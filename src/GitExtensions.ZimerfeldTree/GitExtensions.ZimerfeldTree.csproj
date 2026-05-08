@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- Target Windows-only WinForms; net9.0-windows is required by GitExtensions 4.x -->
+    <!-- Target Windows-only WinForms; must match the runtime GitExtensions uses (net9.0) -->
     <TargetFramework>net9.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
 
@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.18</Version>
+    <Version>1.0.22</Version>
     <AssemblyVersion>1.0.18.0</AssemblyVersion>
     <FileVersion>1.0.18.0</FileVersion>
 
@@ -37,15 +37,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      GitExtensions.Extensibility provides IGitPlugin, GitPluginBase, IGitUICommands,
-      GitUIBaseEventArgs and related types.  The plugin DLL must NOT ship these — they
-      are already present in the host process — so PrivateAssets="all" ensures they are
-      compile-time only and ExcludeAssets prevents them from being copied to the output.
-    -->
-    <PackageReference Include="GitExtensions.Extensibility" Version="4.*"
-                      PrivateAssets="all"
-                      ExcludeAssets="runtime" />
+    <!-- Reference GitExtensions DLLs directly — they must NOT be copied to output -->
+    <Reference Include="GitExtensions.Extensibility">
+      <HintPath>C:\Program Files\GitExtensions\GitExtensions.Extensibility.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GitUIPluginInterfaces">
+      <HintPath>C:\Program Files\GitExtensions\GitUIPluginInterfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition">
+      <HintPath>C:\Program Files\GitExtensions\System.ComponentModel.Composition.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
 </Project>

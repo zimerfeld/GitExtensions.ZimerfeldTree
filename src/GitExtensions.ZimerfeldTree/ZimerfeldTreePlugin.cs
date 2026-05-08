@@ -33,7 +33,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     /// Called when the user clicks Plugins → ZimerfeldTree.
     /// Opens the window (or brings it to the front if already open).
     /// </summary>
-    public override bool Execute(GitUIBaseEventArgs args)
+    public override bool Execute(GitUIEventArgs args)
     {
         string workDir = args.GitModule?.WorkingDir ?? string.Empty;
 
@@ -41,7 +41,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         {
             // Notify GitExtensions to refresh its own UI after a checkout
             Action? notifyChanged = null;
-            try { notifyChanged = () => args.UICommands?.RepoChangedNotifier?.Notify(); }
+            try { notifyChanged = () => args.GitUICommands?.RepoChangedNotifier?.Notify(); }
             catch { /* RepoChangedNotifier may not be available in every build */ }
 
             _form = new BranchHierarchyForm(workDir, notifyChanged);

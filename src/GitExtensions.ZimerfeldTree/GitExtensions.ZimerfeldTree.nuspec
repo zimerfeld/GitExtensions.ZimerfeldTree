@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   GitExtensions.ZimerfeldTree.nuspec
   NuGet package manifest for the ZimerfeldTree GitExtensions plugin.
@@ -16,18 +16,16 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-    <version>1.0.18</version>
+    <version>1.0.22</version>
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
-
     <!-- ── Licensing — per NuGet authoring best practices ────────────── -->
     <!--  https://learn.microsoft.com/pt-br/nuget/create-packages/package-authoring-best-practices#licensing  -->
     <license type="expression">MIT</license>
     <!-- licenseUrl is deprecated but kept for older clients -->
     <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-
     <!-- ── Description ───────────────────────────────────────────────── -->
     <description>
 GitExtensions plugin that displays branches hierarchically in a persistent non-modal
@@ -47,24 +45,20 @@ Features:
       Hierarchical branch tree viewer plugin for GitExtensions — groups branches by path
       prefix under LOCAL, REMOTES and TAGS sections with filtering and context menu.
     </summary>
-
     <!-- ── Project metadata ──────────────────────────────────────────── -->
     <projectUrl>https://github.com/zimerfeld/ZimerfeldTree</projectUrl>
     <tags>gitextensions plugin branch tree hierarchy git</tags>
     <copyright>Copyright © 2026 Zimerfeld</copyright>
     <language>pt-BR</language>
-
     <!-- ── Release notes ─────────────────────────────────────────────── -->
     <releaseNotes>
 1.0.18 — Initial public release.
     </releaseNotes>
-
     <!-- ── NuGet package type — this is a "tool" package (DLL + scripts) -->
     <packageTypes>
       <packageType name="DotnetTool" />
     </packageTypes>
   </metadata>
-
   <!-- ── Package contents ───────────────────────────────────────────────── -->
   <!--
     File paths are relative to this .nuspec file, which lives in:
@@ -78,16 +72,12 @@ Features:
   -->
   <files>
     <!-- Compiled plugin DLL (copied to tools\ by build.ps1 before packing) -->
-    <file src="..\..\tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll"
-          target="tools\net9.0-windows\" />
-
+    <file src="..\..\tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll" target="tools\net9.0-windows\" />
     <!-- Package Manager Console automation scripts -->
-    <file src="..\..\tools\install.ps1"   target="tools\" />
+    <file src="..\..\tools\install.ps1" target="tools\" />
     <file src="..\..\tools\uninstall.ps1" target="tools\" />
-
     <!-- License file in the package root (best practice) -->
     <file src="..\..\LICENSE.txt" target="" />
-
     <!-- README displayed on nuget.org / local NuGet feeds -->
     <file src="..\..\README.md" target="" />
   </files>
