@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Target Windows-only WinForms; net9.0-windows is required by GitExtensions 4.x -->
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- Output assembly name must match what install.ps1 / nuspec reference -->
+    <AssemblyName>GitExtensions.Plugins.ZimerfeldTree</AssemblyName>
+    <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
+
+    <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
+    <Version>1.0.18</Version>
+    <AssemblyVersion>1.0.18.0</AssemblyVersion>
+    <FileVersion>1.0.18.0</FileVersion>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Plugin DLLs are loaded by GitExtensions — do not produce a standalone exe -->
+    <OutputType>Library</OutputType>
+
+    <!-- Strip debug symbols from Release builds to keep the DLL lean -->
+    <DebugType Condition="'$(Configuration)'=='Release'">none</DebugType>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
+
+    <!-- Metadata shown in Windows Explorer / NuGet Gallery -->
+    <Product>GitExtensions ZimerfeldTree Plugin</Product>
+    <Company>Zimerfeld</Company>
+    <Copyright>Copyright © 2026 Zimerfeld</Copyright>
+    <Description>
+      GitExtensions plugin that displays branches hierarchically as a path-based tree,
+      grouped into LOCAL, REMOTES and TAGS sections with real-time filtering and a rich
+      right-click context menu.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      GitExtensions.Extensibility provides IGitPlugin, GitPluginBase, IGitUICommands,
+      GitUIBaseEventArgs and related types.  The plugin DLL must NOT ship these — they
+      are already present in the host process — so PrivateAssets="all" ensures they are
+      compile-time only and ExcludeAssets prevents them from being copied to the output.
+    -->
+    <PackageReference Include="GitExtensions.Extensibility" Version="4.*"
+                      PrivateAssets="all"
+                      ExcludeAssets="runtime" />
+  </ItemGroup>
+
+</Project>

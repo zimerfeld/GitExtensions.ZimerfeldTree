@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "pwsh -NoProfile -File C:\\NUGET\\ZimerfeldTree\\.claude\\hooks\\check-readme.ps1",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "timeout": 120,
+            "statusMessage": "Gerando novo pacote...",
+            "command": "$src = 'C:\\NUGET\\ZimerfeldTree\\src'; $dll = 'C:\\NUGET\\ZimerfeldTree\\src\\GitExtensions.ZimerfeldTree\\bin\\Release\\net9.0-windows\\GitExtensions.Plugins.ZimerfeldTree.dll'; $newest = (Get-ChildItem $src -Recurse -Include '*.cs','*.csproj','*.nuspec' -EA SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime; $dllTime = if (Test-Path $dll) { (Get-Item $dll).LastWriteTime } else { [DateTime]::MinValue }; if ($newest -gt $dllTime) { & 'C:\\NUGET\\ZimerfeldTree\\build.ps1' }"
+          }
+        ]
+      }
+    ]
+  }
+}
