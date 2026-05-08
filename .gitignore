@@ -1,0 +1,20 @@
+# Build output
+bin/
+obj/
+
+# NuGet packages (keep only the latest, tracked by build.ps1)
+*.nupkg
+
+# Inspector tool (used only for API discovery during development)
+inspector/bin/
+inspector/obj/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+
+# OS
+Thumbs.db
+.DS_Store
