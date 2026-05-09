@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.18**
+**Versão atual: 1.0.26**
 
 ---
 
@@ -83,6 +83,51 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 ```powershell
 Install-Package GitExtensions.ZimerfeldTree -Source C:\NUGET
 ```
+
+---
+
+## Hierarquia de branches — limitações
+
+### A hierarquia é por nome, não por parentesco de commits
+
+O plugin agrupa branches usando o separador `/` do nome — **não** pelo histórico de commits do git. `master` e `develop` são irmãos porque nenhum deles contém `/`:
+
+```
+LOCAL
+├── develop      ← irmão
+└── master       ← irmão
+```
+
+Para que uma branch apareça como filha de outra, o nome deve conter `/`:
+
+```
+LOCAL
+└── feature/
+    ├── login    ← feature/login
+    └── pagamento ← feature/pagamento
+```
+
+### Branch real não pode ser nó pai de outra branch
+
+O git armazena refs como arquivos no sistema de arquivos. Se `feature/login` já existe como branch, tentrar criar `feature/login/oauth` resulta em erro:
+
+```
+fatal: cannot lock ref 'refs/heads/feature/login/oauth':
+'refs/heads/feature/login' exists; cannot create 'refs/heads/feature/login/oauth'
+```
+
+Isso ocorre porque `feature/login` seria simultaneamente um **arquivo** (a branch) e um **diretório** (pai de `oauth`), o que é impossível no sistema de arquivos.
+
+**Solução:** use prefixos distintos ou nomes irmãos:
+
+| Intenção | Nomes que funcionam |
+|---|---|
+| Sub-tarefas de login | `feature/login-oauth`, `feature/login-session` |
+| Agrupador sem branch real | `feature/login/base` + `feature/login/oauth` |
+
+### Gitflow não prevê feature filha de feature
+
+O gitflow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são **irmãs** entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum.
 
 ---
 
