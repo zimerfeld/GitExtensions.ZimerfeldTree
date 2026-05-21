@@ -67,7 +67,7 @@ Copy-Item $dll $toolsTarget -Force
 
 # -- 6. Pack -------------------------------------------------------------------
 Write-Host "Gerando pacote $newVersion..."
-nuget pack $nuspec -OutputDirectory $outDir
+& "$PSScriptRoot\tools\nuget.exe" pack $nuspec -OutputDirectory $outDir
 if ($LASTEXITCODE -ne 0) { Write-Error "nuget pack falhou."; exit 1 }
 
 # Remove pacotes de versoes anteriores
