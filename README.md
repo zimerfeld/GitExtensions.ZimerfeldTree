@@ -69,6 +69,11 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ## Instalação
 
+### Instalação Powershell/Terminal as Administrator
+
+cd C:\GitExtensions\ZimerfeldTree\tools
+.\install.ps1
+
 ### Instalação Manual
 
 1. Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
