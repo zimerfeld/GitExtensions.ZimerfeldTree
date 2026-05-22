@@ -16,9 +16,11 @@ public sealed class BranchHierarchyForm : Form
     private readonly Action? _notifyRepoChanged; // called after checkout so GitExtensions refreshes
 
     // ── Cached data ───────────────────────────────────────────────────────────
-    private List<BranchInfo> _localBranches  = [];
-    private List<BranchInfo> _remoteBranches = [];
-    private List<BranchInfo> _tags           = [];
+    private List<BranchInfo>             _localBranches  = [];
+    private List<BranchInfo>             _remoteBranches = [];
+    private List<BranchInfo>             _tags           = [];
+    private Dictionary<string, string?>  _localParentMap = []; // real git ancestry
+    private bool                         _gitFlowForced  = false;
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -28,6 +30,9 @@ public sealed class BranchHierarchyForm : Form
     private Panel            _filterPanel = null!;
     private TextBox          _txtFilter   = null!;
     private Button           _btnRefresh  = null!;
+    private Panel            _warnPanel   = null!;
+    private Label            _warnLabel   = null!;
+    private Button           _btnGitFlow  = null!;
     private TreeView         _tree        = null!;
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
@@ -79,7 +84,12 @@ public sealed class BranchHierarchyForm : Form
             _localBranches  = _svc.GetLocalBranches();
             _remoteBranches = _svc.GetRemoteBranches();
             _tags           = _svc.GetTags();
-            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty);
+            _localParentMap = _svc.BuildParentMap(_localBranches);
+            UpdateGitFlowWarning();
+            var mapToUse = _gitFlowForced
+                ? BuildGitFlowParentMap(_localBranches)
+                : _localParentMap;
+            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, mapToUse);
             ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
@@ -105,14 +115,18 @@ public sealed class BranchHierarchyForm : Form
 
         BuildTopPanel();
         BuildFilterPanel();
+        BuildWarnPanel();
         BuildTreeView();
         BuildContextMenu();
         BuildStatusStrip();
 
         // Layout order (Dock fills from bottom and top inward, Fill takes remainder)
+        // Added last = topmost for DockStyle.Top; so visual order top→bottom:
+        //   _topPanel, _filterPanel, _warnPanel, _tree (Fill), _status
         Controls.Add(_tree);           // Fill
-        Controls.Add(_filterPanel);    // Top (added after tree so it appears above)
-        Controls.Add(_topPanel);       // Top
+        Controls.Add(_warnPanel);      // Top (between filter and tree)
+        Controls.Add(_filterPanel);    // Top (below topPanel)
+        Controls.Add(_topPanel);       // Top (topmost)
         Controls.Add(_status);         // Bottom
 
         ResumeLayout(false);
@@ -191,6 +205,37 @@ public sealed class BranchHierarchyForm : Form
         _filterPanel.Controls.Add(_btnRefresh);
     }
 
+    private void BuildWarnPanel()
+    {
+        _warnLabel = new Label
+        {
+            Dock      = DockStyle.Fill,
+            Text      = string.Empty,
+            ForeColor = Color.DarkRed,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding   = new Padding(4, 0, 0, 0),
+            AutoSize  = false
+        };
+
+        _btnGitFlow = new Button
+        {
+            Dock  = DockStyle.Right,
+            Width = 160,
+            Text  = "Organizar como GitFlow"
+        };
+        _btnGitFlow.Click += BtnGitFlow_Click;
+
+        _warnPanel = new Panel
+        {
+            Dock    = DockStyle.Top,
+            Height  = 26,
+            Visible = false,
+            Padding = new Padding(4, 2, 4, 2)
+        };
+        _warnPanel.Controls.Add(_warnLabel);
+        _warnPanel.Controls.Add(_btnGitFlow);
+    }
+
     private void BuildTreeView()
     {
         _tree = new TreeView
@@ -266,6 +311,90 @@ public sealed class BranchHierarchyForm : Form
         _status.Items.Add(_statusLbl);
     }
 
+    // ── GitFlow enforcement ───────────────────────────────────────────────────
+
+    private void BtnGitFlow_Click(object? sender, EventArgs e)
+    {
+        _gitFlowForced = !_gitFlowForced;
+        RefreshTree();
+    }
+
+    private void UpdateGitFlowWarning()
+    {
+        var violations = GetGitFlowViolations();
+
+        if (violations.Count == 0 && !_gitFlowForced)
+        {
+            _warnPanel.Visible = false;
+            return;
+        }
+
+        _warnPanel.Visible = true;
+        if (_gitFlowForced)
+        {
+            _warnLabel.Text     = "Exibindo hierarquia GitFlow forçada.";
+            _warnLabel.ForeColor = Color.DarkBlue;
+            _btnGitFlow.Text    = "Restaurar hierarquia real";
+        }
+        else
+        {
+            string msg = violations.Count == 1
+                ? violations[0]
+                : $"Hierarquia fora do GitFlow ({violations.Count} violações).";
+            _warnLabel.Text     = $"⚠ {msg}";
+            _warnLabel.ForeColor = Color.DarkRed;
+            _btnGitFlow.Text    = "Organizar como GitFlow";
+        }
+    }
+
+    private List<string> GetGitFlowViolations()
+    {
+        var violations = new List<string>();
+        string? master  = _localBranches.FirstOrDefault(b => b.FullName is "master" or "main")?.FullName;
+        string? develop = _localBranches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
+
+        if (master != null && _localParentMap.TryGetValue(master, out var mp) && mp != null)
+            violations.Add($"'{master}' deveria ser raiz, mas tem pai '{mp}'.");
+
+        if (develop != null)
+        {
+            _localParentMap.TryGetValue(develop, out var dp);
+            if (dp != master)
+                violations.Add($"'develop' deveria ser filho de '{master ?? "master/main"}', está em '{dp ?? "(raiz)"}'.");
+        }
+
+        foreach (var b in _localBranches)
+        {
+            if (!b.FullName.StartsWith("feature/")) continue;
+            _localParentMap.TryGetValue(b.FullName, out var fp);
+            if (fp != develop)
+                violations.Add($"'{b.FullName}' deveria ser filho de 'develop'.");
+        }
+
+        return violations;
+    }
+
+    private static Dictionary<string, string?> BuildGitFlowParentMap(List<BranchInfo> branches)
+    {
+        string? master  = branches.FirstOrDefault(b => b.FullName is "master" or "main")?.FullName;
+        string? develop = branches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
+
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var b in branches)
+        {
+            string name = b.FullName;
+            string? parent;
+            if      (name == master)                 parent = null;
+            else if (name == develop)                parent = master;
+            else if (name.StartsWith("feature/"))   parent = develop;
+            else if (name.StartsWith("release/"))   parent = develop;
+            else if (name.StartsWith("hotfix/"))    parent = master;
+            else                                     parent = null;
+            result[name] = parent;
+        }
+        return result;
+    }
+
     // ── Repository combo ──────────────────────────────────────────────────────
 
     private void LoadRepositories()
@@ -295,14 +424,14 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Tree building ─────────────────────────────────────────────────────────
 
-    private void RebuildAllSections(string filter)
+    private void RebuildAllSections(string filter, Dictionary<string, string?> localMap)
     {
-        BuildLocalSection(filter);
+        BuildLocalSection(filter, localMap);
         BuildRemotesSection(filter);
         BuildTagsSection(filter);
     }
 
-    private void BuildLocalSection(string filter)
+    private void BuildLocalSection(string filter, Dictionary<string, string?> localMap)
     {
         var list = Filter(_localBranches, filter);
         _localRoot.Text = $"LOCAL ({list.Count})";
@@ -311,7 +440,7 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _localRoot.Nodes.Add(EmptyNode("(nenhuma branch local encontrada)")); return; }
 
-        foreach (var n in BuildPathTree(list, b => b.FullName, b => b.FullName.Split('/')[^1], CreateBranchNode))
+        foreach (var n in BuildAncestryTree(list, localMap, CreateBranchNodeFull))
             _localRoot.Nodes.Add(n);
     }
 
@@ -426,6 +555,35 @@ public sealed class BranchHierarchyForm : Form
         return nodes;
     }
 
+    // ── Ancestry tree builder ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Converts a flat list of branches into a tree using git parent-child relationships
+    /// from <paramref name="parentMap"/>.  Branches whose parent is not in the displayed set
+    /// become roots.
+    /// </summary>
+    private static List<TreeNode> BuildAncestryTree(
+        List<BranchInfo> branches,
+        Dictionary<string, string?> parentMap,
+        Func<BranchInfo, TreeNode> createLeaf)
+    {
+        var nodeMap = branches.ToDictionary(b => b.FullName, b => createLeaf(b), StringComparer.Ordinal);
+        var roots   = new List<TreeNode>();
+
+        foreach (var b in branches.OrderBy(b => b.FullName))
+        {
+            var node = nodeMap[b.FullName];
+            string? parentName = parentMap.TryGetValue(b.FullName, out var p) ? p : null;
+
+            if (parentName != null && nodeMap.TryGetValue(parentName, out var parentNode))
+                parentNode.Nodes.Add(node);
+            else
+                roots.Add(node);
+        }
+
+        return roots;
+    }
+
     // ── Node factories ────────────────────────────────────────────────────────
 
     private TreeNode CreateBranchNode(BranchInfo info)
@@ -444,6 +602,18 @@ public sealed class BranchHierarchyForm : Form
         };
     }
 
+    /// <summary>Branch node that shows the full branch name (used in the ancestry tree).</summary>
+    private TreeNode CreateBranchNodeFull(BranchInfo info)
+    {
+        string label = info.IsCurrent ? $"[{info.FullName}]" : info.FullName;
+        return new TreeNode(label)
+        {
+            Tag       = info,
+            NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
+            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
+        };
+    }
+
     private static TreeNode EmptyNode(string text) =>
         new(text) { Tag = SectionTag.Empty, ForeColor = Color.Gray };
 
@@ -452,7 +622,14 @@ public sealed class BranchHierarchyForm : Form
     private void ApplyFilter(string filter)
     {
         _tree.BeginUpdate();
-        try   { RebuildAllSections(filter); ExpandRoots(); }
+        try
+        {
+            var mapToUse = _gitFlowForced
+                ? BuildGitFlowParentMap(_localBranches)
+                : _localParentMap;
+            RebuildAllSections(filter, mapToUse);
+            ExpandRoots();
+        }
         finally { _tree.EndUpdate(); }
     }
 
@@ -465,7 +642,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void ExpandRoots()
     {
-        _localRoot.Expand();
+        _localRoot.ExpandAll();   // show full ancestry tree
         _remotesRoot.Expand();
         _tagsRoot.Expand();
     }
