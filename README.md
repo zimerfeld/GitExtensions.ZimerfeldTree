@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.42**
+**Versão atual: 1.0.43**
 
 ---
 
@@ -74,6 +74,16 @@ No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opçã
 - Por padrão o dropdown fica **desabilitado** e usa `develop` como base (comportamento padrão do `git flow ... start`)
 - Ao marcar o checkbox **based on:**, o dropdown é habilitado e lista as branches locais, permitindo iniciar a nova branch a partir de outra — por exemplo, uma **feature filha de outra feature pai**
 - A base escolhida é passada ao comando: `git flow feature start "<nome>" "<base>"`
+
+### Janela GitFlow — painel "Manage existing branches" (git-flow-next)
+
+O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem as flags `-S`/`-p` do finish:
+
+- **Publish** — `git flow <tipo> publish "<nome>"`: envia a branch para o remoto
+- **Track** — `git flow <tipo> track "<nome>"`: cria uma branch local que rastreia a branch remota correspondente (útil para branches iniciadas por outra pessoa)
+- **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
+- **Finish** — `git flow <tipo> finish [-k] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` para preservar a branch
+- O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
 
 ### Atalhos de teclado e mouse
 
