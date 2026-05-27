@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.26**
+**Versão atual: 1.0.41**
 
 ---
 
@@ -33,6 +33,14 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - Campo de pesquisa filtra branches em todas as seções simultaneamente
 - Filtro preserva nós pai que possuem filhos correspondentes
 
+### Organização automática como GitFlow
+
+- O plugin verifica se a hierarquia real (por parentesco de commits) respeita as regras do GitFlow:
+  `master`/`main` na raiz, `develop` filho de `master`, e branches `feature/*`, `release/*` e `hotfix/*` nos pais esperados
+- Quando detecta que a hierarquia está **fora da condição de GitFlow**, ele **aplica automaticamente** a organização GitFlow na árvore e exibe o aviso correspondente
+- Nesse estado, o botão do painel de aviso mostra **"Restaurar hierarquia real"** — clicar nele volta a exibir a ancestralidade real do git
+- A escolha manual do botão é respeitada e só é reavaliada ao trocar de repositório (ou reabrir a janela)
+
 ### Atualização automática
 
 - A árvore é recarregada automaticamente ao:
@@ -45,15 +53,19 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 | Item | Disponível para |
 |------|----------------|
+| Commit (N) | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
 | Checkout | Local, remota, tag |
 | Nova branch daqui… | Local, tag |
 | Mesclar na branch atual | Local |
 | Rebase na branch atual | Local |
 | Renomear… | Local |
 | Excluir… | Local, remota, tag |
+| GitFlow… | Branch (local/remota/tag) |
 | Expandir tudo | Sempre |
 | Recolher tudo | Sempre |
 | Atualizar | Sempre |
+
+O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit do GitExtensions já apontando para o repositório em exibição.
 
 ### Atalhos de teclado e mouse
 
