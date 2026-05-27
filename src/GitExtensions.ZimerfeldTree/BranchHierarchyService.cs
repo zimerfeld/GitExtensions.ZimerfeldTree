@@ -73,6 +73,34 @@ public sealed class BranchHierarchyService
         catch { return string.Empty; }
     }
 
+    /// <summary>Returns the number of pending changes (staged, unstaged and untracked) in the working tree.</summary>
+    public int GetPendingChangesCount()
+    {
+        try
+        {
+            return SplitLines(RunGit("status --porcelain", out _)).Count();
+        }
+        catch { return 0; }
+    }
+
+    /// <summary>Opens the GitExtensions Commit window for the current working directory.</summary>
+    public (bool ok, string err) OpenCommitWindow()
+    {
+        try
+        {
+            // The plugin DLL is hosted by GitExtensions.exe, so the host process points to it.
+            string exe = Process.GetCurrentProcess().MainModule?.FileName ?? "GitExtensions.exe";
+            var psi = new ProcessStartInfo(exe, "commit")
+            {
+                WorkingDirectory = WorkingDir,
+                UseShellExecute = false
+            };
+            Process.Start(psi);
+            return (true, string.Empty);
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     /// <summary>Returns all local branches.</summary>
     public List<BranchInfo> GetLocalBranches()
     {

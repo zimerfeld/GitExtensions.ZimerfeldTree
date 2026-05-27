@@ -22,6 +22,7 @@ public sealed class BranchHierarchyForm : Form
     private Dictionary<string, string?>  _localParentMap  = []; // real git ancestry
     private Dictionary<string, string?>  _remoteParentMap = [];
     private bool                         _gitFlowForced   = false;
+    private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -45,6 +46,7 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Context menu ──────────────────────────────────────────────────────────
     private ContextMenuStrip   _ctxMenu     = null!;
+    private ToolStripMenuItem  _miCommit    = null!;
     private ToolStripMenuItem  _miCheckout  = null!;
     private ToolStripMenuItem  _miNewBranch = null!;
     private ToolStripMenuItem  _miMerge     = null!;
@@ -72,6 +74,7 @@ public sealed class BranchHierarchyForm : Form
     public void UpdateWorkingDir(string newDir)
     {
         _svc.WorkingDir = newDir;
+        _gitFlowUserToggled = false; // re-enable auto-organization for the new repo
         if (!_cboRepo.Items.Contains(newDir))
             _cboRepo.Items.Add(newDir);
         _cboRepo.SelectedItem = newDir;
@@ -265,6 +268,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildContextMenu()
     {
+        _miCommit    = new ToolStripMenuItem("Commit");
         _miCheckout  = new ToolStripMenuItem("Checkout");
         _miNewBranch = new ToolStripMenuItem("Nova branch daqui…");
         _miMerge     = new ToolStripMenuItem("Mesclar na branch atual");
@@ -276,6 +280,7 @@ public sealed class BranchHierarchyForm : Form
         _miCollapse  = new ToolStripMenuItem("Recolher tudo");
         _miRefresh   = new ToolStripMenuItem("Atualizar");
 
+        _miCommit   .Click += (_, _) => DoCommit();
         _miCheckout .Click += (_, _) => DoCheckout();
         _miNewBranch.Click += (_, _) => DoNewBranch();
         _miMerge    .Click += (_, _) => DoMerge();
@@ -291,6 +296,8 @@ public sealed class BranchHierarchyForm : Form
         _ctxMenu.Opening += CtxMenu_Opening;
         _ctxMenu.Items.AddRange(
         [
+            _miCommit,
+            new ToolStripSeparator(),
             _miCheckout, _miNewBranch,
             new ToolStripSeparator(),
             _miMerge, _miRebase,
@@ -321,6 +328,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BtnGitFlow_Click(object? sender, EventArgs e)
     {
+        _gitFlowUserToggled = true; // manual choice overrides auto-organization
         _gitFlowForced = !_gitFlowForced;
         RefreshTree();
     }
@@ -328,6 +336,11 @@ public sealed class BranchHierarchyForm : Form
     private void UpdateGitFlowWarning()
     {
         var violations = GetGitFlowViolations();
+
+        // Auto-organize: when the real hierarchy violates GitFlow, switch to the GitFlow
+        // view automatically. Skipped once the user has explicitly chosen a view.
+        if (!_gitFlowUserToggled && violations.Count > 0)
+            _gitFlowForced = true;
 
         if (violations.Count == 0 && !_gitFlowForced)
         {
@@ -338,7 +351,9 @@ public sealed class BranchHierarchyForm : Form
         _warnPanel.Visible = true;
         if (_gitFlowForced)
         {
-            _warnLabel.Text     = "Exibindo hierarquia GitFlow forçada.";
+            _warnLabel.Text     = violations.Count > 0
+                ? $"Hierarquia fora do GitFlow ({violations.Count}) — exibindo organização GitFlow."
+                : "Exibindo hierarquia GitFlow forçada.";
             _warnLabel.ForeColor = Color.DarkBlue;
             _btnGitFlow.Text    = "Restaurar hierarquia real";
         }
@@ -477,6 +492,7 @@ public sealed class BranchHierarchyForm : Form
         if (_cboRepo.SelectedItem is string dir && dir != _svc.WorkingDir)
         {
             _svc.WorkingDir = dir;
+            _gitFlowUserToggled = false; // re-enable auto-organization for the new repo
             RefreshTree();
         }
     }
@@ -758,6 +774,8 @@ public sealed class BranchHierarchyForm : Form
         bool remote  = info?.Type == BranchType.Remote;
         bool tag     = info?.Type == BranchType.Tag;
 
+        _miCommit.Text = $"Commit ({_svc.GetPendingChangesCount()})";
+
         _miCheckout .Visible = branch;
         _miNewBranch.Visible = local || tag;
         _miMerge    .Visible = local;
@@ -768,6 +786,12 @@ public sealed class BranchHierarchyForm : Form
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
+
+    private void DoCommit()
+    {
+        var (ok, err) = _svc.OpenCommitWindow();
+        if (!ok) ShowError("Erro ao abrir a janela de Commit", err);
+    }
 
     private void DoCheckout()
     {
