@@ -19,8 +19,9 @@ public sealed class BranchHierarchyForm : Form
     private List<BranchInfo>             _localBranches  = [];
     private List<BranchInfo>             _remoteBranches = [];
     private List<BranchInfo>             _tags           = [];
-    private Dictionary<string, string?>  _localParentMap = []; // real git ancestry
-    private bool                         _gitFlowForced  = false;
+    private Dictionary<string, string?>  _localParentMap  = []; // real git ancestry
+    private Dictionary<string, string?>  _remoteParentMap = [];
+    private bool                         _gitFlowForced   = false;
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -81,15 +82,15 @@ public sealed class BranchHierarchyForm : Form
         _tree.BeginUpdate();
         try
         {
-            _localBranches  = _svc.GetLocalBranches();
-            _remoteBranches = _svc.GetRemoteBranches();
-            _tags           = _svc.GetTags();
-            _localParentMap = _svc.BuildParentMap(_localBranches);
+            _localBranches   = _svc.GetLocalBranches();
+            _remoteBranches  = _svc.GetRemoteBranches();
+            _tags            = _svc.GetTags();
+            _localParentMap  = _svc.BuildParentMap(_localBranches);
+            _remoteParentMap = _svc.BuildRemoteParentMap(_remoteBranches);
             UpdateGitFlowWarning();
-            var mapToUse = _gitFlowForced
-                ? BuildGitFlowParentMap(_localBranches)
-                : _localParentMap;
-            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, mapToUse);
+            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)          : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches) : _remoteParentMap;
+            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
             ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
@@ -350,17 +351,19 @@ public sealed class BranchHierarchyForm : Form
     private List<string> GetGitFlowViolations()
     {
         var violations = new List<string>();
+
+        // ── Local ────────────────────────────────────────────────────────────
         string? master  = _localBranches.FirstOrDefault(b => b.FullName is "master" or "main")?.FullName;
         string? develop = _localBranches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
 
         if (master != null && _localParentMap.TryGetValue(master, out var mp) && mp != null)
-            violations.Add($"'{master}' deveria ser raiz, mas tem pai '{mp}'.");
+            violations.Add($"LOCAL '{master}' deveria ser raiz, mas tem pai '{mp}'.");
 
         if (develop != null)
         {
             _localParentMap.TryGetValue(develop, out var dp);
             if (dp != master)
-                violations.Add($"'develop' deveria ser filho de '{master ?? "master/main"}', está em '{dp ?? "(raiz)"}'.");
+                violations.Add($"LOCAL 'develop' deveria ser filho de '{master ?? "master/main"}', está em '{dp ?? "(raiz)"}'.");
         }
 
         foreach (var b in _localBranches)
@@ -368,10 +371,61 @@ public sealed class BranchHierarchyForm : Form
             if (!b.FullName.StartsWith("feature/")) continue;
             _localParentMap.TryGetValue(b.FullName, out var fp);
             if (fp != develop)
-                violations.Add($"'{b.FullName}' deveria ser filho de 'develop'.");
+                violations.Add($"LOCAL '{b.FullName}' deveria ser filho de 'develop'.");
+        }
+
+        // ── Remotes (por grupo) ───────────────────────────────────────────────
+        foreach (var grp in _remoteBranches.GroupBy(b => b.RemoteName ?? "origin"))
+        {
+            string r        = grp.Key;
+            var    branches = grp.ToList();
+            string? rmaster  = branches.FirstOrDefault(b => b.DisplayName is "master" or "main")?.FullName;
+            string? rdevelop = branches.FirstOrDefault(b => b.DisplayName == "develop")?.FullName;
+
+            if (rmaster != null && _remoteParentMap.TryGetValue(rmaster, out var rmp) && rmp != null)
+                violations.Add($"REMOTE '{r}/master' deveria ser raiz, mas tem pai '{rmp}'.");
+
+            if (rdevelop != null)
+            {
+                _remoteParentMap.TryGetValue(rdevelop, out var rdp);
+                if (rdp != rmaster)
+                    violations.Add($"REMOTE '{r}/develop' deveria ser filho de '{r}/{master ?? "master/main"}', está em '{rdp ?? "(raiz)"}'.");
+            }
+
+            foreach (var b in branches)
+            {
+                if (!b.DisplayName.StartsWith("feature/")) continue;
+                _remoteParentMap.TryGetValue(b.FullName, out var rfp);
+                if (rfp != rdevelop)
+                    violations.Add($"REMOTE '{b.FullName}' deveria ser filho de '{r}/develop'.");
+            }
         }
 
         return violations;
+    }
+
+    private static Dictionary<string, string?> BuildGitFlowRemoteParentMap(List<BranchInfo> branches)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var grp in branches.GroupBy(b => b.RemoteName ?? "origin"))
+        {
+            var groupList = grp.ToList();
+            string? master  = groupList.FirstOrDefault(b => b.DisplayName is "master" or "main")?.FullName;
+            string? develop = groupList.FirstOrDefault(b => b.DisplayName == "develop")?.FullName;
+
+            foreach (var b in groupList)
+            {
+                string? parent;
+                if      (b.FullName == master)                   parent = null;
+                else if (b.FullName == develop)                  parent = master;
+                else if (b.DisplayName.StartsWith("feature/"))   parent = develop;
+                else if (b.DisplayName.StartsWith("release/"))   parent = develop;
+                else if (b.DisplayName.StartsWith("hotfix/"))    parent = master;
+                else                                             parent = null;
+                result[b.FullName] = parent;
+            }
+        }
+        return result;
     }
 
     private static Dictionary<string, string?> BuildGitFlowParentMap(List<BranchInfo> branches)
@@ -424,10 +478,10 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Tree building ─────────────────────────────────────────────────────────
 
-    private void RebuildAllSections(string filter, Dictionary<string, string?> localMap)
+    private void RebuildAllSections(string filter, Dictionary<string, string?> localMap, Dictionary<string, string?> remoteMap)
     {
         BuildLocalSection(filter, localMap);
-        BuildRemotesSection(filter);
+        BuildRemotesSection(filter, remoteMap);
         BuildTagsSection(filter);
     }
 
@@ -444,7 +498,7 @@ public sealed class BranchHierarchyForm : Form
             _localRoot.Nodes.Add(n);
     }
 
-    private void BuildRemotesSection(string filter)
+    private void BuildRemotesSection(string filter, Dictionary<string, string?> remoteMap)
     {
         var list = Filter(_remoteBranches, filter);
         _remotesRoot.Text = $"REMOTES ({list.Count})";
@@ -453,33 +507,13 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _remotesRoot.Nodes.Add(EmptyNode("(nenhuma branch remota encontrada)")); return; }
 
-        // Group by remote name; each remote gets its own sub-tree
         foreach (var group in list.GroupBy(b => b.RemoteName ?? "origin").OrderBy(g => g.Key))
         {
             var remoteNode = new TreeNode(group.Key) { Tag = SectionTag.RemoteGroup };
+            var groupList  = group.ToList();
 
-            // Strip the "remote/" prefix before building the path hierarchy
-            var relBranches = group.Select(b => new BranchInfo
-            {
-                FullName   = b.DisplayName,   // e.g. "feature/login"
-                Type       = BranchType.Remote,
-                RemoteName = b.RemoteName,
-                IsCurrent  = b.IsCurrent
-            }).ToList();
-
-            // We need the original BranchInfo (with full FullName) attached to leaf nodes
-            // so that Checkout uses the correct "origin/feature/login" name.
-            // Map display name → original BranchInfo.
-            var origMap = group.ToDictionary(b => b.DisplayName, StringComparer.Ordinal);
-
-            foreach (var n in BuildPathTree(
-                relBranches,
-                b => b.FullName,
-                b => b.FullName.Split('/')[^1],
-                b => CreateBranchNode(origMap.TryGetValue(b.FullName, out var orig) ? orig : b)))
-            {
+            foreach (var n in BuildAncestryTree(groupList, remoteMap, CreateRemoteBranchNode))
                 remoteNode.Nodes.Add(n);
-            }
 
             _remotesRoot.Nodes.Add(remoteNode);
         }
@@ -602,6 +636,18 @@ public sealed class BranchHierarchyForm : Form
         };
     }
 
+    /// <summary>Branch node for remote ancestry tree — shows DisplayName (strips remote prefix).</summary>
+    private TreeNode CreateRemoteBranchNode(BranchInfo info)
+    {
+        string label = info.IsCurrent ? $"[{info.DisplayName}]" : info.DisplayName;
+        return new TreeNode(label)
+        {
+            Tag       = info,
+            NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
+            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
+        };
+    }
+
     /// <summary>Branch node that shows the full branch name (used in the ancestry tree).</summary>
     private TreeNode CreateBranchNodeFull(BranchInfo info)
     {
@@ -624,10 +670,9 @@ public sealed class BranchHierarchyForm : Form
         _tree.BeginUpdate();
         try
         {
-            var mapToUse = _gitFlowForced
-                ? BuildGitFlowParentMap(_localBranches)
-                : _localParentMap;
-            RebuildAllSections(filter, mapToUse);
+            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)          : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches) : _remoteParentMap;
+            RebuildAllSections(filter, localMap, remoteMap);
             ExpandRoots();
         }
         finally { _tree.EndUpdate(); }

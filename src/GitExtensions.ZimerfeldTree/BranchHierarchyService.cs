@@ -104,13 +104,16 @@ public sealed class BranchHierarchyService
             string raw = RunGit("branch -r --format=%(refname:short)", out _);
             foreach (var line in SplitLines(raw))
             {
-                if (line.Contains("->")) continue; // skip HEAD pointers
+                if (line.Contains("->")) continue; // formato sem --format: "origin/HEAD -> origin/main"
                 var slash = line.IndexOf('/');
-                string? remote = slash >= 0 ? line[..slash] : null;
+                if (slash < 0) continue; // formato com --format: symref "origin/HEAD" sai como "origin" (sem barra)
+                string remote     = line[..slash];
+                string branchPart = line[(slash + 1)..];
+                if (branchPart.Equals("HEAD", StringComparison.OrdinalIgnoreCase)) continue;
                 result.Add(new BranchInfo
                 {
-                    FullName = line,
-                    Type = BranchType.Remote,
+                    FullName   = line,
+                    Type       = BranchType.Remote,
                     RemoteName = remote
                 });
             }
@@ -283,6 +286,43 @@ public sealed class BranchHierarchyService
         }
         catch { }
         return tips;
+    }
+
+    // Gets all remote-tracking tip SHAs in a single git call: name → full SHA.
+    private Dictionary<string, string> GatherRemoteTips()
+    {
+        var tips = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            string raw = RunGit("branch -r --format=%(refname:short) %(objectname)", out _);
+            foreach (var line in SplitLines(raw))
+            {
+                if (line.Contains("->")) continue;
+                int sp = line.IndexOf(' ');
+                string name = sp > 0 ? line[..sp] : line;
+                int sl = name.IndexOf('/');
+                if (sl < 0) continue; // symref sem barra (ex: "origin" para origin/HEAD)
+                if (name[(sl + 1)..].Equals("HEAD", StringComparison.OrdinalIgnoreCase)) continue;
+                if (sp > 0) tips[name] = line[(sp + 1)..].Trim();
+            }
+        }
+        catch { }
+        return tips;
+    }
+
+    /// <summary>
+    /// Same algorithm as <see cref="BuildParentMap"/> but operates on remote-tracking branches.
+    /// Each branch's <see cref="BranchInfo.FullName"/> must be the full remote ref
+    /// (e.g. "origin/feature/login") so that <c>git merge-base</c> can resolve it.
+    /// </summary>
+    public Dictionary<string, string?> BuildRemoteParentMap(List<BranchInfo> branches)
+    {
+        var tips   = GatherRemoteTips();
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var b in branches)
+            result[b.FullName] = FindParent(b.FullName, branches, tips);
+        BreakCycles(result);
+        return result;
     }
 
     /// <summary>
