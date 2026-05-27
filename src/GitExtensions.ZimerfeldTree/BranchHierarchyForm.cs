@@ -16,9 +16,12 @@ public sealed class BranchHierarchyForm : Form
     private readonly Action? _notifyRepoChanged; // called after checkout so GitExtensions refreshes
 
     // ── Cached data ───────────────────────────────────────────────────────────
-    private List<BranchInfo> _localBranches  = [];
-    private List<BranchInfo> _remoteBranches = [];
-    private List<BranchInfo> _tags           = [];
+    private List<BranchInfo>             _localBranches  = [];
+    private List<BranchInfo>             _remoteBranches = [];
+    private List<BranchInfo>             _tags           = [];
+    private Dictionary<string, string?>  _localParentMap  = []; // real git ancestry
+    private Dictionary<string, string?>  _remoteParentMap = [];
+    private bool                         _gitFlowForced   = false;
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -28,6 +31,9 @@ public sealed class BranchHierarchyForm : Form
     private Panel            _filterPanel = null!;
     private TextBox          _txtFilter   = null!;
     private Button           _btnRefresh  = null!;
+    private Panel            _warnPanel   = null!;
+    private Label            _warnLabel   = null!;
+    private Button           _btnGitFlow  = null!;
     private TreeView         _tree        = null!;
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
@@ -45,6 +51,7 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripMenuItem  _miRebase    = null!;
     private ToolStripMenuItem  _miRename    = null!;
     private ToolStripMenuItem  _miDelete    = null!;
+    private ToolStripMenuItem  _miGitFlow   = null!;
     private ToolStripMenuItem  _miExpand    = null!;
     private ToolStripMenuItem  _miCollapse  = null!;
     private ToolStripMenuItem  _miRefresh   = null!;
@@ -76,10 +83,15 @@ public sealed class BranchHierarchyForm : Form
         _tree.BeginUpdate();
         try
         {
-            _localBranches  = _svc.GetLocalBranches();
-            _remoteBranches = _svc.GetRemoteBranches();
-            _tags           = _svc.GetTags();
-            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty);
+            _localBranches   = _svc.GetLocalBranches();
+            _remoteBranches  = _svc.GetRemoteBranches();
+            _tags            = _svc.GetTags();
+            _localParentMap  = _svc.BuildParentMap(_localBranches);
+            _remoteParentMap = _svc.BuildRemoteParentMap(_remoteBranches);
+            UpdateGitFlowWarning();
+            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)          : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches) : _remoteParentMap;
+            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
             ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
@@ -105,14 +117,18 @@ public sealed class BranchHierarchyForm : Form
 
         BuildTopPanel();
         BuildFilterPanel();
+        BuildWarnPanel();
         BuildTreeView();
         BuildContextMenu();
         BuildStatusStrip();
 
         // Layout order (Dock fills from bottom and top inward, Fill takes remainder)
+        // Added last = topmost for DockStyle.Top; so visual order top→bottom:
+        //   _topPanel, _filterPanel, _warnPanel, _tree (Fill), _status
         Controls.Add(_tree);           // Fill
-        Controls.Add(_filterPanel);    // Top (added after tree so it appears above)
-        Controls.Add(_topPanel);       // Top
+        Controls.Add(_warnPanel);      // Top (between filter and tree)
+        Controls.Add(_filterPanel);    // Top (below topPanel)
+        Controls.Add(_topPanel);       // Top (topmost)
         Controls.Add(_status);         // Bottom
 
         ResumeLayout(false);
@@ -191,6 +207,37 @@ public sealed class BranchHierarchyForm : Form
         _filterPanel.Controls.Add(_btnRefresh);
     }
 
+    private void BuildWarnPanel()
+    {
+        _warnLabel = new Label
+        {
+            Dock      = DockStyle.Fill,
+            Text      = string.Empty,
+            ForeColor = Color.DarkRed,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding   = new Padding(4, 0, 0, 0),
+            AutoSize  = false
+        };
+
+        _btnGitFlow = new Button
+        {
+            Dock  = DockStyle.Right,
+            Width = 160,
+            Text  = "Organizar como GitFlow"
+        };
+        _btnGitFlow.Click += BtnGitFlow_Click;
+
+        _warnPanel = new Panel
+        {
+            Dock    = DockStyle.Top,
+            Height  = 26,
+            Visible = false,
+            Padding = new Padding(4, 2, 4, 2)
+        };
+        _warnPanel.Controls.Add(_warnLabel);
+        _warnPanel.Controls.Add(_btnGitFlow);
+    }
+
     private void BuildTreeView()
     {
         _tree = new TreeView
@@ -224,6 +271,7 @@ public sealed class BranchHierarchyForm : Form
         _miRebase    = new ToolStripMenuItem("Rebase na branch atual");
         _miRename    = new ToolStripMenuItem("Renomear…");
         _miDelete    = new ToolStripMenuItem("Excluir…");
+        _miGitFlow   = new ToolStripMenuItem("GitFlow…");
         _miExpand    = new ToolStripMenuItem("Expandir tudo");
         _miCollapse  = new ToolStripMenuItem("Recolher tudo");
         _miRefresh   = new ToolStripMenuItem("Atualizar");
@@ -234,6 +282,7 @@ public sealed class BranchHierarchyForm : Form
         _miRebase   .Click += (_, _) => DoRebase();
         _miRename   .Click += (_, _) => DoRename();
         _miDelete   .Click += (_, _) => DoDelete();
+        _miGitFlow  .Click += (_, _) => DoGitFlow();
         _miExpand   .Click += (_, _) => _tree.ExpandAll();
         _miCollapse .Click += (_, _) => { _tree.CollapseAll(); ExpandRoots(); };
         _miRefresh  .Click += (_, _) => RefreshTree();
@@ -247,6 +296,8 @@ public sealed class BranchHierarchyForm : Form
             _miMerge, _miRebase,
             new ToolStripSeparator(),
             _miRename, _miDelete,
+            new ToolStripSeparator(),
+            _miGitFlow,
             new ToolStripSeparator(),
             _miExpand, _miCollapse, _miRefresh
         ]);
@@ -264,6 +315,143 @@ public sealed class BranchHierarchyForm : Form
             TextAlign = ContentAlignment.MiddleLeft
         };
         _status.Items.Add(_statusLbl);
+    }
+
+    // ── GitFlow enforcement ───────────────────────────────────────────────────
+
+    private void BtnGitFlow_Click(object? sender, EventArgs e)
+    {
+        _gitFlowForced = !_gitFlowForced;
+        RefreshTree();
+    }
+
+    private void UpdateGitFlowWarning()
+    {
+        var violations = GetGitFlowViolations();
+
+        if (violations.Count == 0 && !_gitFlowForced)
+        {
+            _warnPanel.Visible = false;
+            return;
+        }
+
+        _warnPanel.Visible = true;
+        if (_gitFlowForced)
+        {
+            _warnLabel.Text     = "Exibindo hierarquia GitFlow forçada.";
+            _warnLabel.ForeColor = Color.DarkBlue;
+            _btnGitFlow.Text    = "Restaurar hierarquia real";
+        }
+        else
+        {
+            string msg = violations.Count == 1
+                ? violations[0]
+                : $"Hierarquia fora do GitFlow ({violations.Count} violações).";
+            _warnLabel.Text     = $"⚠ {msg}";
+            _warnLabel.ForeColor = Color.DarkRed;
+            _btnGitFlow.Text    = "Organizar como GitFlow";
+        }
+    }
+
+    private List<string> GetGitFlowViolations()
+    {
+        var violations = new List<string>();
+
+        // ── Local ────────────────────────────────────────────────────────────
+        string? master  = _localBranches.FirstOrDefault(b => b.FullName is "master" or "main")?.FullName;
+        string? develop = _localBranches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
+
+        if (master != null && _localParentMap.TryGetValue(master, out var mp) && mp != null)
+            violations.Add($"LOCAL '{master}' deveria ser raiz, mas tem pai '{mp}'.");
+
+        if (develop != null)
+        {
+            _localParentMap.TryGetValue(develop, out var dp);
+            if (dp != master)
+                violations.Add($"LOCAL 'develop' deveria ser filho de '{master ?? "master/main"}', está em '{dp ?? "(raiz)"}'.");
+        }
+
+        foreach (var b in _localBranches)
+        {
+            if (!b.FullName.StartsWith("feature/")) continue;
+            _localParentMap.TryGetValue(b.FullName, out var fp);
+            if (fp != develop)
+                violations.Add($"LOCAL '{b.FullName}' deveria ser filho de 'develop'.");
+        }
+
+        // ── Remotes (por grupo) ───────────────────────────────────────────────
+        foreach (var grp in _remoteBranches.GroupBy(b => b.RemoteName ?? "origin"))
+        {
+            string r        = grp.Key;
+            var    branches = grp.ToList();
+            string? rmaster  = branches.FirstOrDefault(b => b.DisplayName is "master" or "main")?.FullName;
+            string? rdevelop = branches.FirstOrDefault(b => b.DisplayName == "develop")?.FullName;
+
+            if (rmaster != null && _remoteParentMap.TryGetValue(rmaster, out var rmp) && rmp != null)
+                violations.Add($"REMOTE '{r}/master' deveria ser raiz, mas tem pai '{rmp}'.");
+
+            if (rdevelop != null)
+            {
+                _remoteParentMap.TryGetValue(rdevelop, out var rdp);
+                if (rdp != rmaster)
+                    violations.Add($"REMOTE '{r}/develop' deveria ser filho de '{r}/{master ?? "master/main"}', está em '{rdp ?? "(raiz)"}'.");
+            }
+
+            foreach (var b in branches)
+            {
+                if (!b.DisplayName.StartsWith("feature/")) continue;
+                _remoteParentMap.TryGetValue(b.FullName, out var rfp);
+                if (rfp != rdevelop)
+                    violations.Add($"REMOTE '{b.FullName}' deveria ser filho de '{r}/develop'.");
+            }
+        }
+
+        return violations;
+    }
+
+    private static Dictionary<string, string?> BuildGitFlowRemoteParentMap(List<BranchInfo> branches)
+    {
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var grp in branches.GroupBy(b => b.RemoteName ?? "origin"))
+        {
+            var groupList = grp.ToList();
+            string? master  = groupList.FirstOrDefault(b => b.DisplayName is "master" or "main")?.FullName;
+            string? develop = groupList.FirstOrDefault(b => b.DisplayName == "develop")?.FullName;
+
+            foreach (var b in groupList)
+            {
+                string? parent;
+                if      (b.FullName == master)                   parent = null;
+                else if (b.FullName == develop)                  parent = master;
+                else if (b.DisplayName.StartsWith("feature/"))   parent = develop;
+                else if (b.DisplayName.StartsWith("release/"))   parent = develop;
+                else if (b.DisplayName.StartsWith("hotfix/"))    parent = master;
+                else                                             parent = null;
+                result[b.FullName] = parent;
+            }
+        }
+        return result;
+    }
+
+    private static Dictionary<string, string?> BuildGitFlowParentMap(List<BranchInfo> branches)
+    {
+        string? master  = branches.FirstOrDefault(b => b.FullName is "master" or "main")?.FullName;
+        string? develop = branches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
+
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var b in branches)
+        {
+            string name = b.FullName;
+            string? parent;
+            if      (name == master)                 parent = null;
+            else if (name == develop)                parent = master;
+            else if (name.StartsWith("feature/"))   parent = develop;
+            else if (name.StartsWith("release/"))   parent = develop;
+            else if (name.StartsWith("hotfix/"))    parent = master;
+            else                                     parent = null;
+            result[name] = parent;
+        }
+        return result;
     }
 
     // ── Repository combo ──────────────────────────────────────────────────────
@@ -295,14 +483,14 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Tree building ─────────────────────────────────────────────────────────
 
-    private void RebuildAllSections(string filter)
+    private void RebuildAllSections(string filter, Dictionary<string, string?> localMap, Dictionary<string, string?> remoteMap)
     {
-        BuildLocalSection(filter);
-        BuildRemotesSection(filter);
+        BuildLocalSection(filter, localMap);
+        BuildRemotesSection(filter, remoteMap);
         BuildTagsSection(filter);
     }
 
-    private void BuildLocalSection(string filter)
+    private void BuildLocalSection(string filter, Dictionary<string, string?> localMap)
     {
         var list = Filter(_localBranches, filter);
         _localRoot.Text = $"LOCAL ({list.Count})";
@@ -311,11 +499,11 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _localRoot.Nodes.Add(EmptyNode("(nenhuma branch local encontrada)")); return; }
 
-        foreach (var n in BuildPathTree(list, b => b.FullName, b => b.FullName.Split('/')[^1], CreateBranchNode))
+        foreach (var n in BuildAncestryTree(list, localMap, CreateBranchNodeFull))
             _localRoot.Nodes.Add(n);
     }
 
-    private void BuildRemotesSection(string filter)
+    private void BuildRemotesSection(string filter, Dictionary<string, string?> remoteMap)
     {
         var list = Filter(_remoteBranches, filter);
         _remotesRoot.Text = $"REMOTES ({list.Count})";
@@ -324,33 +512,13 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _remotesRoot.Nodes.Add(EmptyNode("(nenhuma branch remota encontrada)")); return; }
 
-        // Group by remote name; each remote gets its own sub-tree
         foreach (var group in list.GroupBy(b => b.RemoteName ?? "origin").OrderBy(g => g.Key))
         {
             var remoteNode = new TreeNode(group.Key) { Tag = SectionTag.RemoteGroup };
+            var groupList  = group.ToList();
 
-            // Strip the "remote/" prefix before building the path hierarchy
-            var relBranches = group.Select(b => new BranchInfo
-            {
-                FullName   = b.DisplayName,   // e.g. "feature/login"
-                Type       = BranchType.Remote,
-                RemoteName = b.RemoteName,
-                IsCurrent  = b.IsCurrent
-            }).ToList();
-
-            // We need the original BranchInfo (with full FullName) attached to leaf nodes
-            // so that Checkout uses the correct "origin/feature/login" name.
-            // Map display name → original BranchInfo.
-            var origMap = group.ToDictionary(b => b.DisplayName, StringComparer.Ordinal);
-
-            foreach (var n in BuildPathTree(
-                relBranches,
-                b => b.FullName,
-                b => b.FullName.Split('/')[^1],
-                b => CreateBranchNode(origMap.TryGetValue(b.FullName, out var orig) ? orig : b)))
-            {
+            foreach (var n in BuildAncestryTree(groupList, remoteMap, CreateRemoteBranchNode))
                 remoteNode.Nodes.Add(n);
-            }
 
             _remotesRoot.Nodes.Add(remoteNode);
         }
@@ -380,6 +548,7 @@ public sealed class BranchHierarchyForm : Form
         Func<T, string> getPath,
         Func<T, string> getLeafLabel,
         Func<T, TreeNode> createLeaf)
+        where T : notnull
     {
         // Build an intermediate dictionary tree: key → dict or T
         var root = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -426,6 +595,35 @@ public sealed class BranchHierarchyForm : Form
         return nodes;
     }
 
+    // ── Ancestry tree builder ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Converts a flat list of branches into a tree using git parent-child relationships
+    /// from <paramref name="parentMap"/>.  Branches whose parent is not in the displayed set
+    /// become roots.
+    /// </summary>
+    private static List<TreeNode> BuildAncestryTree(
+        List<BranchInfo> branches,
+        Dictionary<string, string?> parentMap,
+        Func<BranchInfo, TreeNode> createLeaf)
+    {
+        var nodeMap = branches.ToDictionary(b => b.FullName, b => createLeaf(b), StringComparer.Ordinal);
+        var roots   = new List<TreeNode>();
+
+        foreach (var b in branches.OrderBy(b => b.FullName))
+        {
+            var node = nodeMap[b.FullName];
+            string? parentName = parentMap.TryGetValue(b.FullName, out var p) ? p : null;
+
+            if (parentName != null && nodeMap.TryGetValue(parentName, out var parentNode))
+                parentNode.Nodes.Add(node);
+            else
+                roots.Add(node);
+        }
+
+        return roots;
+    }
+
     // ── Node factories ────────────────────────────────────────────────────────
 
     private TreeNode CreateBranchNode(BranchInfo info)
@@ -444,6 +642,30 @@ public sealed class BranchHierarchyForm : Form
         };
     }
 
+    /// <summary>Branch node for remote ancestry tree — shows DisplayName (strips remote prefix).</summary>
+    private TreeNode CreateRemoteBranchNode(BranchInfo info)
+    {
+        string label = info.IsCurrent ? $"[{info.DisplayName}]" : info.DisplayName;
+        return new TreeNode(label)
+        {
+            Tag       = info,
+            NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
+            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
+        };
+    }
+
+    /// <summary>Branch node that shows the full branch name (used in the ancestry tree).</summary>
+    private TreeNode CreateBranchNodeFull(BranchInfo info)
+    {
+        string label = info.IsCurrent ? $"[{info.FullName}]" : info.FullName;
+        return new TreeNode(label)
+        {
+            Tag       = info,
+            NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
+            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
+        };
+    }
+
     private static TreeNode EmptyNode(string text) =>
         new(text) { Tag = SectionTag.Empty, ForeColor = Color.Gray };
 
@@ -452,7 +674,13 @@ public sealed class BranchHierarchyForm : Form
     private void ApplyFilter(string filter)
     {
         _tree.BeginUpdate();
-        try   { RebuildAllSections(filter); ExpandRoots(); }
+        try
+        {
+            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)          : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches) : _remoteParentMap;
+            RebuildAllSections(filter, localMap, remoteMap);
+            ExpandRoots();
+        }
         finally { _tree.EndUpdate(); }
     }
 
@@ -465,7 +693,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void ExpandRoots()
     {
-        _localRoot.Expand();
+        _localRoot.ExpandAll();   // show full ancestry tree
         _remotesRoot.Expand();
         _tagsRoot.Expand();
     }
@@ -484,6 +712,8 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_DrawNode(object? sender, DrawTreeNodeEventArgs e)
     {
+        if (e.Node is null) return;
+
         bool selected = (e.State & TreeNodeStates.Selected) != 0;
         bool current  = e.Node.Tag is BranchInfo bi && bi.IsCurrent;
 
@@ -503,7 +733,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_NodeMouseDoubleClick(object? sender, TreeNodeMouseClickEventArgs e)
     {
-        if (e.Node.Tag is BranchInfo) DoCheckout();
+        if (e.Node?.Tag is BranchInfo) DoCheckout();
     }
 
     private void Tree_KeyDown(object? sender, KeyEventArgs e)
@@ -534,6 +764,7 @@ public sealed class BranchHierarchyForm : Form
         _miRebase   .Visible = local;
         _miRename   .Visible = local;
         _miDelete   .Visible = local || remote || tag;
+        _miGitFlow  .Visible = branch;
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
@@ -578,6 +809,14 @@ public sealed class BranchHierarchyForm : Form
         var (ok, err) = _svc.CreateBranch(dlg.Value.Trim(), info.FullName);
         if (ok) RefreshTree();
         else ShowError("Erro ao criar branch", err);
+    }
+
+    private void DoGitFlow()
+    {
+        using var dlg = new GitFlowForm(_svc);
+        dlg.ShowDialog(this);
+        RefreshTree();
+        _notifyRepoChanged?.Invoke();
     }
 
     private void DoMerge()

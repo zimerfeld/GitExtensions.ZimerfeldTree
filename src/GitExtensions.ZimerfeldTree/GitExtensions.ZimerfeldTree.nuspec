@@ -16,7 +16,7 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-    <version>1.0.26</version>
+    <version>1.0.40</version>
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -47,6 +47,7 @@ Features:
     </summary>
     <!-- ── Project metadata ──────────────────────────────────────────── -->
     <projectUrl>https://github.com/zimerfeld/ZimerfeldTree</projectUrl>
+    <readme>README.md</readme>
     <tags>gitextensions plugin branch tree hierarchy git</tags>
     <copyright>Copyright © 2026 Zimerfeld</copyright>
     <language>pt-BR</language>

@@ -82,7 +82,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
 
     // ── Event handlers ────────────────────────────────────────────────────────
 
-    private void OnRepositoryChanged(object sender, GitUIEventArgs e)
+    private void OnRepositoryChanged(object? sender, GitUIEventArgs e)
     {
         if (_form is null || _form.IsDisposed) return;
 
@@ -94,7 +94,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         });
     }
 
-    private void OnBranchChanged(object sender, GitUIPostActionEventArgs e)
+    private void OnBranchChanged(object? sender, GitUIPostActionEventArgs e)
     {
         if (_form is null || _form.IsDisposed) return;
         _form.InvokeIfRequired(() => _form.RefreshTree());
