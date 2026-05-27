@@ -10,9 +10,9 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.26</Version>
-    <AssemblyVersion>1.0.26.0</AssemblyVersion>
-    <FileVersion>1.0.26.0</FileVersion>
+    <Version>1.0.40</Version>
+    <AssemblyVersion>1.0.40.0</AssemblyVersion>
+    <FileVersion>1.0.40.0</FileVersion>
 
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -24,6 +24,10 @@
     <!-- Strip debug symbols from Release builds to keep the DLL lean -->
     <DebugType Condition="'$(Configuration)'=='Release'">none</DebugType>
     <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
+
+    <!-- Benign: GitExtensions DLLs pull WindowsBase 8.0 while the net9 ref pack supplies 4.0.
+         The runtime resolves the correct assembly at load time, so demote MSB3277 to a message. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
 
     <!-- Metadata shown in Windows Explorer / NuGet Gallery -->
     <Product>GitExtensions ZimerfeldTree Plugin</Product>

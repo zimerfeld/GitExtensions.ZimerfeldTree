@@ -104,13 +104,16 @@ public sealed class BranchHierarchyService
             string raw = RunGit("branch -r --format=%(refname:short)", out _);
             foreach (var line in SplitLines(raw))
             {
-                if (line.Contains("->")) continue; // skip HEAD pointers
+                if (line.Contains("->")) continue; // formato sem --format: "origin/HEAD -> origin/main"
                 var slash = line.IndexOf('/');
-                string? remote = slash >= 0 ? line[..slash] : null;
+                if (slash < 0) continue; // formato com --format: symref "origin/HEAD" sai como "origin" (sem barra)
+                string remote     = line[..slash];
+                string branchPart = line[(slash + 1)..];
+                if (branchPart.Equals("HEAD", StringComparison.OrdinalIgnoreCase)) continue;
                 result.Add(new BranchInfo
                 {
-                    FullName = line,
-                    Type = BranchType.Remote,
+                    FullName   = line,
+                    Type       = BranchType.Remote,
                     RemoteName = remote
                 });
             }
@@ -246,6 +249,246 @@ public sealed class BranchHierarchyService
             return code == 0 ? (true, string.Empty) : (false, err.Trim());
         }
         catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    // ── Git Flow ───────────────────────────────────────────────────────────────
+
+    /// <summary>The branch types supported by git flow, in display order.</summary>
+    public static readonly string[] GitFlowTypes = ["feature", "bugfix", "release", "hotfix", "support"];
+
+    /// <summary>Runs an arbitrary git command and returns the combined stdout+stderr and exit code.</summary>
+    public (string output, int code) RunGitFlow(string arguments)
+    {
+        try
+        {
+            var (stdout, stderr, code) = RunGitFull(arguments);
+            string combined = stdout.TrimEnd();
+            stderr = stderr.TrimEnd();
+            if (stderr.Length > 0)
+                combined = combined.Length > 0 ? combined + "\n" + stderr : stderr;
+            return (combined, code);
+        }
+        catch (Exception ex) { return (ex.Message, -1); }
+    }
+
+    /// <summary>Returns the full symbolic HEAD ref (e.g. "refs/heads/develop").</summary>
+    public string GetHeadRef()
+    {
+        try
+        {
+            string s = RunGit("rev-parse --symbolic-full-name HEAD", out int code).Trim();
+            if (code == 0 && s.Length > 0) return s;
+        }
+        catch { }
+        var cur = GetCurrentBranch();
+        return cur.Length > 0 ? "refs/heads/" + cur : string.Empty;
+    }
+
+    /// <summary>Returns the configured git flow prefix for a branch type, or the default "type/".</summary>
+    public string GetGitFlowPrefix(string type)
+    {
+        try
+        {
+            string s = RunGit($"config --get gitflow.prefix.{type}", out int code).Trim();
+            if (code == 0 && s.Length > 0) return s;
+        }
+        catch { }
+        return type + "/";
+    }
+
+    /// <summary>Returns the names of configured remotes (e.g. "origin").</summary>
+    public List<string> GetRemotes()
+    {
+        var result = new List<string>();
+        try
+        {
+            foreach (var line in SplitLines(RunGit("remote", out _)))
+                result.Add(line);
+        }
+        catch { }
+        return result;
+    }
+
+    /// <summary>Returns local branches matching a git flow prefix, with the prefix stripped off.</summary>
+    public List<string> GetGitFlowBranches(string prefix)
+    {
+        var result = new List<string>();
+        foreach (var b in GetLocalBranches())
+            if (b.FullName.StartsWith(prefix, StringComparison.Ordinal))
+                result.Add(b.FullName[prefix.Length..]);
+        return result;
+    }
+
+    // ── Ancestry analysis (pure merge-base) ──────────────────────────────────
+
+    /// <summary>
+    /// Builds a map of branchName → parentBranchName (null = root) using merge-base only.
+    /// Branch A is the parent of B when tip(A) == merge-base(A, B), meaning A's current
+    /// tip is a direct ancestor of B.  Among all valid candidates the one with the fewest
+    /// extra commits on top wins (closest fork point).
+    /// </summary>
+    public Dictionary<string, string?> BuildParentMap(List<BranchInfo> branches)
+    {
+        var tips   = GatherTips();
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+
+        foreach (var b in branches)
+            result[b.FullName] = FindParent(b.FullName, branches, tips);
+
+        BreakCycles(result);
+        return result;
+    }
+
+    // Gets all local-branch tip SHAs in a single git call: name → full SHA.
+    private Dictionary<string, string> GatherTips()
+    {
+        var tips = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            string raw = RunGit("branch --format=\"%(refname:short) %(objectname)\"", out _);
+            foreach (var line in SplitLines(raw))
+            {
+                int sp = line.IndexOf(' ');
+                if (sp > 0) tips[line[..sp]] = line[(sp + 1)..].Trim();
+            }
+        }
+        catch { }
+        return tips;
+    }
+
+    // Gets all remote-tracking tip SHAs in a single git call: name → full SHA.
+    private Dictionary<string, string> GatherRemoteTips()
+    {
+        var tips = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            string raw = RunGit("branch -r --format=\"%(refname:short) %(objectname)\"", out _);
+            foreach (var line in SplitLines(raw))
+            {
+                if (line.Contains("->")) continue;
+                int sp = line.IndexOf(' ');
+                string name = sp > 0 ? line[..sp] : line;
+                int sl = name.IndexOf('/');
+                if (sl < 0) continue; // symref sem barra (ex: "origin" para origin/HEAD)
+                if (name[(sl + 1)..].Equals("HEAD", StringComparison.OrdinalIgnoreCase)) continue;
+                if (sp > 0) tips[name] = line[(sp + 1)..].Trim();
+            }
+        }
+        catch { }
+        return tips;
+    }
+
+    /// <summary>
+    /// Same algorithm as <see cref="BuildParentMap"/> but operates on remote-tracking branches.
+    /// Each branch's <see cref="BranchInfo.FullName"/> must be the full remote ref
+    /// (e.g. "origin/feature/login") so that <c>git merge-base</c> can resolve it.
+    /// </summary>
+    public Dictionary<string, string?> BuildRemoteParentMap(List<BranchInfo> branches)
+    {
+        var tips   = GatherRemoteTips();
+        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var b in branches)
+            result[b.FullName] = FindParent(b.FullName, branches, tips);
+        BreakCycles(result);
+        return result;
+    }
+
+    /// <summary>
+    /// For branch B, finds its parent: the candidate A whose merge-base with B is the
+    /// deepest (most recent common ancestor) in the commit graph.
+    /// <para>
+    /// Candidates where B is already a direct ancestor of A are excluded — they would be
+    /// children of B, not parents. When two candidates produce the same merge-base depth
+    /// (tie), the one that is closest to the fork point wins (fewest commits it added since
+    /// the fork).
+    /// </para>
+    /// </summary>
+    private string? FindParent(
+        string branch,
+        List<BranchInfo> candidates,
+        Dictionary<string, string> tips)
+    {
+        if (!tips.TryGetValue(branch, out string? branchTip)) return null;
+
+        string? bestParent   = null;
+        string? bestMb       = null;
+        int     bestDistance = int.MaxValue; // lazy: only computed on a tie
+
+        foreach (var cand in candidates)
+        {
+            if (cand.FullName == branch) continue;
+            if (!tips.ContainsKey(cand.FullName)) continue;
+
+            try
+            {
+                string mb = RunGit(
+                    $"merge-base {EscapeArg(cand.FullName)} {EscapeArg(branch)}",
+                    out int code).Trim();
+
+                if (code != 0 || string.IsNullOrEmpty(mb)) continue;
+
+                // Skip when B is a direct ancestor of the candidate
+                // (merge-base == B's own tip means B is below the candidate, not above).
+                if (mb == branchTip) continue;
+
+                if (bestMb == null)
+                {
+                    bestMb = mb; bestParent = cand.FullName;
+                    continue;
+                }
+
+                // Compare which merge-base is deeper (more recent).
+                // merge-base(mb, bestMb) == bestMb  →  bestMb is ancestor of mb  →  mb is deeper
+                // merge-base(mb, bestMb) == mb       →  mb is ancestor of bestMb  →  bestMb is deeper
+                // both equal                          →  same commit (tie)
+                string cmp = RunGit($"merge-base {mb} {bestMb}", out _).Trim();
+
+                if (cmp == bestMb && cmp != mb) // mb strictly deeper → new best
+                {
+                    bestMb = mb; bestParent = cand.FullName; bestDistance = int.MaxValue;
+                }
+                else if (cmp == mb && cmp == bestMb) // same merge-base → tiebreak
+                {
+                    // Prefer the candidate that is closer to the fork point
+                    // (fewest commits it added on top of the shared ancestor).
+                    if (bestDistance == int.MaxValue)
+                        bestDistance = CommitCount($"{bestMb}..{bestParent}");
+                    int d = CommitCount($"{mb}..{EscapeArg(cand.FullName)}");
+                    if (d < bestDistance)
+                    {
+                        bestParent = cand.FullName; bestDistance = d;
+                    }
+                }
+                // else bestMb is deeper → keep current best
+            }
+            catch { }
+        }
+
+        return bestParent;
+    }
+
+    private int CommitCount(string revRange)
+    {
+        try
+        {
+            string s = RunGit($"rev-list --count {revRange}", out _).Trim();
+            return int.TryParse(s, out int n) ? n : int.MaxValue;
+        }
+        catch { return int.MaxValue; }
+    }
+
+    private static void BreakCycles(Dictionary<string, string?> parentMap)
+    {
+        foreach (var key in parentMap.Keys.ToList())
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            string? cur = key;
+            while (cur != null)
+            {
+                if (!seen.Add(cur)) { parentMap[cur] = null; break; }
+                parentMap.TryGetValue(cur, out cur);
+            }
+        }
     }
 
     // ── Settings reader ──────────────────────────────────────────────────────
