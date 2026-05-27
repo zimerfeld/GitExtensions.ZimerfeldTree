@@ -251,6 +251,74 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    // ── Git Flow ───────────────────────────────────────────────────────────────
+
+    /// <summary>The branch types supported by git flow, in display order.</summary>
+    public static readonly string[] GitFlowTypes = ["feature", "bugfix", "release", "hotfix", "support"];
+
+    /// <summary>Runs an arbitrary git command and returns the combined stdout+stderr and exit code.</summary>
+    public (string output, int code) RunGitFlow(string arguments)
+    {
+        try
+        {
+            var (stdout, stderr, code) = RunGitFull(arguments);
+            string combined = stdout.TrimEnd();
+            stderr = stderr.TrimEnd();
+            if (stderr.Length > 0)
+                combined = combined.Length > 0 ? combined + "\n" + stderr : stderr;
+            return (combined, code);
+        }
+        catch (Exception ex) { return (ex.Message, -1); }
+    }
+
+    /// <summary>Returns the full symbolic HEAD ref (e.g. "refs/heads/develop").</summary>
+    public string GetHeadRef()
+    {
+        try
+        {
+            string s = RunGit("rev-parse --symbolic-full-name HEAD", out int code).Trim();
+            if (code == 0 && s.Length > 0) return s;
+        }
+        catch { }
+        var cur = GetCurrentBranch();
+        return cur.Length > 0 ? "refs/heads/" + cur : string.Empty;
+    }
+
+    /// <summary>Returns the configured git flow prefix for a branch type, or the default "type/".</summary>
+    public string GetGitFlowPrefix(string type)
+    {
+        try
+        {
+            string s = RunGit($"config --get gitflow.prefix.{type}", out int code).Trim();
+            if (code == 0 && s.Length > 0) return s;
+        }
+        catch { }
+        return type + "/";
+    }
+
+    /// <summary>Returns the names of configured remotes (e.g. "origin").</summary>
+    public List<string> GetRemotes()
+    {
+        var result = new List<string>();
+        try
+        {
+            foreach (var line in SplitLines(RunGit("remote", out _)))
+                result.Add(line);
+        }
+        catch { }
+        return result;
+    }
+
+    /// <summary>Returns local branches matching a git flow prefix, with the prefix stripped off.</summary>
+    public List<string> GetGitFlowBranches(string prefix)
+    {
+        var result = new List<string>();
+        foreach (var b in GetLocalBranches())
+            if (b.FullName.StartsWith(prefix, StringComparison.Ordinal))
+                result.Add(b.FullName[prefix.Length..]);
+        return result;
+    }
+
     // ── Ancestry analysis (pure merge-base) ──────────────────────────────────
 
     /// <summary>
@@ -277,7 +345,7 @@ public sealed class BranchHierarchyService
         var tips = new Dictionary<string, string>(StringComparer.Ordinal);
         try
         {
-            string raw = RunGit("branch --format=%(refname:short) %(objectname)", out _);
+            string raw = RunGit("branch --format=\"%(refname:short) %(objectname)\"", out _);
             foreach (var line in SplitLines(raw))
             {
                 int sp = line.IndexOf(' ');
@@ -294,7 +362,7 @@ public sealed class BranchHierarchyService
         var tips = new Dictionary<string, string>(StringComparer.Ordinal);
         try
         {
-            string raw = RunGit("branch -r --format=%(refname:short) %(objectname)", out _);
+            string raw = RunGit("branch -r --format=\"%(refname:short) %(objectname)\"", out _);
             foreach (var line in SplitLines(raw))
             {
                 if (line.Contains("->")) continue;

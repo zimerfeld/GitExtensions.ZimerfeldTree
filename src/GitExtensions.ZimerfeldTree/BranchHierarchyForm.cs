@@ -51,6 +51,7 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripMenuItem  _miRebase    = null!;
     private ToolStripMenuItem  _miRename    = null!;
     private ToolStripMenuItem  _miDelete    = null!;
+    private ToolStripMenuItem  _miGitFlow   = null!;
     private ToolStripMenuItem  _miExpand    = null!;
     private ToolStripMenuItem  _miCollapse  = null!;
     private ToolStripMenuItem  _miRefresh   = null!;
@@ -270,6 +271,7 @@ public sealed class BranchHierarchyForm : Form
         _miRebase    = new ToolStripMenuItem("Rebase na branch atual");
         _miRename    = new ToolStripMenuItem("Renomear…");
         _miDelete    = new ToolStripMenuItem("Excluir…");
+        _miGitFlow   = new ToolStripMenuItem("GitFlow…");
         _miExpand    = new ToolStripMenuItem("Expandir tudo");
         _miCollapse  = new ToolStripMenuItem("Recolher tudo");
         _miRefresh   = new ToolStripMenuItem("Atualizar");
@@ -280,6 +282,7 @@ public sealed class BranchHierarchyForm : Form
         _miRebase   .Click += (_, _) => DoRebase();
         _miRename   .Click += (_, _) => DoRename();
         _miDelete   .Click += (_, _) => DoDelete();
+        _miGitFlow  .Click += (_, _) => DoGitFlow();
         _miExpand   .Click += (_, _) => _tree.ExpandAll();
         _miCollapse .Click += (_, _) => { _tree.CollapseAll(); ExpandRoots(); };
         _miRefresh  .Click += (_, _) => RefreshTree();
@@ -293,6 +296,8 @@ public sealed class BranchHierarchyForm : Form
             _miMerge, _miRebase,
             new ToolStripSeparator(),
             _miRename, _miDelete,
+            new ToolStripSeparator(),
+            _miGitFlow,
             new ToolStripSeparator(),
             _miExpand, _miCollapse, _miRefresh
         ]);
@@ -543,6 +548,7 @@ public sealed class BranchHierarchyForm : Form
         Func<T, string> getPath,
         Func<T, string> getLeafLabel,
         Func<T, TreeNode> createLeaf)
+        where T : notnull
     {
         // Build an intermediate dictionary tree: key → dict or T
         var root = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
@@ -706,6 +712,8 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_DrawNode(object? sender, DrawTreeNodeEventArgs e)
     {
+        if (e.Node is null) return;
+
         bool selected = (e.State & TreeNodeStates.Selected) != 0;
         bool current  = e.Node.Tag is BranchInfo bi && bi.IsCurrent;
 
@@ -725,7 +733,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_NodeMouseDoubleClick(object? sender, TreeNodeMouseClickEventArgs e)
     {
-        if (e.Node.Tag is BranchInfo) DoCheckout();
+        if (e.Node?.Tag is BranchInfo) DoCheckout();
     }
 
     private void Tree_KeyDown(object? sender, KeyEventArgs e)
@@ -756,6 +764,7 @@ public sealed class BranchHierarchyForm : Form
         _miRebase   .Visible = local;
         _miRename   .Visible = local;
         _miDelete   .Visible = local || remote || tag;
+        _miGitFlow  .Visible = branch;
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
@@ -800,6 +809,14 @@ public sealed class BranchHierarchyForm : Form
         var (ok, err) = _svc.CreateBranch(dlg.Value.Trim(), info.FullName);
         if (ok) RefreshTree();
         else ShowError("Erro ao criar branch", err);
+    }
+
+    private void DoGitFlow()
+    {
+        using var dlg = new GitFlowForm(_svc);
+        dlg.ShowDialog(this);
+        RefreshTree();
+        _notifyRepoChanged?.Invoke();
     }
 
     private void DoMerge()
