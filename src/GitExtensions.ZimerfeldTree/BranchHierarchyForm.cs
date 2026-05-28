@@ -515,7 +515,7 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _localRoot.Nodes.Add(EmptyNode("(nenhuma branch local encontrada)")); return; }
 
-        foreach (var n in BuildAncestryTree(list, localMap, CreateBranchNodeFull))
+        foreach (var n in BuildAncestryTree(list, localMap, b => b.FullName))
             _localRoot.Nodes.Add(n);
     }
 
@@ -533,7 +533,7 @@ public sealed class BranchHierarchyForm : Form
             var remoteNode = new TreeNode(group.Key) { Tag = SectionTag.RemoteGroup };
             var groupList  = group.ToList();
 
-            foreach (var n in BuildAncestryTree(groupList, remoteMap, CreateRemoteBranchNode))
+            foreach (var n in BuildAncestryTree(groupList, remoteMap, b => b.DisplayName))
                 remoteNode.Nodes.Add(n);
 
             _remotesRoot.Nodes.Add(remoteNode);
@@ -549,29 +549,64 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _tagsRoot.Nodes.Add(EmptyNode("(nenhuma tag encontrada)")); return; }
 
-        foreach (var tag in list.OrderBy(t => t.FullName))
-            _tagsRoot.Nodes.Add(CreateBranchNode(tag));
+        var noChildren = new Dictionary<string, List<BranchInfo>>(StringComparer.Ordinal);
+        foreach (var n in PathGroup(list, noChildren, t => t.FullName))
+            _tagsRoot.Nodes.Add(n);
     }
 
-    // ── Generic path-tree builder ─────────────────────────────────────────────
+    // ── Combined ancestry + path tree builder ─────────────────────────────────
 
     /// <summary>
-    /// Converts a flat list of <typeparamref name="T"/> into a tree of <see cref="TreeNode"/>
-    /// nodes using '/' as the path separator, creating intermediate folder nodes where needed.
+    /// Builds the section tree combining two relationships:
+    /// <list type="bullet">
+    /// <item>vertical nesting by git ancestry (<paramref name="parentMap"/>): a branch is nested
+    /// under its parent branch when that parent is also displayed;</item>
+    /// <item>horizontal grouping by '/' in the name: among the children of a given parent, names
+    /// that share a path prefix are grouped under folder nodes
+    /// (e.g. <c>feature/teste</c> → folder "feature" containing leaf "teste").</item>
+    /// </list>
+    /// <paramref name="getPath"/> returns the name used for '/' splitting and leaf labels
+    /// (full name for locals, remote-stripped DisplayName for remotes).
     /// </summary>
-    private static List<TreeNode> BuildPathTree<T>(
-        IEnumerable<T> items,
-        Func<T, string> getPath,
-        Func<T, string> getLeafLabel,
-        Func<T, TreeNode> createLeaf)
-        where T : notnull
+    private List<TreeNode> BuildAncestryTree(
+        List<BranchInfo> branches,
+        Dictionary<string, string?> parentMap,
+        Func<BranchInfo, string> getPath)
     {
-        // Build an intermediate dictionary tree: key → dict or T
-        var root = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var present    = new HashSet<string>(branches.Select(b => b.FullName), StringComparer.Ordinal);
+        var childrenOf = new Dictionary<string, List<BranchInfo>>(StringComparer.Ordinal);
+        var roots      = new List<BranchInfo>();
 
-        foreach (var item in items.OrderBy(getPath))
+        foreach (var b in branches)
         {
-            var parts  = getPath(item).Split('/');
+            string? parent = parentMap.TryGetValue(b.FullName, out var p) ? p : null;
+            if (parent != null && present.Contains(parent))
+            {
+                if (!childrenOf.TryGetValue(parent, out var lst)) { lst = []; childrenOf[parent] = lst; }
+                lst.Add(b);
+            }
+            else
+            {
+                roots.Add(b);
+            }
+        }
+
+        return PathGroup(roots, childrenOf, getPath);
+    }
+
+    /// <summary>
+    /// Groups a set of sibling branches by '/' path segments into folder nodes, then nests each
+    /// branch's ancestry children (from <paramref name="childrenOf"/>) recursively under its leaf.
+    /// </summary>
+    private List<TreeNode> PathGroup(
+        List<BranchInfo> siblings,
+        Dictionary<string, List<BranchInfo>> childrenOf,
+        Func<BranchInfo, string> getPath)
+    {
+        var root = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        foreach (var b in siblings.OrderBy(getPath, StringComparer.OrdinalIgnoreCase))
+        {
+            var parts  = getPath(b).Split('/');
             var cursor = root;
             for (int i = 0; i < parts.Length - 1; i++)
             {
@@ -583,98 +618,45 @@ public sealed class BranchHierarchyForm : Form
                 }
                 cursor = (SortedDictionary<string, object>)cursor[parts[i]];
             }
-            cursor[parts[^1]] = item;   // leaf
+            cursor[parts[^1]] = b; // leaf
         }
-
-        return WalkDict(root, createLeaf);
+        return WalkPathDict(root, childrenOf, getPath);
     }
 
-    private static List<TreeNode> WalkDict<T>(
+    private List<TreeNode> WalkPathDict(
         SortedDictionary<string, object> dict,
-        Func<T, TreeNode> createLeaf)
+        Dictionary<string, List<BranchInfo>> childrenOf,
+        Func<BranchInfo, string> getPath)
     {
         var nodes = new List<TreeNode>();
         foreach (var kvp in dict)
         {
-            if (kvp.Value is T leaf)
+            if (kvp.Value is BranchInfo b)
             {
-                nodes.Add(createLeaf(leaf));
+                var node = CreateLeafNode(b, kvp.Key);
+                if (childrenOf.TryGetValue(b.FullName, out var kids))
+                    foreach (var n in PathGroup(kids, childrenOf, getPath))
+                        node.Nodes.Add(n);
+                nodes.Add(node);
             }
             else if (kvp.Value is SortedDictionary<string, object> sub)
             {
                 var folder = new TreeNode(kvp.Key) { Tag = SectionTag.Folder };
-                foreach (var child in WalkDict(sub, createLeaf))
-                    folder.Nodes.Add(child);
+                foreach (var n in WalkPathDict(sub, childrenOf, getPath))
+                    folder.Nodes.Add(n);
                 nodes.Add(folder);
             }
         }
         return nodes;
     }
 
-    // ── Ancestry tree builder ─────────────────────────────────────────────────
-
-    /// <summary>
-    /// Converts a flat list of branches into a tree using git parent-child relationships
-    /// from <paramref name="parentMap"/>.  Branches whose parent is not in the displayed set
-    /// become roots.
-    /// </summary>
-    private static List<TreeNode> BuildAncestryTree(
-        List<BranchInfo> branches,
-        Dictionary<string, string?> parentMap,
-        Func<BranchInfo, TreeNode> createLeaf)
-    {
-        var nodeMap = branches.ToDictionary(b => b.FullName, b => createLeaf(b), StringComparer.Ordinal);
-        var roots   = new List<TreeNode>();
-
-        foreach (var b in branches.OrderBy(b => b.FullName))
-        {
-            var node = nodeMap[b.FullName];
-            string? parentName = parentMap.TryGetValue(b.FullName, out var p) ? p : null;
-
-            if (parentName != null && nodeMap.TryGetValue(parentName, out var parentNode))
-                parentNode.Nodes.Add(node);
-            else
-                roots.Add(node);
-        }
-
-        return roots;
-    }
-
     // ── Node factories ────────────────────────────────────────────────────────
 
-    private TreeNode CreateBranchNode(BranchInfo info)
+    /// <summary>Creates a leaf branch/tag node showing the last path segment as its label.</summary>
+    private TreeNode CreateLeafNode(BranchInfo info, string label)
     {
-        string label = info.FullName.Contains('/')
-            ? info.FullName.Split('/')[^1]
-            : info.FullName;
-
-        if (info.IsCurrent) label = $"[{label}]";
-
-        return new TreeNode(label)
-        {
-            Tag      = info,
-            NodeFont = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
-            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
-        };
-    }
-
-    /// <summary>Branch node for remote ancestry tree — shows DisplayName (strips remote prefix).</summary>
-    private TreeNode CreateRemoteBranchNode(BranchInfo info)
-    {
-        string label = info.IsCurrent ? $"[{info.DisplayName}]" : info.DisplayName;
-        return new TreeNode(label)
-        {
-            Tag       = info,
-            NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
-            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
-        };
-    }
-
-    /// <summary>Branch node that shows the full branch name (used in the ancestry tree).</summary>
-    private TreeNode CreateBranchNodeFull(BranchInfo info)
-    {
-        string label = info.IsCurrent ? $"[{info.FullName}]" : info.FullName;
-        return new TreeNode(label)
+        string text = info.IsCurrent ? $"[{label}]" : label;
+        return new TreeNode(text)
         {
             Tag       = info,
             NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,

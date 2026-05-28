@@ -35,6 +35,7 @@ public sealed class GitFlowForm : Form
     private Button   _btnUpdate      = null!;
     private Button   _btnFinish      = null!;
     private CheckBox _chkKeep        = null!;
+    private CheckBox _chkNoFetch     = null!;
 
     // ── Result ──
     private GroupBox _grpResult = null!;
@@ -203,7 +204,13 @@ public sealed class GitFlowForm : Form
         _chkKeep = new CheckBox
         {
             Text   = "Keep branch after finish",
-            Bounds = new Rectangle(418, 138, 190, 22),
+            Bounds = new Rectangle(398, 136, 210, 20),
+            Anchor = AnchorStyles.Top | AnchorStyles.Right
+        };
+        _chkNoFetch = new CheckBox
+        {
+            Text   = "No fetch (--no-fetch)",
+            Bounds = new Rectangle(398, 160, 210, 20),
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
 
@@ -213,13 +220,13 @@ public sealed class GitFlowForm : Form
             AutoSize  = false,
             TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = SystemColors.GrayText,
-            Bounds    = new Rectangle(12, 140, 400, 18)
+            Bounds    = new Rectangle(12, 162, 370, 18)
         };
 
         _grpManage.Controls.AddRange(
         [
             _cboManageType, lblBranch, _lblManagePrefix, _cboManageBranch,
-            _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, lblHint
+            _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, _chkNoFetch, lblHint
         ]);
         Controls.Add(_grpManage);
     }
@@ -363,16 +370,20 @@ public sealed class GitFlowForm : Form
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
 
-        string flags = _chkKeep.Checked ? "-k " : string.Empty;
+        string flags = string.Empty;
+        if (_chkKeep.Checked)    flags += "-k ";
+        if (_chkNoFetch.Checked) flags += "--no-fetch ";
         RunFlow($"flow {type} finish {flags}\"{name}\"");
     }
 
     private void RunFlow(string args)
     {
+        string output;
+        int code;
         Cursor = Cursors.WaitCursor;
         try
         {
-            var (output, code) = _svc.RunGitFlow(args);
+            (output, code) = _svc.RunGitFlow(args);
             string body = output.Length == 0
                 ? (code == 0 ? "(comando concluído)" : "(sem saída)")
                 : output.Replace("\n", "\r\n");
@@ -385,6 +396,34 @@ public sealed class GitFlowForm : Form
 
         _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
         ReloadManageBranches();
+
+        if (code != 0)
+            ShowFlowError(output);
+    }
+
+    /// <summary>
+    /// Shows a MessageBox after a failed git flow command. When the output points to a missing
+    /// base/production branch (the common git-flow-next finish failure), it adds guidance.
+    /// </summary>
+    private static void ShowFlowError(string output)
+    {
+        bool missingBase =
+            output.Contains("couldn't find remote ref", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("does not exist", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("start point branch", StringComparison.OrdinalIgnoreCase);
+
+        string msg = missingBase
+            ? "O git flow não encontrou a branch base/produção (ex.: 'main' ou 'develop').\n\n" +
+              "Verifique se ela existe localmente:\n" +
+              "    git branch --list main master develop\n\n" +
+              "E a configuração do git flow:\n" +
+              "    git config gitflow.branch.main\n" +
+              "    git config gitflow.branch.develop\n\n" +
+              "Crie a branch que falta ou ajuste a config. Se a falha for ao buscar do remoto, " +
+              "marque \"No fetch (--no-fetch)\" e tente novamente."
+            : "O comando git flow falhou. Veja os detalhes na janela de resultado.";
+
+        MessageBox.Show(msg, "GitFlow — falha", MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
     private void ShowAbout()

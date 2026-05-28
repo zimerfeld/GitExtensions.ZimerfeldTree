@@ -1,14 +1,14 @@
-Versao: 1.0.42  ->  1.0.43
+Versao: 1.0.43  ->  1.0.44
 Compilando...
 
 Build succeeded.
     0 Warning(s)
     0 Error(s)
 
-Time Elapsed 00:00:02.77
+Time Elapsed 00:00:03.87
 Plugin instalado em: C:\Program Files\GitExtensions\Plugins
-Gerando pacote 1.0.43...
+Gerando pacote 1.0.44...
 Attempting to build package from 'GitExtensions.ZimerfeldTree.nuspec'.
-Successfully created package 'C:\GitExtensions\ZimerfeldTree\GitExtensions.ZimerfeldTree.1.0.43.nupkg'.
+Successfully created package 'C:\GitExtensions\ZimerfeldTree\GitExtensions.ZimerfeldTree.1.0.44.nupkg'.
 
-Concluido: GitExtensions.ZimerfeldTree.1.0.43.nupkg
+Concluido: GitExtensions.ZimerfeldTree.1.0.44.nupkg

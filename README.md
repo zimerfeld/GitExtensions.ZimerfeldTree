@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.43**
+**Versão atual: 1.0.44**
 
 ---
 
@@ -12,7 +12,8 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 - Janela não-modal que permanece aberta em paralelo ao GitExtensions
 - Árvore dividida em três seções fixas: **LOCAL**, **REMOTES** e **TAGS**
-- **LOCAL e REMOTES ** usam agrupamento por **prefixo de caminho** (`/`): `feature/x` e `feature/y` aparecem como filhos de um nó-pasta `feature`
+- **LOCAL e REMOTES** combinam **ancestralidade** (parentesco real por commits / organização GitFlow) com **agrupamento por caminho** (`/`): dentro de cada nível pai, nomes com `/` viram nós-pasta. Ex.: `feature/teste` aparece como pasta `feature` → folha `teste`, e `release/2026` como `release` → `2026`. Quando `feature/*` é filha de `develop`, fica `develop` → `feature` → `teste`
+- **TAGS** também agrupa por `/` (sem ancestralidade)
 - LOCAL, REMOTES e TAGS exibe `(nenhuma branch local encontrada)` quando não há branches
 - A janela abre **centralizada na tela** (horizontal e vertical)
 
@@ -82,8 +83,12 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Publish** — `git flow <tipo> publish "<nome>"`: envia a branch para o remoto
 - **Track** — `git flow <tipo> track "<nome>"`: cria uma branch local que rastreia a branch remota correspondente (útil para branches iniciadas por outra pessoa)
 - **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
-- **Finish** — `git flow <tipo> finish [-k] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` para preservar a branch
+- **Finish** — `git flow <tipo> finish [-k] [--no-fetch] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
 - O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
+
+#### Tratamento de erros
+
+Quando um comando git flow falha, o resultado é exibido na janela e um aviso é mostrado. Se o erro indicar uma **branch base/produção ausente** (ex.: `couldn't find remote ref main`, `start point branch 'main' does not exist`), a mensagem orienta a verificar as branches existentes e a configuração `gitflow.branch.*`, e sugere marcar **No fetch** quando a falha for ao buscar do remoto.
 
 ### Atalhos de teclado e mouse
 
