@@ -47,9 +47,8 @@ public sealed class GitFlowForm : Form
 
         Text            = "GitFlow";
         Size            = new Size(662, 824);
-        MinimumSize     = new Size(560, 640);
-        FormBorderStyle = FormBorderStyle.Sizable;
-        MaximizeBox     = true;
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox     = false;
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.CenterParent;
         Font            = new Font("Segoe UI", 9f);
