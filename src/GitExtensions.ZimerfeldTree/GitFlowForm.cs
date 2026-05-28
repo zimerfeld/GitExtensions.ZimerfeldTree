@@ -281,8 +281,33 @@ public sealed class GitFlowForm : Form
         _cboBasedOn.SelectedIndex = 0; // "develop" is the default base
         _cboBasedOn.Enabled = _chkBasedOn.Checked;
 
+        // Detect git-flow type of the currently checked-out branch so the Manage
+        // panel opens already pointing at it (matching what the user is on).
+        string current = _svc.GetCurrentBranch();
+        int matchIdx = -1;
+        string matchName = string.Empty;
+        for (int i = 0; i < BranchHierarchyService.GitFlowTypes.Length; i++)
+        {
+            string prefix = _svc.GetGitFlowPrefix(BranchHierarchyService.GitFlowTypes[i]);
+            if (prefix.Length > 0 && current.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                matchIdx  = i;
+                matchName = current[prefix.Length..];
+                break;
+            }
+        }
+
         _cboStartType.SelectedIndex  = 0; // triggers prefix update
-        _cboManageType.SelectedIndex = 0; // triggers branch reload
+        _cboManageType.SelectedIndex = matchIdx >= 0 ? matchIdx : 0; // triggers branch reload
+
+        if (matchName.Length > 0)
+        {
+            int branchIdx = _cboManageBranch.Items.IndexOf(matchName);
+            if (branchIdx >= 0)
+                _cboManageBranch.SelectedIndex = branchIdx;
+            else
+                _cboManageBranch.Text = matchName;
+        }
     }
 
     private void ReloadManageBranches()
