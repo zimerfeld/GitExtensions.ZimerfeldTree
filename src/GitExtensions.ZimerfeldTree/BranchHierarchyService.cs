@@ -383,40 +383,45 @@ public sealed class BranchHierarchyService
     }
 
     /// <summary>
-    /// Returns ahead/behind commit counts for every local branch that has an upstream configured.
-    /// Uses a single <c>git for-each-ref</c> call so it is fast regardless of branch count.
-    /// Key = short branch name, Value = (ahead, behind).
+    /// Returns tracking info for every local branch that has an upstream configured,
+    /// including branches that are in sync (both counts = 0).
+    /// Uses a single pipe-delimited <c>git for-each-ref</c> call.
+    /// Key = short branch name, Value = (hasUpstream=true, ahead, behind).
     /// </summary>
-    public Dictionary<string, (int ahead, int behind)> GetBranchTrackingInfo()
+    public Dictionary<string, (bool hasUpstream, int ahead, int behind)> GetBranchTrackingInfo()
     {
-        var result = new Dictionary<string, (int, int)>(StringComparer.Ordinal);
+        var result = new Dictionary<string, (bool, int, int)>(StringComparer.Ordinal);
         try
         {
-            // %(upstream:track) yields "[ahead N, behind M]" or "[ahead N]" / "[behind M]" or "".
-            // The format value MUST be quoted so the OS passes it as a single argument to git;
-            // without quotes the space splits it and %(upstream:track) is silently ignored.
+            // Pipe-delimited format: branchname|upstream_short|upstream_track
+            // Pipe is not valid in git ref names on major hosting platforms, making it
+            // a reliable field separator.  The outer quotes keep the --format as one argument.
             string raw = RunGit(
-                "for-each-ref \"--format=%(refname:short) %(upstream:track)\" refs/heads/", out int code);
+                "for-each-ref \"--format=%(refname:short)|%(upstream:short)|%(upstream:track)\" refs/heads/",
+                out int code);
             if (code != 0) return result;
 
             foreach (var line in SplitLines(raw))
             {
-                int bracket = line.IndexOf('[');
-                if (bracket < 0) continue;           // no upstream / no divergence
+                int p1 = line.IndexOf('|');
+                if (p1 < 0) continue;
+                int p2 = line.IndexOf('|', p1 + 1);
+                if (p2 < 0) continue;
 
-                string branch = line[..bracket].Trim();
-                string track  = line[bracket..];
+                string branch   = line[..p1];
+                string upstream = line[(p1 + 1)..p2];
+                string track    = line[(p2 + 1)..];
+
+                if (string.IsNullOrEmpty(upstream)) continue; // no upstream configured
 
                 int ahead  = 0;
                 int behind = 0;
-
                 var ma = System.Text.RegularExpressions.Regex.Match(track, @"ahead (\d+)");
                 var mb = System.Text.RegularExpressions.Regex.Match(track, @"behind (\d+)");
                 if (ma.Success) int.TryParse(ma.Groups[1].Value, out ahead);
                 if (mb.Success) int.TryParse(mb.Groups[1].Value, out behind);
 
-                if (ahead > 0 || behind > 0)
-                    result[branch] = (ahead, behind);
+                result[branch] = (true, ahead, behind);
             }
         }
         catch { }

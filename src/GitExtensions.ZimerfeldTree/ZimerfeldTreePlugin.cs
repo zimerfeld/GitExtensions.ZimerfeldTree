@@ -18,6 +18,10 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     // Singleton form — one per GitExtensions session
     private BranchHierarchyForm? _form;
 
+    // Current commands instance — updated by Register/Unregister as repos change.
+    // Used to open the native commit dialog so Commit Template plugins are visible.
+    private IGitUICommands? _commands;
+
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public ZimerfeldTreePlugin() : base(false)
@@ -45,7 +49,15 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             try { notifyChanged = () => args.GitUICommands?.RepoChangedNotifier?.Notify(); }
             catch { /* RepoChangedNotifier may not be available in every build */ }
 
-            _form = new BranchHierarchyForm(workDir, notifyChanged);
+            // Open the native commit dialog in-process so Commit Template plugins load correctly.
+            // Returns null when unavailable (caller falls back to spawning a new process).
+            Func<IWin32Window, bool?> openCommit = owner =>
+            {
+                try { return _commands?.StartCommitDialog(owner, string.Empty, false); }
+                catch { return null; }
+            };
+
+            _form = new BranchHierarchyForm(workDir, notifyChanged, openCommit);
             _form.FormClosed += (_, _) => _form = null;
         }
         else
@@ -65,6 +77,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     public override void Register(IGitUICommands commands)
     {
         base.Register(commands);
+        _commands = commands;
 
         commands.PostBrowseInitialize  += OnRepositoryChanged;
         commands.PostCheckoutBranch    += OnBranchChanged;
@@ -78,6 +91,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         commands.PostCheckoutBranch    -= OnBranchChanged;
         commands.PostCheckoutRevision  -= OnBranchChanged;
 
+        _commands = null;
         base.Unregister(commands);
     }
 

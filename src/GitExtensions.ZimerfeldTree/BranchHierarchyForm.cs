@@ -2,6 +2,7 @@
 // MIT License — Copyright (c) 2026 Zimerfeld
 
 using System.ComponentModel;
+using System.Text.Json;
 
 namespace GitExtensions.ZimerfeldTree;
 
@@ -14,6 +15,11 @@ public sealed class BranchHierarchyForm : Form
     // ── Services ─────────────────────────────────────────────────────────────
     private readonly BranchHierarchyService _svc;
     private readonly Action? _notifyRepoChanged; // called after checkout so GitExtensions refreshes
+    /// <summary>
+    /// Delegate provided by the plugin that opens the native GitExtensions commit dialog in-process.
+    /// Returns true = commits were made, false = dialog closed without committing, null = unavailable (fall back).
+    /// </summary>
+    private readonly Func<IWin32Window, bool?>? _openCommitDialog;
 
     // ── Cached data ───────────────────────────────────────────────────────────
     private List<BranchInfo>             _localBranches  = [];
@@ -34,7 +40,9 @@ public sealed class BranchHierarchyForm : Form
     private Button           _btnRefresh  = null!;
     private Panel            _warnPanel   = null!;
     private Label            _warnLabel   = null!;
-    private Button           _btnGitFlow  = null!;
+    private Button           _btnGitFlow          = null!;
+    private Button           _btnGitFlowDedicated = null!;
+    private Panel            _gitFlowButtonPanel  = null!;
     private TreeView         _tree        = null!;
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
@@ -45,6 +53,17 @@ public sealed class BranchHierarchyForm : Form
     private Label       _loadingTitle   = null!;
     private Label       _loadingStatus  = null!;
     private bool        _isRefreshing;
+
+    // ── Tree expand/collapse state persistence ────────────────────────────────
+    /// <summary>Per-repo set of expanded node paths (key = workingDir, value = stable path strings).</summary>
+    private Dictionary<string, HashSet<string>> _treeStateByRepo = [];
+    /// <summary>True while we are restoring saved state — suppresses AfterExpand/AfterCollapse saves.</summary>
+    private bool _restoringState;
+    /// <summary>Debounce timer that delays disk writes when many nodes expand/collapse rapidly.</summary>
+    private System.Windows.Forms.Timer? _saveDebounce;
+    private static readonly string StateFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GitExtensions", "ZimerfeldTree.treestate.json");
 
     // ── Bottom panel ──────────────────────────────────────────────────────────
     private Panel  _bottomPanel = null!;
@@ -70,12 +89,16 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripMenuItem  _miRefresh   = null!;
 
     // ─────────────────────────────────────────────────────────────────────────
-    public BranchHierarchyForm(string workingDir, Action? notifyRepoChanged = null)
+    public BranchHierarchyForm(string workingDir, Action? notifyRepoChanged = null,
+        Func<IWin32Window, bool?>? openCommitDialog = null)
     {
         _svc = new BranchHierarchyService(workingDir);
-        _notifyRepoChanged = notifyRepoChanged;
+        _notifyRepoChanged  = notifyRepoChanged;
+        _openCommitDialog   = openCommitDialog;
+        _treeStateByRepo    = LoadTreeState();
         InitializeComponent();
         LoadRepositories();
+        FormClosed += (_, _) => { _saveDebounce?.Dispose(); SaveTreeState(); };
         // Initial tree load is triggered by the Shown event so the window skeleton
         // is visible to the user before we start reading the repository.
     }
@@ -150,7 +173,11 @@ public sealed class BranchHierarchyForm : Form
                 var tracking = _svc.GetBranchTrackingInfo();
                 foreach (var b in local)
                     if (tracking.TryGetValue(b.FullName, out var ti))
-                    { b.AheadCount = ti.ahead; b.BehindCount = ti.behind; }
+                    {
+                        b.HasUpstream  = ti.hasUpstream;
+                        b.AheadCount   = ti.ahead;
+                        b.BehindCount  = ti.behind;
+                    }
                 ip?.Report((100, "Concluído."));
             });
         }
@@ -210,6 +237,7 @@ public sealed class BranchHierarchyForm : Form
         BuildTopPanel();
         BuildFilterPanel();
         BuildWarnPanel();
+        BuildGitFlowButtonPanel();
         BuildTreeView();
         BuildContextMenu();
         BuildStatusStrip();
@@ -218,11 +246,12 @@ public sealed class BranchHierarchyForm : Form
 
         // Layout order (Dock fills from bottom and top inward, Fill takes the remainder).
         // Added last = topmost for DockStyle.Top; visual order top→bottom:
-        //   _topPanel, _filterPanel, _warnPanel, _tree (Fill), _bottomPanel, _status
-        Controls.Add(_tree);           // Fill
-        Controls.Add(_warnPanel);      // Top
-        Controls.Add(_filterPanel);    // Top
-        Controls.Add(_topPanel);       // Top (topmost)
+        //   _topPanel, _filterPanel, _warnPanel, _gitFlowButtonPanel, _tree (Fill), _bottomPanel, _status
+        Controls.Add(_tree);                // Fill
+        Controls.Add(_gitFlowButtonPanel);  // Top — just above the tree
+        Controls.Add(_warnPanel);           // Top
+        Controls.Add(_filterPanel);         // Top
+        Controls.Add(_topPanel);            // Top (topmost)
         Controls.Add(_status);         // Bottom
         Controls.Add(_bottomPanel);    // Bottom (above status)
         Controls.Add(_loadingOverlay); // Floats above everything (BringToFront when shown)
@@ -339,6 +368,26 @@ public sealed class BranchHierarchyForm : Form
         _warnPanel.Controls.Add(_btnGitFlow);
     }
 
+    private void BuildGitFlowButtonPanel()
+    {
+        _btnGitFlowDedicated = new Button
+        {
+            Text   = "GitFlow",
+            Width  = 120,
+            Height = 24,
+            Anchor = AnchorStyles.None,
+            Font   = new Font(Font, FontStyle.Bold)
+        };
+        _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
+
+        _gitFlowButtonPanel = new Panel { Dock = DockStyle.Top, Height = 32 };
+        _gitFlowButtonPanel.Controls.Add(_btnGitFlowDedicated);
+        _gitFlowButtonPanel.Layout += (_, _) =>
+            _btnGitFlowDedicated.Location = new Point(
+                (_gitFlowButtonPanel.Width  - _btnGitFlowDedicated.Width)  / 2,
+                (_gitFlowButtonPanel.Height - _btnGitFlowDedicated.Height) / 2);
+    }
+
     private void BuildTreeView()
     {
         _tree = new TreeView
@@ -349,17 +398,32 @@ public sealed class BranchHierarchyForm : Form
             ShowRootLines = true,
             HideSelection = false,
             DrawMode      = TreeViewDrawMode.OwnerDrawText,
-            Font          = new Font("Segoe UI", 9f)
+            Font          = new Font("Segoe UI", 9f),
+            ImageList     = NodeIcons.GetList()
         };
 
         _tree.DrawNode              += Tree_DrawNode;
         _tree.NodeMouseDoubleClick  += Tree_NodeMouseDoubleClick;
         _tree.KeyDown               += Tree_KeyDown;
         _tree.MouseDown             += Tree_MouseDown;
+        _tree.AfterExpand           += Tree_AfterExpand;
+        _tree.AfterCollapse         += Tree_AfterCollapse;
 
-        _localRoot   = new TreeNode("LOCAL (0)")   { Tag = SectionTag.Local };
-        _remotesRoot = new TreeNode("REMOTES (0)") { Tag = SectionTag.Remotes };
-        _tagsRoot    = new TreeNode("TAGS (0)")    { Tag = SectionTag.Tags };
+        _localRoot = new TreeNode("LOCAL (0)")
+        {
+            Tag = SectionTag.Local,
+            ImageIndex = NodeIcons.SectionLocal, SelectedImageIndex = NodeIcons.SectionLocal
+        };
+        _remotesRoot = new TreeNode("REMOTES (0)")
+        {
+            Tag = SectionTag.Remotes,
+            ImageIndex = NodeIcons.SectionRemotes, SelectedImageIndex = NodeIcons.SectionRemotes
+        };
+        _tagsRoot = new TreeNode("TAGS (0)")
+        {
+            Tag = SectionTag.Tags,
+            ImageIndex = NodeIcons.SectionTags, SelectedImageIndex = NodeIcons.SectionTags
+        };
 
         _tree.Nodes.AddRange([_localRoot, _remotesRoot, _tagsRoot]);
     }
@@ -386,8 +450,8 @@ public sealed class BranchHierarchyForm : Form
         _miRename   .Click += (_, _) => DoRename();
         _miDelete   .Click += (_, _) => DoDelete();
         _miGitFlow  .Click += (_, _) => DoGitFlow();
-        _miExpand   .Click += (_, _) => _tree.ExpandAll();
-        _miCollapse .Click += (_, _) => { _tree.CollapseAll(); ExpandRoots(); };
+        _miExpand  .Click += (_, _) => _tree.SelectedNode?.ExpandAll();
+        _miCollapse.Click += (_, _) => { if (_tree.SelectedNode is { } n) CollapseRecursive(n); };
         _miRefresh  .Click += (_, _) => RefreshTree();
 
         _ctxMenu = new ContextMenuStrip();
@@ -688,7 +752,12 @@ public sealed class BranchHierarchyForm : Form
 
         foreach (var group in list.GroupBy(b => b.RemoteName ?? "origin").OrderBy(g => g.Key))
         {
-            var remoteNode = new TreeNode(group.Key) { Tag = SectionTag.RemoteGroup };
+            var remoteNode = new TreeNode(group.Key)
+            {
+                Tag                = SectionTag.RemoteGroup,
+                ImageIndex         = NodeIcons.Remote,
+                SelectedImageIndex = NodeIcons.Remote
+            };
             var groupList  = group.ToList();
 
             foreach (var n in BuildAncestryTree(groupList, remoteMap, b => b.DisplayName))
@@ -799,7 +868,13 @@ public sealed class BranchHierarchyForm : Form
             }
             else if (kvp.Value is SortedDictionary<string, object> sub)
             {
-                var folder = new TreeNode(kvp.Key) { Tag = SectionTag.Folder };
+                int fi = GetFolderIconIndex(kvp.Key);
+                var folder = new TreeNode(kvp.Key)
+                {
+                    Tag                = SectionTag.Folder,
+                    ImageIndex         = fi,
+                    SelectedImageIndex = fi
+                };
                 foreach (var n in WalkPathDict(sub, childrenOf, getPath))
                     folder.Nodes.Add(n);
                 nodes.Add(folder);
@@ -813,24 +888,76 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>Creates a leaf branch/tag node showing the last path segment as its label.</summary>
     private TreeNode CreateLeafNode(BranchInfo info, string label)
     {
-        // Append ahead/behind indicators only for local branches that have divergence.
+        // Tracking indicators — shown only when there is actual divergence:
+        //   ↑N = commits ahead (to push)   ↓M = commits behind (to pull)
+        //   Both omitted when the branch is in sync with its upstream.
         string tracking = string.Empty;
-        if (info.Type == BranchType.Local && (info.AheadCount > 0 || info.BehindCount > 0))
+        if (info.Type == BranchType.Local && info.HasUpstream &&
+            (info.AheadCount > 0 || info.BehindCount > 0))
         {
-            var sb = new System.Text.StringBuilder(" ");
-            if (info.BehindCount > 0) sb.Append($"↓{info.BehindCount}");  // pull
-            if (info.AheadCount  > 0) sb.Append($"↑{info.AheadCount}");   // push
+            var sb = new System.Text.StringBuilder(" (");
+            if (info.BehindCount > 0) sb.Append($"↓{info.BehindCount}");
+            if (info.AheadCount  > 0) sb.Append($"↑{info.AheadCount}");
+            sb.Append(')');
             tracking = sb.ToString();
         }
 
         string displayLabel = info.IsCurrent ? $"[{label}]" : label;
         string text         = displayLabel + tracking;
 
+        int imgIdx = GetBranchIconIndex(info);
+
         return new TreeNode(text)
         {
-            Tag       = info,
-            NodeFont  = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
-            ForeColor = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor
+            Tag                = info,
+            NodeFont           = info.IsCurrent ? new Font(_tree.Font, FontStyle.Bold) : null,
+            ForeColor          = info.IsCurrent ? SystemColors.Highlight : _tree.ForeColor,
+            ImageIndex         = imgIdx,
+            SelectedImageIndex = imgIdx
+        };
+    }
+
+    /// <summary>
+    /// Selects the <see cref="NodeIcons"/> index for a branch or tag leaf node based on
+    /// the branch name conventions (master, develop, feature/*, etc.).
+    /// </summary>
+    private static int GetBranchIconIndex(BranchInfo info)
+    {
+        // For remotes, compare against the display name (strips the remote prefix).
+        string name = (info.Type == BranchType.Remote
+            ? info.DisplayName : info.FullName).ToLowerInvariant();
+
+        if (name is "master" or "main")         return NodeIcons.BranchMaster;
+        if (name is "develop" or "development") return NodeIcons.BranchDevelop;
+        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeature;
+        if (name.StartsWith("bugfix/")  ||
+            name.StartsWith("bug/"))            return NodeIcons.BranchBugfix;
+        if (name.StartsWith("release/"))        return NodeIcons.BranchRelease;
+        if (name.StartsWith("hotfix/"))         return NodeIcons.BranchHotfix;
+        if (name.StartsWith("support/"))        return NodeIcons.BranchSupport;
+
+        return info.Type switch
+        {
+            BranchType.Remote => NodeIcons.RemoteBranch,
+            BranchType.Tag    => NodeIcons.Tag,
+            _                 => NodeIcons.Branch,
+        };
+    }
+
+    /// <summary>
+    /// Selects the <see cref="NodeIcons"/> index for a path-segment folder node based on
+    /// the folder name (e.g. "feature" → leaf icon, "hotfix" → warning icon).
+    /// </summary>
+    private static int GetFolderIconIndex(string folderName)
+    {
+        return folderName.ToLowerInvariant() switch
+        {
+            "feature"  or "features"             => NodeIcons.BranchFeature,
+            "bugfix"   or "bug"   or "bugs"       => NodeIcons.BranchBugfix,
+            "release"  or "releases"             => NodeIcons.BranchRelease,
+            "hotfix"   or "hotfixes"             => NodeIcons.BranchHotfix,
+            "support"                            => NodeIcons.BranchSupport,
+            _                                    => NodeIcons.Folder,
         };
     }
 
@@ -861,9 +988,140 @@ public sealed class BranchHierarchyForm : Form
 
     private void ExpandRoots()
     {
-        _localRoot.ExpandAll();   // show full ancestry tree
-        _remotesRoot.Expand();
-        _tagsRoot.Expand();
+        // While filtering, always expand everything so results are visible.
+        string filter = _txtFilter?.Text.Trim() ?? string.Empty;
+        if (!string.IsNullOrEmpty(filter))
+        {
+            _localRoot.ExpandAll();
+            _remotesRoot.ExpandAll();
+            _tagsRoot.ExpandAll();
+            return;
+        }
+        _treeStateByRepo.TryGetValue(_svc.WorkingDir, out var saved);
+        RestoreTreeState(saved);
+    }
+
+    private void RestoreTreeState(HashSet<string>? expandedPaths)
+    {
+        if (expandedPaths is null || expandedPaths.Count == 0)
+        {
+            // Default first-time behaviour
+            _localRoot.ExpandAll();
+            _remotesRoot.Expand();
+            _tagsRoot.Expand();
+            return;
+        }
+        _restoringState = true;
+        try
+        {
+            _tree.CollapseAll();
+            RestoreNodeExpansion(_tree.Nodes, expandedPaths);
+        }
+        finally { _restoringState = false; }
+    }
+
+    private void RestoreNodeExpansion(TreeNodeCollection nodes, HashSet<string> paths)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            string? path = GetNodeStablePath(node);
+            if (path != null && paths.Contains(path))
+            {
+                node.Expand();
+                RestoreNodeExpansion(node.Nodes, paths);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Computes a stable string key for a tree node that survives tree rebuilds.
+    /// Uses the section tag for root nodes, the remote name for remote-group nodes,
+    /// the folder text for folder nodes, and BranchInfo.FullName for leaf nodes.
+    /// Returns null for nodes that should not be tracked (empty placeholders).
+    /// </summary>
+    private static string? GetNodeStablePath(TreeNode node)
+    {
+        var parts = new List<string>();
+        TreeNode? cur = node;
+        while (cur != null)
+        {
+            string? seg;
+            if (cur.Tag is BranchInfo bi)
+            {
+                seg = bi.FullName;
+            }
+            else if (cur.Tag is string s)
+            {
+                seg = s switch
+                {
+                    SectionTag.Local       => "LOCAL",
+                    SectionTag.Remotes     => "REMOTES",
+                    SectionTag.Tags        => "TAGS",
+                    SectionTag.RemoteGroup => cur.Text,
+                    SectionTag.Folder      => cur.Text,
+                    _                      => null   // Empty or unknown
+                };
+            }
+            else
+            {
+                return null;
+            }
+            if (seg is null) return null;
+            parts.Add(seg);
+            cur = cur.Parent;
+        }
+        parts.Reverse();
+        return string.Join("|", parts);
+    }
+
+    private void ScheduleSaveDebounce()
+    {
+        if (_saveDebounce is null)
+        {
+            _saveDebounce = new System.Windows.Forms.Timer { Interval = 500 };
+            _saveDebounce.Tick += (_, _) => { _saveDebounce.Stop(); SaveTreeState(); };
+        }
+        _saveDebounce.Stop();
+        _saveDebounce.Start();
+    }
+
+    private static Dictionary<string, HashSet<string>> LoadTreeState()
+    {
+        try
+        {
+            if (!File.Exists(StateFilePath)) return [];
+            string json = File.ReadAllText(StateFilePath);
+            var raw = JsonSerializer.Deserialize<Dictionary<string, List<string>>>(json);
+            if (raw is null) return [];
+            return raw.ToDictionary(
+                kv => kv.Key,
+                kv => new HashSet<string>(kv.Value, StringComparer.Ordinal),
+                StringComparer.OrdinalIgnoreCase);
+        }
+        catch { return []; }
+    }
+
+    private void SaveTreeState()
+    {
+        try
+        {
+            var raw = _treeStateByRepo.ToDictionary(kv => kv.Key, kv => kv.Value.ToList());
+            string dir = Path.GetDirectoryName(StateFilePath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(StateFilePath, JsonSerializer.Serialize(raw));
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Recursively collapses <paramref name="node"/> and all of its descendants
+    /// (depth-first so child state is set before parent collapse).
+    /// </summary>
+    private static void CollapseRecursive(TreeNode node)
+    {
+        foreach (TreeNode child in node.Nodes)
+            CollapseRecursive(child);
+        node.Collapse();
     }
 
     private void UpdateStatus()
@@ -898,6 +1156,27 @@ public sealed class BranchHierarchyForm : Form
     }
 
     // ── Tree events ───────────────────────────────────────────────────────────
+
+    private void Tree_AfterExpand(object? sender, TreeViewEventArgs e)
+    {
+        if (_restoringState || e.Node is null) return;
+        string? path = GetNodeStablePath(e.Node);
+        if (path is null) return;
+        if (!_treeStateByRepo.TryGetValue(_svc.WorkingDir, out var set))
+        { set = []; _treeStateByRepo[_svc.WorkingDir] = set; }
+        set.Add(path);
+        ScheduleSaveDebounce();
+    }
+
+    private void Tree_AfterCollapse(object? sender, TreeViewEventArgs e)
+    {
+        if (_restoringState || e.Node is null) return;
+        string? path = GetNodeStablePath(e.Node);
+        if (path is null) return;
+        if (_treeStateByRepo.TryGetValue(_svc.WorkingDir, out var set))
+            set.Remove(path);
+        ScheduleSaveDebounce();
+    }
 
     private void Tree_NodeMouseDoubleClick(object? sender, TreeNodeMouseClickEventArgs e)
     {
@@ -935,12 +1214,46 @@ public sealed class BranchHierarchyForm : Form
         _miRename   .Visible = local;
         _miDelete   .Visible = local || remote || tag;
         _miGitFlow  .Visible = branch;
+
+        FixContextMenuSeparators();
+    }
+
+    /// <summary>
+    /// Hides any separator that has no visible non-separator items on one or both sides.
+    /// Prevents orphan separator lines when menu groups are entirely hidden.
+    /// </summary>
+    private void FixContextMenuSeparators()
+    {
+        var items = _ctxMenu.Items;
+        foreach (ToolStripItem item in items)
+        {
+            if (item is not ToolStripSeparator sep) continue;
+            int idx = items.IndexOf(sep);
+            bool beforeOk = false, afterOk = false;
+            for (int i = idx - 1; i >= 0; i--)
+                if (items[i] is not ToolStripSeparator && items[i].Visible) { beforeOk = true; break; }
+            for (int i = idx + 1; i < items.Count; i++)
+                if (items[i] is not ToolStripSeparator && items[i].Visible) { afterOk = true; break; }
+            sep.Visible = beforeOk && afterOk;
+        }
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
     private void DoCommit()
     {
+        // Prefer the in-process native commit dialog: it has the full plugin system loaded,
+        // so Commit Template plugins (e.g. Zimerfeld: Auto-resumo) are visible.
+        if (_openCommitDialog != null)
+        {
+            bool? result = _openCommitDialog(this);
+            if (result.HasValue)
+            {
+                if (result.Value) { RefreshTree(); _notifyRepoChanged?.Invoke(); }
+                return;
+            }
+        }
+        // Fallback: spawn a new GitExtensions process (plugins won't load in that mode).
         var (ok, err) = _svc.OpenCommitWindow();
         if (!ok) ShowError("Erro ao abrir a janela de Commit", err);
     }

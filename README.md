@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.60**
+**Versão atual: 1.0.68**
 
 TreeOfLife
 
@@ -61,6 +61,21 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 - Campo de pesquisa filtra branches em todas as seções simultaneamente
 - Filtro preserva nós pai que possuem filhos correspondentes
 
+### Botão GitFlow dedicado
+
+- Botão **GitFlow** sempre visível e **centralizado** acima do painel da árvore
+- Abre diretamente a janela de operações GitFlow (mesma janela do item do menu de contexto)
+- Disponível a qualquer momento, independentemente do estado do painel de aviso GitFlow
+
+### Persistência de estado da árvore
+
+- O estado de expansão/recolhimento de cada nó é **salvo automaticamente** por Working Directory
+- Ao abrir o plugin ou ao atualizar a árvore, a estrutura é restaurada exatamente como estava na última sessão
+- Estado gravado em `%APPDATA%\GitExtensions\ZimerfeldTree.treestate.json`
+- Salvamento com debounce de 500 ms para não gerar I/O excessivo durante expansões rápidas
+- Primeira abertura de um repositório usa o comportamento padrão: LOCAL totalmente expandido, REMOTES e TAGS com apenas a raiz expandida
+- Durante filtro ativo, todos os nós são expandidos automaticamente para mostrar os resultados
+
 ### Organização automática como GitFlow
 
 - O plugin verifica se a hierarquia real (por parentesco de commits) respeita as regras do GitFlow:
@@ -93,7 +108,9 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 | Recolher tudo           | Sempre                                                                              |
 | Atualizar               | Sempre                                                                              |
 
-O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit do GitExtensions já apontando para o repositório em exibição.
+O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: *Zimerfeld: Auto-resumo*) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no ZimerfeldTree divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
+
+Os separadores do menu de contexto são ocultados automaticamente quando todos os itens do grupo correspondente estão escondidos — sem linhas de separação órfãs.
 
 ### Janela GitFlow — branch base no Start
 

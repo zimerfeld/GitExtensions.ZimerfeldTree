@@ -34,6 +34,9 @@ public sealed class BranchInfo
             ? FullName[(RemoteName.Length + 1)..]
             : FullName;
 
+    /// <summary>True when a remote upstream is configured for this branch.</summary>
+    public bool HasUpstream { get; set; }
+
     /// <summary>
     /// Commits this branch is ahead of its upstream (commits to push, ↑).
     /// Zero when there is no upstream or no divergence.
