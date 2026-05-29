@@ -463,8 +463,24 @@ public sealed class GitFlowForm : Form
             if (baseBranch.Length > 0) baseArg = $" \"{baseBranch}\"";
         }
 
-        RunFlow($"flow {type} start \"{name}\"{baseArg}");
+        bool ok = RunFlow($"flow {type} start \"{name}\"{baseArg}");
         _txtStartName.Clear();
+
+        // Pre-select the new branch in "Manage existing branches".
+        if (ok)
+        {
+            int typeIdx = _cboManageType.Items.IndexOf(type);
+            if (typeIdx >= 0)
+            {
+                if (_cboManageType.SelectedIndex != typeIdx)
+                    _cboManageType.SelectedIndex = typeIdx; // triggers ReloadManageBranches
+                int branchIdx = _cboManageBranch.Items.IndexOf(name);
+                if (branchIdx >= 0)
+                    _cboManageBranch.SelectedIndex = branchIdx;
+                else
+                    _cboManageBranch.Text = name;
+            }
+        }
     }
 
     private void DoPublish()
@@ -515,7 +531,27 @@ public sealed class GitFlowForm : Form
             }
         }
 
-        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"", append: true);
+        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"", append: true, suppressError: true);
+
+        if (!ok)
+        {
+            string resultText = _txtResult.Text;
+            if (resultText.Contains("merge is already in progress", StringComparison.OrdinalIgnoreCase))
+            {
+                string prefix = _svc.GetGitFlowPrefix(type);
+                var answer = MessageBox.Show(
+                    $"Há um merge em andamento para '{prefix}{name}'.\n\n" +
+                    "Resolva os conflitos, faça o commit e clique Sim para continuar o finish com --continue.",
+                    "GitFlow — merge em andamento",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (answer == DialogResult.Yes)
+                    ok = RunFlow($"flow {type} finish --continue \"{name}\"", append: true);
+            }
+            else
+            {
+                ShowFlowError(resultText);
+            }
+        }
 
         // After a successful "release" finish: push master, push develop,
         // and (if both succeed) checkout develop.
@@ -545,7 +581,7 @@ public sealed class GitFlowForm : Form
     /// When <paramref name="append"/> is true, the new output block is appended to the existing
     /// result text (so multi-step flows like release-finish + push + checkout stay visible).
     /// </summary>
-    private bool RunFlow(string args, bool append = false)
+    private bool RunFlow(string args, bool append = false, bool suppressError = false)
     {
         string output;
         int code;
@@ -569,7 +605,7 @@ public sealed class GitFlowForm : Form
         _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
         ReloadManageBranches();
 
-        if (code != 0)
+        if (code != 0 && !suppressError)
             ShowFlowError(output);
 
         return code == 0;
