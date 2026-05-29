@@ -205,6 +205,21 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>
+    /// Creates a new local branch from <paramref name="fromRef"/> and immediately checks it out
+    /// using a single <c>git checkout -b</c> command.
+    /// </summary>
+    public (bool ok, string error) CreateAndCheckoutBranch(string newName, string fromRef)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull(
+                $"checkout -b \"{EscapeArg(newName)}\" \"{EscapeArg(fromRef)}\"");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     public (bool ok, string error) DeleteBranch(string branchName, bool isRemote = false)
     {
         try

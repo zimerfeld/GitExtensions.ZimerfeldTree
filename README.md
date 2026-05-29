@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.52**
+**Versão atual: 1.0.56**
 
 ---
 
@@ -16,6 +16,10 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - **TAGS** também agrupa por `/` (sem ancestralidade)
 - LOCAL, REMOTES e TAGS exibe `(nenhuma branch local encontrada)` quando não há branches
 - A janela abre **centralizada na tela** (horizontal e vertical)
+- Tamanho da janela **fixo** (não redimensionável): borda `FixedSingle` com o botão X padrão do sistema operacional (sem alças de resize)
+- **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
+- **Overlay em toda atualização**: o painel de progresso aparece sempre que a árvore é recarregada — abertura inicial, checkout, nova branch, merge, rename, delete, GitFlow, refresh manual e troca de repositório
+- **Botão "Fechar"** no canto inferior direito da janela (atalho: tecla **Esc**)
 
 ### Seletor de Working Directory e Branch
 
@@ -96,6 +100,23 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 #### Tratamento de erros
 
 Quando um comando git flow falha, o resultado é exibido na janela e um aviso é mostrado. Se o erro indicar uma **branch base/produção ausente** (ex.: `couldn't find remote ref main`, `start point branch 'main' does not exist`), a mensagem orienta a verificar as branches existentes e a configuração `gitflow.branch.*`, e sugere marcar **No fetch** quando a falha for ao buscar do remoto.
+
+### Ícone "Árvore da Vida"
+
+O plugin usa um ícone gerado em tempo de execução via GDI+ (sem imagens externas ou recursos embutidos). O design é uma **Árvore da Vida** simétrica dentro de um círculo:
+
+- **Círculo** com fundo verde-claro e borda verde-escura
+- **Tronco** central vertical (verde-escuro, cantos arredondados)
+- **Galhos** em 3 níveis + bifurcação apical — cada nível mais fino e mais estreito
+- **Raízes** em 2 pares curvos abaixo do tronco
+- **Frutos/folhas** dourados nos extremos de cada galho e raiz
+- **"Coração da vida"** — fruto dourado central no tronco, representando a força vital
+
+O ícone aparece:
+- No **menu Plugins** do GitExtensions (16 × 16 px)
+- Na **barra de título** da janela do plugin e na barra de tarefas do Windows (ICO multi-size: 32 + 16 px, formato PNG-encoded Vista+)
+
+O arquivo [`TreeOfLifeIcon.cs`](src/GitExtensions.ZimerfeldTree/TreeOfLifeIcon.cs) contém toda a lógica de renderização. Não há dependências externas.
 
 ### Atalhos de teclado e mouse
 

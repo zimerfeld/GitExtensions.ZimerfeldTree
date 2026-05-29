@@ -39,6 +39,17 @@ public sealed class BranchHierarchyForm : Form
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
 
+    // ── Loading overlay ───────────────────────────────────────────────────────
+    private Panel       _loadingOverlay = null!;
+    private ProgressBar _progressBar    = null!;
+    private Label       _loadingTitle   = null!;
+    private Label       _loadingStatus  = null!;
+    private bool        _isRefreshing;
+
+    // ── Bottom panel ──────────────────────────────────────────────────────────
+    private Panel  _bottomPanel = null!;
+    private Button _btnClose    = null!;
+
     // ── Tree section roots ────────────────────────────────────────────────────
     private TreeNode _localRoot   = null!;
     private TreeNode _remotesRoot = null!;
@@ -65,7 +76,8 @@ public sealed class BranchHierarchyForm : Form
         _notifyRepoChanged = notifyRepoChanged;
         InitializeComponent();
         LoadRepositories();
-        RefreshTree();
+        // Initial tree load is triggered by the Shown event so the window skeleton
+        // is visible to the user before we start reading the repository.
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -80,29 +92,98 @@ public sealed class BranchHierarchyForm : Form
         _cboRepo.SelectedItem = newDir;
     }
 
-    /// <summary>Re-reads branches from git and rebuilds the tree.</summary>
-    public void RefreshTree()
+    /// <summary>
+    /// Re-reads branches from git asynchronously and rebuilds the tree.
+    /// Shows the "Carregando…" overlay while reading. Concurrent calls are collapsed into one.
+    /// </summary>
+    public void RefreshTree() => _ = RefreshTreeAsync(showOverlay: true);
+
+    /// <summary>
+    /// Loads all branch/tag data on a background thread, optionally showing a centered
+    /// progress overlay, then rebuilds the tree on the UI thread.
+    /// </summary>
+    private async Task RefreshTreeAsync(bool showOverlay)
     {
+        if (_isRefreshing) return;
+        _isRefreshing = true;
+
+        if (showOverlay)
+        {
+            _progressBar.Value      = 0;
+            _loadingStatus.Text     = "Iniciando...";
+            _loadingOverlay.Location = new Point(
+                (ClientSize.Width  - _loadingOverlay.Width)  / 2,
+                (ClientSize.Height - _loadingOverlay.Height) / 2);
+            _loadingOverlay.Visible = true;
+            _loadingOverlay.BringToFront();
+        }
+
+        List<BranchInfo>            local  = [];
+        List<BranchInfo>            remote = [];
+        List<BranchInfo>            tags   = [];
+        Dictionary<string, string?> lMap   = [];
+        Dictionary<string, string?> rMap   = [];
+
+        IProgress<(int pct, string msg)>? ip = showOverlay
+            ? new Progress<(int pct, string msg)>(p =>
+              {
+                  _progressBar.Value  = p.pct;
+                  _loadingStatus.Text = p.msg;
+              })
+            : null;
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                ip?.Report((10, "Carregando branches locais..."));
+                local  = _svc.GetLocalBranches();
+                ip?.Report((30, "Carregando branches remotas..."));
+                remote = _svc.GetRemoteBranches();
+                ip?.Report((55, "Carregando tags..."));
+                tags   = _svc.GetTags();
+                ip?.Report((75, "Calculando hierarquia local..."));
+                lMap   = _svc.BuildParentMap(local);
+                ip?.Report((90, "Calculando hierarquia remota..."));
+                rMap   = _svc.BuildRemoteParentMap(remote);
+                ip?.Report((100, "Concluído."));
+            });
+        }
+        catch (Exception ex)
+        {
+            _isRefreshing = false;
+            if (!IsDisposed)
+            {
+                _loadingOverlay.Visible = false;
+                MessageBox.Show($"Erro ao carregar dados do repositório:\n{ex.Message}",
+                    "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return;
+        }
+
+        if (IsDisposed) { _isRefreshing = false; return; }
+
+        _localBranches   = local;
+        _remoteBranches  = remote;
+        _tags            = tags;
+        _localParentMap  = lMap;
+        _remoteParentMap = rMap;
+
         _tree.BeginUpdate();
         try
         {
-            _localBranches   = _svc.GetLocalBranches();
-            _remoteBranches  = _svc.GetRemoteBranches();
-            _tags            = _svc.GetTags();
-            _localParentMap  = _svc.BuildParentMap(_localBranches);
-            _remoteParentMap = _svc.BuildRemoteParentMap(_remoteBranches);
             UpdateGitFlowWarning();
-            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)          : _localParentMap;
-            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches) : _remoteParentMap;
+            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)         : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)   : _remoteParentMap;
             RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
             ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
         }
-        finally
-        {
-            _tree.EndUpdate();
-        }
+        finally { _tree.EndUpdate(); }
+
+        if (showOverlay) _loadingOverlay.Visible = false;
+        _isRefreshing = false;
     }
 
     // ── Initialization ────────────────────────────────────────────────────────
@@ -113,10 +194,13 @@ public sealed class BranchHierarchyForm : Form
 
         Text            = "ZimerfeldTree — Branch Hierarchy";
         Size            = new Size(580, 720);
-        MinimumSize     = new Size(460, 450);
         StartPosition   = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.SizableToolWindow;
+        FormBorderStyle = FormBorderStyle.FixedSingle;   // standard OS close button, no resize
+        MaximizeBox     = false;
+        MinimizeBox     = false;
+        KeyPreview      = true;
         Font            = new Font("Segoe UI", 9f);
+        Icon            = TreeOfLifeIcon.ForForm();
 
         BuildTopPanel();
         BuildFilterPanel();
@@ -124,15 +208,24 @@ public sealed class BranchHierarchyForm : Form
         BuildTreeView();
         BuildContextMenu();
         BuildStatusStrip();
+        BuildBottomPanel();
+        BuildLoadingOverlay();
 
-        // Layout order (Dock fills from bottom and top inward, Fill takes remainder)
-        // Added last = topmost for DockStyle.Top; so visual order top→bottom:
-        //   _topPanel, _filterPanel, _warnPanel, _tree (Fill), _status
+        // Layout order (Dock fills from bottom and top inward, Fill takes the remainder).
+        // Added last = topmost for DockStyle.Top; visual order top→bottom:
+        //   _topPanel, _filterPanel, _warnPanel, _tree (Fill), _bottomPanel, _status
         Controls.Add(_tree);           // Fill
-        Controls.Add(_warnPanel);      // Top (between filter and tree)
-        Controls.Add(_filterPanel);    // Top (below topPanel)
+        Controls.Add(_warnPanel);      // Top
+        Controls.Add(_filterPanel);    // Top
         Controls.Add(_topPanel);       // Top (topmost)
         Controls.Add(_status);         // Bottom
+        Controls.Add(_bottomPanel);    // Bottom (above status)
+        Controls.Add(_loadingOverlay); // Floats above everything (BringToFront when shown)
+
+        CancelButton = _btnClose;
+
+        // Trigger the async initial load once the window is fully painted.
+        Shown += (_, _) => _ = RefreshTreeAsync(showOverlay: true);
 
         ResumeLayout(false);
         PerformLayout();
@@ -322,6 +415,66 @@ public sealed class BranchHierarchyForm : Form
             TextAlign = ContentAlignment.MiddleLeft
         };
         _status.Items.Add(_statusLbl);
+    }
+
+    private void BuildBottomPanel()
+    {
+        _btnClose = new Button
+        {
+            Text         = "Fechar",
+            Width        = 80,
+            Height       = 26,
+            DialogResult = DialogResult.Cancel
+        };
+        _btnClose.Click += (_, _) => Close();
+
+        _bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 36 };
+        _bottomPanel.Controls.Add(_btnClose);
+
+        // Keep button right-aligned with margin whenever the panel is laid out.
+        _bottomPanel.Layout += (_, _) =>
+            _btnClose.Location = new Point(
+                _bottomPanel.Width  - _btnClose.Width  - 8,
+                (_bottomPanel.Height - _btnClose.Height) / 2);
+    }
+
+    private void BuildLoadingOverlay()
+    {
+        _loadingTitle = new Label
+        {
+            Text      = "Carregando dados do repositório",
+            AutoSize  = false,
+            TextAlign = ContentAlignment.MiddleCenter,
+            Bounds    = new Rectangle(10, 10, 340, 20),
+            Font      = new Font(Font, FontStyle.Bold)
+        };
+
+        _progressBar = new ProgressBar
+        {
+            Bounds  = new Rectangle(10, 38, 340, 20),
+            Minimum = 0,
+            Maximum = 100,
+            Value   = 0,
+            Style   = ProgressBarStyle.Continuous
+        };
+
+        _loadingStatus = new Label
+        {
+            Text      = "Iniciando...",
+            AutoSize  = false,
+            TextAlign = ContentAlignment.MiddleCenter,
+            ForeColor = SystemColors.GrayText,
+            Bounds    = new Rectangle(10, 64, 340, 18)
+        };
+
+        _loadingOverlay = new Panel
+        {
+            Size        = new Size(360, 94),
+            BackColor   = SystemColors.Window,
+            BorderStyle = BorderStyle.FixedSingle,
+            Visible     = false
+        };
+        _loadingOverlay.Controls.AddRange([_loadingTitle, _progressBar, _loadingStatus]);
     }
 
     // ── GitFlow enforcement ───────────────────────────────────────────────────
@@ -812,8 +965,12 @@ public sealed class BranchHierarchyForm : Form
             $"Nome da nova branch a partir de '{info.FullName}':");
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
-        var (ok, err) = _svc.CreateBranch(dlg.Value.Trim(), info.FullName);
-        if (ok) RefreshTree();
+        var (ok, err) = _svc.CreateAndCheckoutBranch(dlg.Value.Trim(), info.FullName);
+        if (ok)
+        {
+            RefreshTree();
+            _notifyRepoChanged?.Invoke();
+        }
         else ShowError("Erro ao criar branch", err);
     }
 
