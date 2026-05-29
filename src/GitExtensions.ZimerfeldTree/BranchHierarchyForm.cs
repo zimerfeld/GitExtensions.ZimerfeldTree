@@ -419,30 +419,33 @@ public sealed class BranchHierarchyForm : Form
 
         _btnGitFlowDedicated = new Button
         {
-            Text   = "GitFlow",
-            Width  = 120,
-            Height = 24,
-            Anchor = AnchorStyles.None,
-            Font   = new Font(Font, FontStyle.Bold)
+            Text    = "GitFlow",
+            Width   = 120,
+            Height  = 24,
+            Anchor  = AnchorStyles.None,
+            Font    = new Font(Font, FontStyle.Bold),
+            Visible = false
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
 
         _gitFlowButtonPanel = new Panel { Dock = DockStyle.Top, Height = 32 };
         _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated]);
 
-        // Pull and Push (visible only when a branch is checked out) and Commit are left-aligned;
-        // GitFlow is centered.
+        // All buttons left-aligned with uniform 4 px gap; only visible ones consume space.
         _gitFlowButtonPanel.Layout += (_, _) =>
         {
             int y = (_gitFlowButtonPanel.Height - 24) / 2;
-            _btnPull.Location = new Point(8, y);
-            _btnPush.Location = new Point(8 + _btnPull.Width + 4, y);
-            int commitX = _btnPull.Visible
-                ? 8 + _btnPull.Width + 4 + _btnPush.Width + 4
-                : 8;
-            _btnCommitDedicated.Location = new Point(commitX, y);
-            _btnGitFlowDedicated.Location = new Point(
-                (_gitFlowButtonPanel.Width - _btnGitFlowDedicated.Width) / 2, y);
+            int x = 8;
+            if (_btnPull.Visible)
+            {
+                _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
+                _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
+            }
+            if (_btnCommitDedicated.Visible)
+            {
+                _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
+            }
+            _btnGitFlowDedicated.Location = new Point(x, y);
         };
     }
 
@@ -1217,9 +1220,10 @@ public sealed class BranchHierarchyForm : Form
     {
         var current    = _localBranches.FirstOrDefault(b => b.IsCurrent);
         bool hasBranch = current != null;
-        _btnPull           .Visible = hasBranch;
-        _btnPush           .Visible = hasBranch;
-        _btnCommitDedicated.Visible = hasBranch;
+        _btnPull            .Visible = hasBranch;
+        _btnPush            .Visible = hasBranch;
+        _btnCommitDedicated .Visible = hasBranch;
+        _btnGitFlowDedicated.Visible = hasBranch;
         _gitFlowButtonPanel.PerformLayout(); // reposition buttons after visibility change
         if (!hasBranch) return;
 
