@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.68**
+**Versão atual: 1.0.69**
 
 TreeOfLife
 
@@ -42,6 +42,8 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 - Tamanho da janela **fixo** (não redimensionável): borda `FixedSingle` com o botão X padrão do sistema operacional (sem alças de resize)
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Overlay em toda atualização**: o painel de progresso aparece sempre que a árvore é recarregada — abertura inicial, checkout, nova branch, merge, rename, delete, GitFlow, refresh manual e troca de repositório
+- **Botão Cancelar no overlay**: permite abortar o carregamento a qualquer momento (o cancelamento ocorre entre as etapas git, preservando os dados anteriores na árvore)
+- **Formulário bloqueado durante carregamento**: todos os campos e botões ficam desabilitados enquanto o overlay está ativo e são reativados ao término (ou ao cancelar)
 - **Botão "Fechar"** no canto inferior direito da janela (atalho: tecla **Esc**)
 
 ### Seletor de Working Directory e Branch

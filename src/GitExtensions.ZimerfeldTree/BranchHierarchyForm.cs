@@ -48,11 +48,13 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripStatusLabel _statusLbl = null!;
 
     // ── Loading overlay ───────────────────────────────────────────────────────
-    private Panel       _loadingOverlay = null!;
-    private ProgressBar _progressBar    = null!;
-    private Label       _loadingTitle   = null!;
-    private Label       _loadingStatus  = null!;
+    private Panel       _loadingOverlay   = null!;
+    private ProgressBar _progressBar      = null!;
+    private Label       _loadingTitle     = null!;
+    private Label       _loadingStatus    = null!;
+    private Button      _btnCancelRefresh = null!;
     private bool        _isRefreshing;
+    private CancellationTokenSource? _refreshCts;
 
     // ── Tree expand/collapse state persistence ────────────────────────────────
     /// <summary>Per-repo set of expanded node paths (key = workingDir, value = stable path strings).</summary>
@@ -130,15 +132,23 @@ public sealed class BranchHierarchyForm : Form
         if (_isRefreshing) return;
         _isRefreshing = true;
 
+        // Cancel any previous refresh that might still be in-flight, then create a fresh token.
+        _refreshCts?.Cancel();
+        _refreshCts = new CancellationTokenSource();
+        var token = _refreshCts.Token;
+
         if (showOverlay)
         {
-            _progressBar.Value      = 0;
-            _loadingStatus.Text     = "Iniciando...";
-            _loadingOverlay.Location = new Point(
+            _progressBar.Value        = 0;
+            _loadingStatus.Text       = "Iniciando...";
+            _btnCancelRefresh.Enabled = true;
+            _btnCancelRefresh.Text    = "Cancelar";
+            _loadingOverlay.Location  = new Point(
                 (ClientSize.Width  - _loadingOverlay.Width)  / 2,
                 (ClientSize.Height - _loadingOverlay.Height) / 2);
             _loadingOverlay.Visible = true;
             _loadingOverlay.BringToFront();
+            SetFormEnabled(false);
         }
 
         List<BranchInfo>            local  = [];
@@ -161,14 +171,19 @@ public sealed class BranchHierarchyForm : Form
             {
                 ip?.Report((10, "Carregando branches locais..."));
                 local  = _svc.GetLocalBranches();
+                token.ThrowIfCancellationRequested();
                 ip?.Report((30, "Carregando branches remotas..."));
                 remote = _svc.GetRemoteBranches();
+                token.ThrowIfCancellationRequested();
                 ip?.Report((50, "Carregando tags..."));
                 tags   = _svc.GetTags();
+                token.ThrowIfCancellationRequested();
                 ip?.Report((65, "Calculando hierarquia local..."));
                 lMap   = _svc.BuildParentMap(local);
+                token.ThrowIfCancellationRequested();
                 ip?.Report((80, "Calculando hierarquia remota..."));
                 rMap   = _svc.BuildRemoteParentMap(remote);
+                token.ThrowIfCancellationRequested();
                 ip?.Report((92, "Obtendo informações de sincronização..."));
                 var tracking = _svc.GetBranchTrackingInfo();
                 foreach (var b in local)
@@ -179,14 +194,29 @@ public sealed class BranchHierarchyForm : Form
                         b.BehindCount  = ti.behind;
                     }
                 ip?.Report((100, "Concluído."));
-            });
+            }, token);
+        }
+        catch (OperationCanceledException)
+        {
+            // User cancelled — silently restore UI without touching the existing tree data.
+            _isRefreshing = false;
+            if (!IsDisposed && showOverlay)
+            {
+                _loadingOverlay.Visible = false;
+                SetFormEnabled(true);
+            }
+            return;
         }
         catch (Exception ex)
         {
             _isRefreshing = false;
             if (!IsDisposed)
             {
-                _loadingOverlay.Visible = false;
+                if (showOverlay)
+                {
+                    _loadingOverlay.Visible = false;
+                    SetFormEnabled(true);
+                }
                 MessageBox.Show($"Erro ao carregar dados do repositório:\n{ex.Message}",
                     "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -214,7 +244,11 @@ public sealed class BranchHierarchyForm : Form
         }
         finally { _tree.EndUpdate(); }
 
-        if (showOverlay) _loadingOverlay.Visible = false;
+        if (showOverlay)
+        {
+            _loadingOverlay.Visible = false;
+            SetFormEnabled(true);
+        }
         _isRefreshing = false;
     }
 
@@ -536,14 +570,26 @@ public sealed class BranchHierarchyForm : Form
             Bounds    = new Rectangle(10, 64, 340, 18)
         };
 
+        _btnCancelRefresh = new Button
+        {
+            Text   = "Cancelar",
+            Bounds = new Rectangle(130, 90, 100, 26)
+        };
+        _btnCancelRefresh.Click += (_, _) =>
+        {
+            _btnCancelRefresh.Enabled = false;
+            _btnCancelRefresh.Text    = "Cancelando…";
+            _refreshCts?.Cancel();
+        };
+
         _loadingOverlay = new Panel
         {
-            Size        = new Size(360, 94),
+            Size        = new Size(360, 126),
             BackColor   = SystemColors.Window,
             BorderStyle = BorderStyle.FixedSingle,
             Visible     = false
         };
-        _loadingOverlay.Controls.AddRange([_loadingTitle, _progressBar, _loadingStatus]);
+        _loadingOverlay.Controls.AddRange([_loadingTitle, _progressBar, _loadingStatus, _btnCancelRefresh]);
     }
 
     // ── GitFlow enforcement ───────────────────────────────────────────────────
@@ -1122,6 +1168,18 @@ public sealed class BranchHierarchyForm : Form
         foreach (TreeNode child in node.Nodes)
             CollapseRecursive(child);
         node.Collapse();
+    }
+
+    /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
+    private void SetFormEnabled(bool enabled)
+    {
+        _cboRepo            .Enabled = enabled;
+        _txtFilter          .Enabled = enabled;
+        _btnRefresh         .Enabled = enabled;
+        _btnGitFlow         .Enabled = enabled;
+        _btnGitFlowDedicated.Enabled = enabled;
+        _tree               .Enabled = enabled;
+        _btnClose           .Enabled = enabled;
     }
 
     private void UpdateStatus()
