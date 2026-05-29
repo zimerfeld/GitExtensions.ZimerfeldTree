@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.81**
+**Versão atual: 1.0.83**
 
 TreeOfLife
 
@@ -117,6 +117,11 @@ O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes n
 
 Os separadores do menu de contexto são ocultados automaticamente quando todos os itens do grupo correspondente estão escondidos — sem linhas de separação órfãs.
 
+### Janela GitFlow — comportamento geral
+
+- Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
+- Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
+
 ### Janela GitFlow — branch base no Start
 
 No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opção **based on:**:
@@ -143,6 +148,8 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
   Ao concluir com sucesso, a seção **TAGS** da árvore é expandida automaticamente e o foco vai para o tag criado pelo finish.
 
   O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se algum passo falhar, o fluxo para naquele ponto e a mensagem de erro é exibida.
+
+- **Finish — merge em andamento**: quando o finish falha com "merge is already in progress", um diálogo pergunta se deseja continuar com `--continue`. Clicar **Sim** executa `git flow <tipo> finish --continue "<nome>"` após o usuário resolver os conflitos e fazer commit.
 
 - O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
 - Ao abrir a janela, se a branch em **checkout** corresponder a um tipo do git flow (ex.: `feature/manage`), o dropdown de tipo e o dropdown de branch já vêm pré-selecionados nesse tipo e nessa branch

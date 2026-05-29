@@ -1510,6 +1510,11 @@ public sealed class BranchHierarchyForm : Form
 
         dlg.ShowDialog(this);
 
+        // Recentre this window on the screen after the GitFlow dialog closes.
+        Location = new Point(
+            wa.Left + (wa.Width  - Width)  / 2,
+            wa.Top  + (wa.Height - Height) / 2);
+
         if (dlg.LastFinishedReleaseTag is string tag)
             _postRefreshAction = () => FocusTagNode(tag);
 
