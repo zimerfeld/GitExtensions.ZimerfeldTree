@@ -1350,7 +1350,8 @@ public sealed class BranchHierarchyForm : Form
         bool remote  = info?.Type == BranchType.Remote;
         bool tag     = info?.Type == BranchType.Tag;
 
-        _miCommit.Text = $"Commit ({_svc.GetPendingChangesCount()})";
+        int miPending = _svc.GetPendingChangesCount();
+        _miCommit.Text = miPending > 0 ? $"Commit ({miPending})" : "Commit";
 
         _miCheckout .Visible = branch;
         _miNewBranch.Visible = local || tag;
