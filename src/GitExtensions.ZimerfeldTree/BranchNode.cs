@@ -33,4 +33,16 @@ public sealed class BranchInfo
         RemoteName is not null && FullName.StartsWith(RemoteName + "/", StringComparison.Ordinal)
             ? FullName[(RemoteName.Length + 1)..]
             : FullName;
+
+    /// <summary>
+    /// Commits this branch is ahead of its upstream (commits to push, ↑).
+    /// Zero when there is no upstream or no divergence.
+    /// </summary>
+    public int AheadCount  { get; set; }
+
+    /// <summary>
+    /// Commits this branch is behind its upstream (commits to pull, ↓).
+    /// Zero when there is no upstream or no divergence.
+    /// </summary>
+    public int BehindCount { get; set; }
 }

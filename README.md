@@ -2,7 +2,30 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.56**
+**Versão atual: 1.0.60**
+
+TreeOfLife
+
+· · ← frutos dourados (apical)
+\/ ← bifurcação apical
+|
+· /|\ · ← galho nível 3 + frutos
+/ | \
+ ·/ \|/ \· ← galho nível 2 + frutos
+\ | /
+· \|/ · ← galho nível 1 + frutos
+⊙ ← "coração da vida" (fruto dourado central)
+|
+·/|\· ← raízes nível 1 + 2
+|
+───────────── ← dentro de um círculo verde
+Elemento Cor Detalhe
+Círculo verde-escuro (#145A29) fundo verde-claro #E8F5E9
+Tronco verde-escuro 2 px, caps arredondados
+Galhos (3 níveis) verde-escuro 1.5 → 0.9 px, afinando para o topo
+Raízes (2 pares) verde-escuro 1.2 → 0.9 px
+Frutos/folhas dourado (#D4A017) círculos 1.5 px nos galhos, 1.0 px nas raízes
+Coração central dourado + borda verde círculo 2.2 px em (16,15)
 
 ---
 
@@ -56,19 +79,19 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ### Menu de contexto (botão direito)
 
-| Item | Disponível para |
-|------|----------------|
-| Commit (N) | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
-| Checkout | Local, remota, tag |
-| Nova branch daqui… | Local, tag |
-| Mesclar na branch atual | Local |
-| Rebase na branch atual | Local |
-| Renomear… | Local |
-| Excluir… | Local, remota, tag |
-| GitFlow… | Branch (local/remota/tag) |
-| Expandir tudo | Sempre |
-| Recolher tudo | Sempre |
-| Atualizar | Sempre |
+| Item                    | Disponível para                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------- |
+| Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
+| Checkout                | Local, remota, tag                                                                  |
+| Nova branch daqui…      | Local, tag                                                                          |
+| Mesclar na branch atual | Local                                                                               |
+| Rebase na branch atual  | Local                                                                               |
+| Renomear…               | Local                                                                               |
+| Excluir…                | Local, remota, tag                                                                  |
+| GitFlow…                | Branch (local/remota/tag)                                                           |
+| Expandir tudo           | Sempre                                                                              |
+| Recolher tudo           | Sempre                                                                              |
+| Atualizar               | Sempre                                                                              |
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit do GitExtensions já apontando para o repositório em exibição.
 
@@ -94,6 +117,7 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
   3. `git checkout <develop>` — só se os dois push tiveram sucesso
 
   O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se algum passo falhar, o fluxo para naquele ponto e a mensagem de erro é exibida.
+
 - O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
 - Ao abrir a janela, se a branch em **checkout** corresponder a um tipo do git flow (ex.: `feature/manage`), o dropdown de tipo e o dropdown de branch já vêm pré-selecionados nesse tipo e nessa branch
 
@@ -113,6 +137,7 @@ O plugin usa um ícone gerado em tempo de execução via GDI+ (sem imagens exter
 - **"Coração da vida"** — fruto dourado central no tronco, representando a força vital
 
 O ícone aparece:
+
 - No **menu Plugins** do GitExtensions (16 × 16 px)
 - Na **barra de título** da janela do plugin e na barra de tarefas do Windows (ICO multi-size: 32 + 16 px, formato PNG-encoded Vista+)
 
@@ -188,10 +213,10 @@ Isso ocorre porque `feature/login` seria simultaneamente um **arquivo** (a branc
 
 **Solução:** use prefixos distintos ou nomes irmãos:
 
-| Intenção | Nomes que funcionam |
-|---|---|
-| Sub-tarefas de login | `feature/login-oauth`, `feature/login-session` |
-| Agrupador sem branch real | `feature/login/base` + `feature/login/oauth` |
+| Intenção                  | Nomes que funcionam                            |
+| ------------------------- | ---------------------------------------------- |
+| Sub-tarefas de login      | `feature/login-oauth`, `feature/login-session` |
+| Agrupador sem branch real | `feature/login/base` + `feature/login/oauth`   |
 
 ### Gitflow não prevê feature filha de feature
 
@@ -216,6 +241,7 @@ pwsh C:\NUGET\ZimerfeldTree\build.ps1
 ```
 
 O script:
+
 1. Lê a versão atual do `.nuspec` e incrementa o `build` (major.minor.**build**)
 2. Atualiza `.nuspec` e `.csproj` com a nova versão
 3. Compila em modo Release (`net9.0-windows`)
@@ -227,6 +253,7 @@ O script:
 ## Desinstalação
 
 Delete o arquivo:
+
 ```
 C:\Program Files\GitExtensions\Plugins\GitExtensions.Plugins.ZimerfeldTree.dll
 ```

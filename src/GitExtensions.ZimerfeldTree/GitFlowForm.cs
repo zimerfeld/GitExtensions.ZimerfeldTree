@@ -41,24 +41,29 @@ public sealed class GitFlowForm : Form
     private GroupBox _grpResult = null!;
     private TextBox  _txtResult = null!;
 
+    // ── Bottom close button ──
+    private Button _btnClose = null!;
+
     public GitFlowForm(BranchHierarchyService svc)
     {
         _svc = svc;
 
-        Text            = "GitFlow";
+        Text            = "ZimerfeldTree - GitFlow";
         Size            = new Size(662, 824);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
-        StartPosition   = FormStartPosition.CenterParent;
+        StartPosition   = FormStartPosition.Manual;   // caller controls position (side-by-side)
         Font            = new Font("Segoe UI", 9f);
-        KeyPreview      = true;
-        KeyDown += (_, e) => { if (e.KeyCode == Keys.Escape) Close(); };
+        Icon            = TreeOfLifeIcon.ForForm();
 
         BuildHeader();
         BuildStartGroup();
         BuildManageGroup();
         BuildResultGroup();
+        BuildCloseButton();
+
+        CancelButton = _btnClose;
 
         Load += (_, _) => InitData();
     }
@@ -182,43 +187,40 @@ public sealed class GitFlowForm : Form
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
-        _btnPublish = new Button { Text = "Publish", Bounds = new Rectangle(40, 104, 110, 26) };
+        // ── Buttons row: 4 × 140 px, gap 18 px, left margin 12 px ───────────────
+        // (12) [Publish 140] (18) [Track 140] (18) [Update 140] (18) [Finish 140] (12) = 638 ✓
+        _btnPublish = new Button { Text = "Publish", Bounds = new Rectangle( 12, 104, 140, 26) };
         _btnPublish.Click += (_, _) => DoPublish();
 
-        _btnTrack = new Button { Text = "Track", Bounds = new Rectangle(170, 104, 110, 26) };
+        _btnTrack = new Button { Text = "Track",   Bounds = new Rectangle(170, 104, 140, 26) };
         _btnTrack.Click += (_, _) => DoTrack();
 
-        _btnUpdate = new Button { Text = "Update", Bounds = new Rectangle(300, 104, 110, 26) };
+        _btnUpdate = new Button { Text = "Update",  Bounds = new Rectangle(328, 104, 140, 26) };
         _btnUpdate.Click += (_, _) => DoUpdate();
 
-        _btnFinish = new Button
-        {
-            Text   = "Finish",
-            Bounds = new Rectangle(498, 104, 110, 26),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right
-        };
+        _btnFinish = new Button { Text = "Finish",  Bounds = new Rectangle(486, 104, 140, 26) };
         _btnFinish.Click += (_, _) => DoFinish();
 
+        // ── Checkboxes row: side by side on the same line ─────────────────────
         _chkKeep = new CheckBox
         {
             Text   = "Keep branch after finish",
-            Bounds = new Rectangle(398, 136, 210, 20),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right
+            Bounds = new Rectangle(12, 138, 220, 20)
         };
         _chkNoFetch = new CheckBox
         {
             Text   = "No fetch (--no-fetch)",
-            Bounds = new Rectangle(398, 160, 210, 20),
-            Anchor = AnchorStyles.Top | AnchorStyles.Right
+            Bounds = new Rectangle(248, 138, 200, 20)
         };
 
+        // ── Hint label: full GroupBox width ───────────────────────────────────
         var lblHint = new Label
         {
             Text      = "Track: cria branch local da remota   •   Update: traz mudanças da branch pai",
             AutoSize  = false,
             TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = SystemColors.GrayText,
-            Bounds    = new Rectangle(12, 162, 370, 18)
+            Bounds    = new Rectangle(12, 164, 614, 18)
         };
 
         _grpManage.Controls.AddRange(
@@ -231,11 +233,12 @@ public sealed class GitFlowForm : Form
 
     private void BuildResultGroup()
     {
+        // Height reduced by 48 px to leave room for the Fechar button below.
         _grpResult = new GroupBox
         {
             Text   = "Result of git flow command run",
-            Bounds = new Rectangle(8, 380, 638, 390),
-            Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            Bounds = new Rectangle(8, 380, 638, 342),
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _txtResult = new TextBox
         {
@@ -244,12 +247,27 @@ public sealed class GitFlowForm : Form
             ScrollBars = ScrollBars.Both,
             WordWrap   = false,
             BackColor  = SystemColors.Window,
-            Bounds     = new Rectangle(10, 22, 618, 358),
-            Anchor     = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+            Bounds     = new Rectangle(10, 22, 618, 310),
+            Anchor     = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Font       = new Font("Consolas", 9f)
         };
         _grpResult.Controls.Add(_txtResult);
         Controls.Add(_grpResult);
+    }
+
+    private void BuildCloseButton()
+    {
+        _btnClose = new Button
+        {
+            Text         = "Fechar",
+            Width        = 90,
+            Height       = 28,
+            Bounds       = new Rectangle(286, 736, 90, 28),
+            Anchor       = AnchorStyles.Bottom,
+            DialogResult = DialogResult.Cancel
+        };
+        _btnClose.Click += (_, _) => Close();
+        Controls.Add(_btnClose);
     }
 
     // ── Data ────────────────────────────────────────────────────────────────

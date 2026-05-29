@@ -140,12 +140,17 @@ public sealed class BranchHierarchyForm : Form
                 local  = _svc.GetLocalBranches();
                 ip?.Report((30, "Carregando branches remotas..."));
                 remote = _svc.GetRemoteBranches();
-                ip?.Report((55, "Carregando tags..."));
+                ip?.Report((50, "Carregando tags..."));
                 tags   = _svc.GetTags();
-                ip?.Report((75, "Calculando hierarquia local..."));
+                ip?.Report((65, "Calculando hierarquia local..."));
                 lMap   = _svc.BuildParentMap(local);
-                ip?.Report((90, "Calculando hierarquia remota..."));
+                ip?.Report((80, "Calculando hierarquia remota..."));
                 rMap   = _svc.BuildRemoteParentMap(remote);
+                ip?.Report((92, "Obtendo informações de sincronização..."));
+                var tracking = _svc.GetBranchTrackingInfo();
+                foreach (var b in local)
+                    if (tracking.TryGetValue(b.FullName, out var ti))
+                    { b.AheadCount = ti.ahead; b.BehindCount = ti.behind; }
                 ip?.Report((100, "Concluído."));
             });
         }
@@ -808,7 +813,19 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>Creates a leaf branch/tag node showing the last path segment as its label.</summary>
     private TreeNode CreateLeafNode(BranchInfo info, string label)
     {
-        string text = info.IsCurrent ? $"[{label}]" : label;
+        // Append ahead/behind indicators only for local branches that have divergence.
+        string tracking = string.Empty;
+        if (info.Type == BranchType.Local && (info.AheadCount > 0 || info.BehindCount > 0))
+        {
+            var sb = new System.Text.StringBuilder(" ");
+            if (info.BehindCount > 0) sb.Append($"↓{info.BehindCount}");  // pull
+            if (info.AheadCount  > 0) sb.Append($"↑{info.AheadCount}");   // push
+            tracking = sb.ToString();
+        }
+
+        string displayLabel = info.IsCurrent ? $"[{label}]" : label;
+        string text         = displayLabel + tracking;
+
         return new TreeNode(text)
         {
             Tag       = info,
@@ -977,6 +994,27 @@ public sealed class BranchHierarchyForm : Form
     private void DoGitFlow()
     {
         using var dlg = new GitFlowForm(_svc);
+
+        // Place the two windows side by side, both centered on the current screen.
+        var wa     = Screen.FromControl(this).WorkingArea;
+        int gap    = 8;
+        int totalW = Width + gap + dlg.Width;
+
+        if (wa.Width >= totalW)
+        {
+            int leftX = wa.Left + (wa.Width  - totalW) / 2;
+            int topY  = wa.Top  + Math.Max(0, (wa.Height - Math.Max(Height, dlg.Height)) / 2);
+            Location     = new Point(leftX, topY);
+            dlg.Location = new Point(leftX + Width + gap, topY);
+        }
+        else
+        {
+            // Screen too narrow — centre GitFlow over this window instead
+            dlg.Location = new Point(
+                Math.Max(wa.Left, Location.X + (Width  - dlg.Width)  / 2),
+                Math.Max(wa.Top,  Location.Y + (Height - dlg.Height) / 2));
+        }
+
         dlg.ShowDialog(this);
         RefreshTree();
         _notifyRepoChanged?.Invoke();
@@ -1098,6 +1136,7 @@ internal sealed class InputDialog : Form
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.CenterParent;
         Font            = new Font("Segoe UI", 9f);
+        Icon            = TreeOfLifeIcon.ForForm();
 
         _label = new Label  { Text = prompt, Bounds = new Rectangle(12, 12, 388, 20) };
         _input = new TextBox { Text = defaultValue, Bounds = new Rectangle(12, 36, 388, 22) };
