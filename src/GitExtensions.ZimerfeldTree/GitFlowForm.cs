@@ -581,6 +581,15 @@ public sealed class GitFlowForm : Form
 
         if (!RunFlow($"push {remote} {master}",  append: true)) return;
         if (!RunFlow($"push {remote} {develop}", append: true)) return;
+
+        // Push the release tag to the remote (git flow finish creates it locally only).
+        RunFlow($"push {remote} refs/tags/{name}", append: true, suppressError: true);
+
+        // Delete the remote release branch. git-flow-next usually removes it during finish,
+        // so a "remote ref does not exist" error here is expected and harmless.
+        string remoteReleaseBranch = _svc.GetGitFlowPrefix(type) + name;
+        RunFlow($"push {remote} --delete {remoteReleaseBranch}", append: true, suppressError: true);
+
         RunFlow($"checkout {develop}", append: true);
     }
 

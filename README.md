@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.91**
+**Versão atual: 1.0.92**
 
 TreeOfLife
 
@@ -150,13 +150,13 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
   2. `git flow release finish [-k] "<nome>"`
   3. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
   4. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
-  5. `git checkout <develop>` — só se os dois push tiveram sucesso
+  5. `git push <remote> refs/tags/<nome>` — envia a **tag** criada pelo finish ao remoto (o git flow só cria a tag localmente)
+  6. `git push <remote> --delete release/<nome>` — remove a **branch remota** da release; o git-flow-next normalmente já a remove durante o finish, então um erro "remote ref does not exist" aqui é esperado e inofensivo (executado com `suppressError`)
+  7. `git checkout <develop>`
   
   Ao concluir com sucesso, a seção **TAGS** da árvore é expandida automaticamente e o foco vai para o tag criado pelo finish.
 
-  O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se algum passo falhar, o fluxo para naquele ponto e a mensagem de erro é exibida.
-
-- **Finish — merge em andamento**: quando o finish falha com "merge is already in progress", um diálogo pergunta se deseja continuar com `--continue`. Clicar **Sim** executa `git flow <tipo> finish --continue "<nome>"` após o usuário resolver os conflitos e fazer commit.
+  O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se um dos passos de push de master/develop falhar, o fluxo para naquele ponto e a mensagem de erro é exibida; o push da tag e a remoção da branch remota não interrompem o fluxo.
 
 - O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
 - Ao abrir a janela, se a branch em **checkout** corresponder a um tipo do git flow (ex.: `feature/manage`), o dropdown de tipo e o dropdown de branch já vêm pré-selecionados nesse tipo e nessa branch
