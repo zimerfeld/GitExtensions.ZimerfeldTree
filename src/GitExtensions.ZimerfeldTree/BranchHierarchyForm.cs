@@ -55,7 +55,7 @@ public sealed class BranchHierarchyForm : Form
     private Panel       _loadingOverlay   = null!;
     private ProgressBar _progressBar      = null!;
     private Label       _loadingTitle     = null!;
-    private Label       _loadingStatus    = null!;
+    private ListBox     _stepsList        = null!;
     private Button      _btnCancelRefresh = null!;
     private bool        _isRefreshing;
     private CancellationTokenSource? _refreshCts;
@@ -144,7 +144,8 @@ public sealed class BranchHierarchyForm : Form
         if (showOverlay)
         {
             _progressBar.Value        = 0;
-            _loadingStatus.Text       = "Iniciando...";
+            _stepsList.Items.Clear();
+            _stepsList.Items.Add("• Iniciando...");
             _btnCancelRefresh.Enabled = true;
             _btnCancelRefresh.Text    = "Cancelar";
             _loadingOverlay.Location  = new Point(
@@ -164,8 +165,10 @@ public sealed class BranchHierarchyForm : Form
         IProgress<(int pct, string msg)>? ip = showOverlay
             ? new Progress<(int pct, string msg)>(p =>
               {
-                  _progressBar.Value  = p.pct;
-                  _loadingStatus.Text = p.msg;
+                  _progressBar.Value = p.pct;
+                  _stepsList.Items.Add($"• {p.msg}");
+                  int last = _stepsList.Items.Count - 1;
+                  if (last >= 0) _stepsList.TopIndex = last;
               })
             : null;
 
@@ -270,9 +273,9 @@ public sealed class BranchHierarchyForm : Form
         Text            = "ZimerfeldTree — Branch Hierarchy";
         Size            = new Size(580, 720);
         StartPosition   = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.FixedSingle;   // standard OS close button, no resize
-        MaximizeBox     = false;
-        MinimizeBox     = false;
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MaximizeBox     = true;
+        MinimizeBox     = true;
         KeyPreview      = true;
         Font            = new Font("Segoe UI", 9f);
         Icon            = TreeOfLifeIcon.ForForm();
@@ -594,19 +597,19 @@ public sealed class BranchHierarchyForm : Form
             Style   = ProgressBarStyle.Continuous
         };
 
-        _loadingStatus = new Label
+        _stepsList = new ListBox
         {
-            Text      = "Iniciando...",
-            AutoSize  = false,
-            TextAlign = ContentAlignment.MiddleCenter,
-            ForeColor = SystemColors.GrayText,
-            Bounds    = new Rectangle(10, 64, 340, 18)
+            Bounds         = new Rectangle(10, 62, 340, 110),
+            SelectionMode  = SelectionMode.None,
+            BorderStyle    = BorderStyle.Fixed3D,
+            IntegralHeight = false,
+            TabStop        = false
         };
 
         _btnCancelRefresh = new Button
         {
             Text   = "Cancelar",
-            Bounds = new Rectangle(130, 90, 100, 26)
+            Bounds = new Rectangle(130, 182, 100, 26)
         };
         _btnCancelRefresh.Click += (_, _) =>
         {
@@ -617,12 +620,12 @@ public sealed class BranchHierarchyForm : Form
 
         _loadingOverlay = new Panel
         {
-            Size        = new Size(360, 126),
+            Size        = new Size(360, 218),
             BackColor   = SystemColors.Window,
             BorderStyle = BorderStyle.FixedSingle,
             Visible     = false
         };
-        _loadingOverlay.Controls.AddRange([_loadingTitle, _progressBar, _loadingStatus, _btnCancelRefresh]);
+        _loadingOverlay.Controls.AddRange([_loadingTitle, _progressBar, _stepsList, _btnCancelRefresh]);
     }
 
     // ── GitFlow enforcement ───────────────────────────────────────────────────

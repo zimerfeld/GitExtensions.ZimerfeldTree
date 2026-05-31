@@ -51,13 +51,17 @@ $dll = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\bin\Release\net9.0-windows
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)
 
-if ($isAdmin -and (Test-Path $pluginsDir)) {
+if (-not (Test-Path $pluginsDir)) {
+    Write-Warning "Pasta de plugins nao encontrada -- deploy pulado."
+    Write-Host "  Copie manualmente: $dll"
+    Write-Host "  Para: $pluginsDir"
+} elseif ($isAdmin) {
     Copy-Item $dll $pluginsDir -Force
     Write-Host "Plugin instalado em: $pluginsDir"
 } else {
-    Write-Warning "Sem permissao de Admin ou pasta nao encontrada -- deploy pulado."
-    Write-Host "  Copie manualmente: $dll"
-    Write-Host "  Para: $pluginsDir"
+    Write-Host "Elevando para Admin para copiar DLL..."
+    Start-Process powershell -Verb RunAs -Wait -ArgumentList "-NoProfile -Command `"Copy-Item '$dll' '$pluginsDir' -Force`""
+    Write-Host "Plugin instalado em: $pluginsDir"
 }
 
 # Atualiza copia na pasta tools (usada pelo nupkg)

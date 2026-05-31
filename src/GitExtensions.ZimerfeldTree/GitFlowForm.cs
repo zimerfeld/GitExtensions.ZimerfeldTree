@@ -519,6 +519,10 @@ public sealed class GitFlowForm : Form
         if (_chkKeep.Checked)    flags += "-k ";
         if (_chkNoFetch.Checked) flags += "--no-fetch ";
 
+        // Fetch before finishing to avoid divergences between local and remote branches.
+        if (!_chkNoFetch.Checked)
+            RunFlow("fetch", append: false, suppressError: true);
+
         // For release branches (without --no-fetch): push to origin first so git-flow's
         // remote fetch finds the branch and avoids "couldn't find remote ref release/X".
         if (isRelease && !_chkNoFetch.Checked)

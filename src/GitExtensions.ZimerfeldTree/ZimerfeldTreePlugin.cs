@@ -66,7 +66,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             _form.UpdateWorkingDir(workDir);
         }
 
-        _form.Show(args.OwnerForm);
+        _form.Show();
         _form.BringToFront();
 
         // Return false: GitExtensions should NOT refresh its own UI (we manage our own state)
