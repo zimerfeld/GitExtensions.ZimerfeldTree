@@ -63,7 +63,7 @@ internal static class NodeIcons
         _list.Images.Add(Ribbon());
         // 8  master/main   — gold shield
         _list.Images.Add(Shield());
-        // 9  develop        — gray open-end wrench
+        // 9  develop        — gray double open-end wrench
         _list.Images.Add(Wrench());
         // 10 feature/*      — green leaf
         _list.Images.Add(Leaf());
@@ -208,8 +208,8 @@ internal static class NodeIcons
     }
 
     /// <summary>
-    /// Gray open-end wrench (spanner): a diagonal handle with a solid jaw head whose
-    /// "mouth" (open slot) is carved out toward the upper-right — develop branch.
+    /// Gray double open-end wrench (spanner): a diagonal handle with a solid jaw head at
+    /// BOTH ends, each with an open "mouth" carved outward along the axis — develop branch.
     /// </summary>
     private static Bitmap Wrench()
     {
@@ -217,27 +217,38 @@ internal static class NodeIcons
 
         Color gray = Color.FromArgb(0x8A, 0x8A, 0x8A);   // tool gray
         using var body  = new SolidBrush(gray);
-        using var shaft = new Pen(gray, 3.2f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        using var shaft = new Pen(gray, 3.4f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
 
-        // Handle: diagonal from lower-left up to the head
-        g.DrawLine(shaft, 4.5f, 13f, 11f, 5.5f);
+        // Axis bottom-left → top-right. u = along handle, p = perpendicular.
+        const float ux = 0.7071f, uy = -0.7071f;
+        const float px = 0.7071f, py =  0.7071f;
+        PointF c1 = new(4.6f, 11.4f);   // lower-left head center
+        PointF c2 = new(11.4f, 4.6f);   // upper-right head center
+        const float headR = 3.7f;       // jaw-head radius
+        const float mouthW = 1.5f;      // mouth half-width
 
-        // Jaw head: a solid disc at the upper end (center ≈ (11.5, 5), r ≈ 4)
-        g.FillEllipse(body, 7.5f, 1f, 8f, 8f);
+        // Handle joining the two heads, then a solid disc at each end
+        g.DrawLine(shaft, c1.X, c1.Y, c2.X, c2.Y);
+        g.FillEllipse(body, c1.X - headR, c1.Y - headR, headR * 2, headR * 2);
+        g.FillEllipse(body, c2.X - headR, c2.Y - headR, headR * 2, headR * 2);
 
-        // Carve the open "mouth": erase a slanted slot from the head center out
-        // past the upper-right rim, leaving two prongs — the open-end jaw.
+        // Carve an open "mouth" slot at each end (slot runs from head center outward
+        // past the rim, leaving two prongs — the open-end jaw).
+        PointF[] Mouth(PointF c, float dir)
+        {
+            PointF o    = new(c.X + ux * 5f * dir, c.Y + uy * 5f * dir);
+            PointF inA  = new(c.X + px * mouthW, c.Y + py * mouthW);
+            PointF inB  = new(c.X - px * mouthW, c.Y - py * mouthW);
+            PointF outA = new(o.X + px * mouthW, o.Y + py * mouthW);
+            PointF outB = new(o.X - px * mouthW, o.Y - py * mouthW);
+            return [inA, outA, outB, inB];
+        }
+
         var prevMode = g.CompositingMode;
         g.CompositingMode = CompositingMode.SourceCopy;
         using var erase = new SolidBrush(Color.Transparent);
-        PointF[] mouth =
-        [
-            new(10.30f, 3.80f),   // inner-left  (near center)
-            new(12.70f, 6.20f),   // inner-right (near center)
-            new(16.24f, 2.66f),   // outer-right (beyond rim)
-            new(13.84f, 0.26f),   // outer-left  (beyond rim)
-        ];
-        g.FillPolygon(erase, mouth);
+        g.FillPolygon(erase, Mouth(c2, +1f));   // upper-right jaw opens up-right
+        g.FillPolygon(erase, Mouth(c1, -1f));   // lower-left  jaw opens down-left
         g.CompositingMode = prevMode;
 
         return bmp;
