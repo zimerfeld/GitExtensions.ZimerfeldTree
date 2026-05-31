@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.89**
+**Versão atual: 1.0.90**
 
 TreeOfLife
 
@@ -142,7 +142,7 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
 - **Finish** — `git flow <tipo> finish [-k] [--no-fetch] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
   - Antes de executar o finish, o plugin executa automaticamente `git fetch` para manter as branches de rastreamento locais sincronizadas com o remoto e evitar divergências; o fetch é omitido quando **No fetch** está marcado
-  - **Auto-resolução de "merge in progress"**: quando o finish falha com `a merge is already in progress for branch '<tipo>/<nome>'`, o plugin detecta automaticamente dois cenários: ① lock pertence a uma branch diferente (ex.: `release/X` travada enquanto se finaliza `feature/Y`) → tenta `--continue` nessa outra branch; se "nothing to commit" executa `--abort` para limpar o lock e retenta o finish original; ② lock pertence à própria branch → solicita ao usuário que resolva conflitos; se "nothing to commit" limpa o estado git com `merge --abort` e retenta automaticamente
+  - **Auto-resolução de "merge in progress"**: quando o finish falha com `a merge is already in progress for branch '<tipo>/<nome>'`, o plugin aborta o estado travado e retenta o finish original automaticamente. A recuperação tem três níveis: ① `git flow <tipo> finish --abort` para limpar o lock do git-flow; ② `git merge --abort` para limpar o `MERGE_HEAD` do git; ③ **recuperação de deadlock** — o git-flow-next mantém um arquivo de estado persistente (`.git/gitflow/state/*.json`) que sobrevive mesmo quando o git não tem `MERGE_HEAD`; nesse caso os dois aborts falham e o plugin remove o arquivo órfão diretamente. Após a limpeza, volta à branch original e retenta o finish
   - A janela GitFlow mantém o foco após cada comando executado
 - **Finish de `release` — fluxo completo automático**: quando o tipo é `release` e o checkbox **No fetch** não está marcado, o painel executa automaticamente em sequência (com as saídas anexadas à janela de resultado):
   1. `git push <remote> release/<nome>` — envia a release para o remoto **antes** do finish, evitando o erro `fatal: couldn't find remote ref release/<nome>` gerado pelo git-flow ao buscar a branch remota

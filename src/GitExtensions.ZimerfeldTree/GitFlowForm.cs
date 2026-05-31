@@ -667,6 +667,12 @@ public sealed class GitFlowForm : Form
 
         RunFlow("merge --abort", append: true, suppressError: true);
 
+        // Deadlock recovery: git-flow-next keeps a persistent state file
+        // (.git/gitflow/state/*.json) that survives even when git has no MERGE_HEAD.
+        // In that case both aborts above fail and the only fix is deleting the stale file.
+        if (_svc.ClearGitFlowState())
+            _txtResult.Text += "\r\n\r\n(estado órfão do git-flow removido: .git/gitflow/state)";
+
         // Return to original branch if abort changed it.
         string currentBranch = _svc.GetCurrentBranch();
         if (originalBranch.Length > 0 &&

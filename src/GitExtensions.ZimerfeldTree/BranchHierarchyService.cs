@@ -336,6 +336,42 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (ex.Message, -1); }
     }
 
+    /// <summary>
+    /// Clears git-flow-next's persistent operation state (<c>.git/gitflow/state/*.json</c>).
+    /// <para>
+    /// git-flow-next records an in-progress finish/merge in a state file that survives even
+    /// when git itself has no merge in progress (no MERGE_HEAD). This produces a deadlock:
+    /// "a merge is already in progress" keeps firing, but neither <c>git merge --abort</c>
+    /// nor <c>git flow ... finish --abort</c> can clear it — both depend on a real MERGE_HEAD
+    /// that does not exist. Deleting the stale state file is the only reliable recovery.
+    /// </para>
+    /// Returns true when at least one state file was removed.
+    /// </summary>
+    public bool ClearGitFlowState()
+    {
+        try
+        {
+            string gitDir = RunGit("rev-parse --git-dir", out int code).Trim();
+            if (code != 0 || gitDir.Length == 0) return false;
+
+            // git-dir may be relative to WorkingDir — resolve to an absolute path.
+            if (!Path.IsPathRooted(gitDir))
+                gitDir = Path.GetFullPath(Path.Combine(WorkingDir, gitDir));
+
+            string stateDir = Path.Combine(gitDir, "gitflow", "state");
+            if (!Directory.Exists(stateDir)) return false;
+
+            bool removed = false;
+            foreach (var file in Directory.GetFiles(stateDir, "*.json"))
+            {
+                try { File.Delete(file); removed = true; }
+                catch { /* file may be locked; ignore */ }
+            }
+            return removed;
+        }
+        catch { return false; }
+    }
+
     /// <summary>Returns the full symbolic HEAD ref (e.g. "refs/heads/develop").</summary>
     public string GetHeadRef()
     {
