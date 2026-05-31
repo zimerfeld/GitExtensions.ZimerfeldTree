@@ -122,7 +122,15 @@ public sealed class GitFlowForm : Form
         };
         _cboStartType.Items.AddRange([.. BranchHierarchyService.GitFlowTypes]);
         _cboStartType.SelectedIndexChanged += (_, _) =>
+        {
             _lblStartPrefix.Text = _svc.GetGitFlowPrefix(_cboStartType.Text);
+
+            // Default release name follows the convention yyyyMMddHHmm (e.g. 202605311230).
+            // Only auto-fill when the field is empty so manual input is never overwritten.
+            if (string.Equals(_cboStartType.Text, "release", StringComparison.OrdinalIgnoreCase)
+                && _txtStartName.Text.Trim().Length == 0)
+                _txtStartName.Text = DateTime.Now.ToString("yyyyMMddHHmm");
+        };
 
         // Row 2 — expected name (prefix label + text input + Start! button)
         var lblName = new Label

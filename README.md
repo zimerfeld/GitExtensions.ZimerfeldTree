@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.90**
+**Versão atual: 1.0.91**
 
 TreeOfLife
 
@@ -132,6 +132,7 @@ No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opçã
 - Por padrão o dropdown fica **desabilitado** e usa `develop` como base (comportamento padrão do `git flow ... start`)
 - Ao marcar o checkbox **based on:**, o dropdown é habilitado e lista as branches locais, permitindo iniciar a nova branch a partir de outra — por exemplo, uma **feature filha de outra feature pai**
 - A base escolhida é passada ao comando: `git flow feature start "<nome>" "<base>"`
+- **Nome padrão de release**: ao selecionar o tipo **release**, o campo de nome é preenchido automaticamente com a convenção `yyyyMMddHHmm` (ex.: `202605311230`), gerando branches como `release/202605311230`; o preenchimento só ocorre quando o campo está vazio, nunca sobrescrevendo digitação manual
 
 ### Janela GitFlow — painel "Manage existing branches" (git-flow-next)
 
