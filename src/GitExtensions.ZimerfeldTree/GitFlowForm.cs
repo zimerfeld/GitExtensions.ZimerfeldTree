@@ -253,20 +253,12 @@ public sealed class GitFlowForm : Form
         };
         _chkNoFetch.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
 
-        // ── Hint label ─────────────────────────────────────────────────────────
-        var lblHint = new Label
-        {
-            Text      = "Track: cria branch local da remota   •   Update: traz mudanças da branch pai",
-            AutoSize  = false,
-            TextAlign = ContentAlignment.MiddleLeft,
-            ForeColor = SystemColors.GrayText,
-            Bounds    = new Rectangle(12, 162, 614, 18)
-        };
+        // Descriptions for Track/Update live only in the "Sobre" (About) link text.
 
         _grpManage.Controls.AddRange(
         [
             lblType, _cboManageType, lblBranch, _lblManagePrefix, _cboManageBranch,
-            _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, _chkNoFetch, lblHint
+            _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, _chkNoFetch
         ]);
         Controls.Add(_grpManage);
     }
@@ -427,21 +419,11 @@ public sealed class GitFlowForm : Form
         string prefix = _svc.GetGitFlowPrefix(_cboManageType.Text);
         _lblManagePrefix.Text = prefix;
 
+        // The dropdown reflects only branches that exist LOCALLY. Reloaded after every
+        // git flow command (see RunFlow), so a branch deleted by finish disappears here.
         var names = new List<string>();
         foreach (var name in _svc.GetGitFlowBranches(prefix))
             if (!names.Contains(name)) names.Add(name);
-
-        // Also list remote branches of this type (with prefix stripped) so Track can
-        // pick up a branch that exists only on the remote.
-        foreach (var rb in _svc.GetRemoteBranches())
-        {
-            int slash = rb.FullName.IndexOf('/');
-            if (slash < 0) continue;
-            string afterRemote = rb.FullName[(slash + 1)..];
-            if (!afterRemote.StartsWith(prefix, StringComparison.Ordinal)) continue;
-            string stripped = afterRemote[prefix.Length..];
-            if (stripped.Length > 0 && !names.Contains(stripped)) names.Add(stripped);
-        }
 
         _cboManageBranch.Items.Clear();
         foreach (var n in names) _cboManageBranch.Items.Add(n);

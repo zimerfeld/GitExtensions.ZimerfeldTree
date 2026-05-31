@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.93**
+**Versão atual: 1.0.94**
 
 TreeOfLife
 
@@ -158,7 +158,7 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 
   O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se um dos passos de push de master/develop falhar, o fluxo para naquele ponto e a mensagem de erro é exibida; o push da tag e a remoção da branch remota não interrompem o fluxo.
 
-- O dropdown de branch lista as branches locais **e** as remotas do tipo (com o prefixo removido), para que o **Track** possa selecionar uma branch que só existe no remoto
+- O dropdown de branch lista **apenas as branches locais** do tipo selecionado, refletindo o que existe localmente; é recarregado após cada comando git flow (ex.: ao finalizar uma branch com Finish, ela é removida do dropdown automaticamente)
 - Ao abrir a janela, se a branch em **checkout** corresponder a um tipo do git flow (ex.: `feature/manage`), o dropdown de tipo e o dropdown de branch já vêm pré-selecionados nesse tipo e nessa branch
 
 #### Tratamento de erros
