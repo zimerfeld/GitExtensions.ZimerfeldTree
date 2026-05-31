@@ -63,7 +63,7 @@ internal static class NodeIcons
         _list.Images.Add(Ribbon());
         // 8  master/main   — gold shield
         _list.Images.Add(Shield());
-        // 9  develop        — gray double open-end wrench
+        // 9  develop        — crossed wrench + hammer
         _list.Images.Add(Wrench());
         // 10 feature/*      — green leaf
         _list.Images.Add(Leaf());
@@ -208,47 +208,65 @@ internal static class NodeIcons
     }
 
     /// <summary>
-    /// Gray double open-end wrench (spanner): a diagonal handle with a solid jaw head at
-    /// BOTH ends, each with an open "mouth" carved outward along the axis — develop branch.
+    /// Crossed tools forming an X — a single open-end wrench (top-left → bottom-right) and a
+    /// claw hammer (top-right → bottom-left), solid dark gray — develop branch.
     /// </summary>
     private static Bitmap Wrench()
     {
         var bmp = Blank(); using var g = AA(bmp);
 
-        Color gray = Color.FromArgb(0x8A, 0x8A, 0x8A);   // tool gray
-        using var body  = new SolidBrush(gray);
-        using var shaft = new Pen(gray, 3.4f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        Color gray = Color.FromArgb(0x6B, 0x6B, 0x6B);   // glyph gray
+        using var body = new SolidBrush(gray);
 
-        // Axis bottom-left → top-right. u = along handle, p = perpendicular.
-        const float ux = 0.7071f, uy = -0.7071f;
-        const float px = 0.7071f, py =  0.7071f;
-        PointF c1 = new(4.6f, 11.4f);   // lower-left head center
-        PointF c2 = new(11.4f, 4.6f);   // upper-right head center
-        const float headR = 3.7f;       // jaw-head radius
-        const float mouthW = 1.5f;      // mouth half-width
+        // ── Wrench: top-left → bottom-right ─────────────────────────────────
+        // axis uw (down-right), perpendicular pw
+        const float uwx = 0.7071f, uwy = 0.7071f;
+        const float pwx = 0.7071f, pwy = -0.7071f;
+        PointF wHead = new(3.8f, 3.8f);    // open-jaw head (top-left)
+        PointF wTail = new(12.6f, 12.6f);  // handle end (bottom-right)
+        const float wHeadR = 3.1f;
+        const float wMouthW = 1.4f;
 
-        // Handle joining the two heads, then a solid disc at each end
-        g.DrawLine(shaft, c1.X, c1.Y, c2.X, c2.Y);
-        g.FillEllipse(body, c1.X - headR, c1.Y - headR, headR * 2, headR * 2);
-        g.FillEllipse(body, c2.X - headR, c2.Y - headR, headR * 2, headR * 2);
+        using (var wShaft = new Pen(gray, 2.8f) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+            g.DrawLine(wShaft, wHead.X, wHead.Y, wTail.X, wTail.Y);
+        g.FillEllipse(body, wHead.X - wHeadR, wHead.Y - wHeadR, wHeadR * 2, wHeadR * 2);
 
-        // Carve an open "mouth" slot at each end (slot runs from head center outward
-        // past the rim, leaving two prongs — the open-end jaw).
-        PointF[] Mouth(PointF c, float dir)
-        {
-            PointF o    = new(c.X + ux * 5f * dir, c.Y + uy * 5f * dir);
-            PointF inA  = new(c.X + px * mouthW, c.Y + py * mouthW);
-            PointF inB  = new(c.X - px * mouthW, c.Y - py * mouthW);
-            PointF outA = new(o.X + px * mouthW, o.Y + py * mouthW);
-            PointF outB = new(o.X - px * mouthW, o.Y - py * mouthW);
-            return [inA, outA, outB, inB];
-        }
+        // ── Hammer: top-right → bottom-left ─────────────────────────────────
+        PointF hHead = new(12.2f, 3.8f);   // head end (top-right)
+        PointF hTail = new(4.0f, 12.8f);   // handle end (bottom-left)
+        // handle direction d and its perpendicular n
+        float dx = hTail.X - hHead.X, dy = hTail.Y - hHead.Y;
+        float dl = MathF.Sqrt(dx * dx + dy * dy); dx /= dl; dy /= dl;
+        float nx = -dy, ny = dx;
+
+        using (var hShaft = new Pen(gray, 2.8f) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+            g.DrawLine(hShaft, hHead.X, hHead.Y, hTail.X, hTail.Y);
+
+        // Hammer head: a thick cross-bar at the top-right end (the striking head),
+        // longer on the outer side, drawn as a rounded perpendicular bar.
+        PointF hb1 = new(hHead.X - nx * 1.4f - dx * 0.8f, hHead.Y - ny * 1.4f - dy * 0.8f);
+        PointF hb2 = new(hHead.X + nx * 3.4f - dx * 0.8f, hHead.Y + ny * 3.4f - dy * 0.8f);
+        using (var hHeadPen = new Pen(gray, 3.4f) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+            g.DrawLine(hHeadPen, hb1.X, hb1.Y, hb2.X, hb2.Y);
+
+        // ── Carve the wrench open "mouth" (top-left, opening up-left) ────────
+        PointF o    = new(wHead.X - uwx * 5f, wHead.Y - uwy * 5f);
+        PointF inA  = new(wHead.X + pwx * wMouthW, wHead.Y + pwy * wMouthW);
+        PointF inB  = new(wHead.X - pwx * wMouthW, wHead.Y - pwy * wMouthW);
+        PointF outA = new(o.X + pwx * wMouthW, o.Y + pwy * wMouthW);
+        PointF outB = new(o.X - pwx * wMouthW, o.Y - pwy * wMouthW);
 
         var prevMode = g.CompositingMode;
         g.CompositingMode = CompositingMode.SourceCopy;
         using var erase = new SolidBrush(Color.Transparent);
-        g.FillPolygon(erase, Mouth(c2, +1f));   // upper-right jaw opens up-right
-        g.FillPolygon(erase, Mouth(c1, -1f));   // lower-left  jaw opens down-left
+        g.FillPolygon(erase, [inA, outA, outB, inB]);
+        // Claw notch on the hammer head's outer tip (small V split)
+        g.FillPolygon(erase,
+        [
+            new PointF(hb2.X - dx * 0.2f, hb2.Y - dy * 0.2f),
+            new PointF(hb2.X + dx * 1.4f + nx * 0.9f, hb2.Y + dy * 1.4f + ny * 0.9f),
+            new PointF(hb2.X + dx * 1.4f - nx * 0.9f, hb2.Y + dy * 1.4f - ny * 0.9f),
+        ]);
         g.CompositingMode = prevMode;
 
         return bmp;
