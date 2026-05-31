@@ -463,18 +463,18 @@ public sealed class BranchHierarchyService
     // ── Ancestry analysis (pure merge-base) ──────────────────────────────────
 
     /// <summary>
-    /// Builds a map of branchName → parentBranchName (null = root) using merge-base only.
-    /// Branch A is the parent of B when tip(A) == merge-base(A, B), meaning A's current
-    /// tip is a direct ancestor of B.  Among all valid candidates the one with the fewest
-    /// extra commits on top wins (closest fork point).
+    /// Builds a map of branchName → parentBranchName (null = root).
+    /// Uses a single <c>git log --all</c> call to build the full commit graph in memory,
+    /// then determines parentage via BFS — O(commits) instead of the previous O(N² × subprocess).
     /// </summary>
     public Dictionary<string, string?> BuildParentMap(List<BranchInfo> branches)
     {
-        var tips   = GatherTips();
-        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var tips               = GatherTips();
+        var (graph, tipToName) = BuildCommitGraph(tips);
+        var result             = new Dictionary<string, string?>(StringComparer.Ordinal);
 
         foreach (var b in branches)
-            result[b.FullName] = FindParent(b.FullName, branches, tips);
+            result[b.FullName] = FindParentInGraph(b.FullName, tips, tipToName, graph);
 
         BreakCycles(result);
         return result;
@@ -519,103 +519,86 @@ public sealed class BranchHierarchyService
         return tips;
     }
 
-    /// <summary>
-    /// Same algorithm as <see cref="BuildParentMap"/> but operates on remote-tracking branches.
-    /// Each branch's <see cref="BranchInfo.FullName"/> must be the full remote ref
-    /// (e.g. "origin/feature/login") so that <c>git merge-base</c> can resolve it.
-    /// </summary>
+    /// <summary>Same as <see cref="BuildParentMap"/> but for remote-tracking branches.</summary>
     public Dictionary<string, string?> BuildRemoteParentMap(List<BranchInfo> branches)
     {
-        var tips   = GatherRemoteTips();
-        var result = new Dictionary<string, string?>(StringComparer.Ordinal);
+        var tips               = GatherRemoteTips();
+        var (graph, tipToName) = BuildCommitGraph(tips);
+        var result             = new Dictionary<string, string?>(StringComparer.Ordinal);
+
         foreach (var b in branches)
-            result[b.FullName] = FindParent(b.FullName, branches, tips);
+            result[b.FullName] = FindParentInGraph(b.FullName, tips, tipToName, graph);
+
         BreakCycles(result);
         return result;
     }
 
     /// <summary>
-    /// For branch B, finds its parent: the candidate A whose merge-base with B is the
-    /// deepest (most recent common ancestor) in the commit graph.
-    /// <para>
-    /// Candidates where B is already a direct ancestor of A are excluded — they would be
-    /// children of B, not parents. When two candidates produce the same merge-base depth
-    /// (tie), the one that is closest to the fork point wins (fewest commits it added since
-    /// the fork).
-    /// </para>
+    /// Builds the full commit graph in ONE <c>git log --all</c> subprocess call.
+    /// Returns the parent map (commitHash → parentHashes[]) and the reverse-tip lookup
+    /// (tipHash → branchName) derived from <paramref name="tips"/>.
     /// </summary>
-    private string? FindParent(
-        string branch,
-        List<BranchInfo> candidates,
-        Dictionary<string, string> tips)
+    private (Dictionary<string, string[]> graph, Dictionary<string, string> tipToName)
+        BuildCommitGraph(Dictionary<string, string> tips)
     {
-        if (!tips.TryGetValue(branch, out string? branchTip)) return null;
+        // Reverse of tips: hash → branch name (last writer wins for shared-tip edge case).
+        var tipToName = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var kv in tips)
+            tipToName[kv.Value] = kv.Key;
 
-        string? bestParent   = null;
-        string? bestMb       = null;
-        int     bestDistance = int.MaxValue; // lazy: only computed on a tie
-
-        foreach (var cand in candidates)
-        {
-            if (cand.FullName == branch) continue;
-            if (!tips.ContainsKey(cand.FullName)) continue;
-
-            try
-            {
-                string mb = RunGit(
-                    $"merge-base {EscapeArg(cand.FullName)} {EscapeArg(branch)}",
-                    out int code).Trim();
-
-                if (code != 0 || string.IsNullOrEmpty(mb)) continue;
-
-                // Skip when B is a direct ancestor of the candidate
-                // (merge-base == B's own tip means B is below the candidate, not above).
-                if (mb == branchTip) continue;
-
-                if (bestMb == null)
-                {
-                    bestMb = mb; bestParent = cand.FullName;
-                    continue;
-                }
-
-                // Compare which merge-base is deeper (more recent).
-                // merge-base(mb, bestMb) == bestMb  →  bestMb is ancestor of mb  →  mb is deeper
-                // merge-base(mb, bestMb) == mb       →  mb is ancestor of bestMb  →  bestMb is deeper
-                // both equal                          →  same commit (tie)
-                string cmp = RunGit($"merge-base {mb} {bestMb}", out _).Trim();
-
-                if (cmp == bestMb && cmp != mb) // mb strictly deeper → new best
-                {
-                    bestMb = mb; bestParent = cand.FullName; bestDistance = int.MaxValue;
-                }
-                else if (cmp == mb && cmp == bestMb) // same merge-base → tiebreak
-                {
-                    // Prefer the candidate that is closer to the fork point
-                    // (fewest commits it added on top of the shared ancestor).
-                    if (bestDistance == int.MaxValue)
-                        bestDistance = CommitCount($"{bestMb}..{bestParent}");
-                    int d = CommitCount($"{mb}..{EscapeArg(cand.FullName)}");
-                    if (d < bestDistance)
-                    {
-                        bestParent = cand.FullName; bestDistance = d;
-                    }
-                }
-                // else bestMb is deeper → keep current best
-            }
-            catch { }
-        }
-
-        return bestParent;
-    }
-
-    private int CommitCount(string revRange)
-    {
+        var graph = new Dictionary<string, string[]>(StringComparer.Ordinal);
         try
         {
-            string s = RunGit($"rev-list --count {revRange}", out _).Trim();
-            return int.TryParse(s, out int n) ? n : int.MaxValue;
+            string raw = RunGit("log --all --format=\"%H %P\"", out _);
+            foreach (var line in SplitLines(raw))
+            {
+                var parts = line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0) continue;
+                graph[parts[0]] = parts.Length > 1 ? parts[1..] : [];
+            }
         }
-        catch { return int.MaxValue; }
+        catch { }
+
+        return (graph, tipToName);
+    }
+
+    /// <summary>
+    /// BFS from <paramref name="branch"/>'s tip upward through the commit graph.
+    /// Returns the name of the nearest ancestor branch tip (the "parent" branch),
+    /// or null when none is found.  O(commits reachable) — no subprocess calls.
+    /// </summary>
+    private static string? FindParentInGraph(
+        string branch,
+        Dictionary<string, string> tips,
+        Dictionary<string, string> tipToName,
+        Dictionary<string, string[]> graph)
+    {
+        if (!tips.TryGetValue(branch, out string? startHash)) return null;
+
+        var visited = new HashSet<string>(StringComparer.Ordinal) { startHash };
+        var queue   = new Queue<string>();
+
+        if (graph.TryGetValue(startHash, out var initParents))
+            foreach (var p in initParents)
+                queue.Enqueue(p);
+
+        while (queue.Count > 0)
+        {
+            string commit = queue.Dequeue();
+            if (!visited.Add(commit)) continue;
+
+            // First branch tip found via BFS is the nearest ancestor — git's first-parent
+            // ordering ensures the "main" branch is found before merged-in branches.
+            if (tipToName.TryGetValue(commit, out string? name) && name != branch)
+                return name;
+
+            if (graph.TryGetValue(commit, out var parents))
+                foreach (var p in parents)
+                    if (!visited.Contains(p))
+                        queue.Enqueue(p);
+        }
+
+        return null;
     }
 
     private static void BreakCycles(Dictionary<string, string?> parentMap)

@@ -481,6 +481,9 @@ public sealed class GitFlowForm : Form
                     _cboManageBranch.Text = name;
             }
         }
+
+        // Restore focus to this form after all UI updates (Clear/combo changes shift focus).
+        if (!IsDisposed) Activate();
     }
 
     private void DoPublish()
@@ -542,14 +545,7 @@ public sealed class GitFlowForm : Form
             string resultText = _txtResult.Text;
             if (resultText.Contains("merge is already in progress", StringComparison.OrdinalIgnoreCase))
             {
-                string prefix = _svc.GetGitFlowPrefix(type);
-                var answer = MessageBox.Show(
-                    $"Há um merge em andamento para '{prefix}{name}'.\n\n" +
-                    "Resolva os conflitos, faça o commit e clique Sim para continuar o finish com --continue.",
-                    "GitFlow — merge em andamento",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (answer == DialogResult.Yes)
-                    ok = RunFlow($"flow {type} finish --continue \"{name}\"", append: true);
+                ok = ResolveInProgressMerge(type, name, flags, resultText);
             }
             else
             {
@@ -604,6 +600,7 @@ public sealed class GitFlowForm : Form
         finally
         {
             Cursor = Cursors.Default;
+            if (!IsDisposed) Activate();
         }
 
         _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
@@ -638,6 +635,94 @@ public sealed class GitFlowForm : Form
             : "O comando git flow falhou. Veja os detalhes na janela de resultado.";
 
         MessageBox.Show(msg, "GitFlow — falha", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
+    /// <summary>
+    /// Handles the "merge is already in progress" error that git-flow-next raises when a
+    /// previous finish left its state lock active.
+    ///
+    /// Two scenarios:
+    ///   A) The lock belongs to a DIFFERENT branch (e.g. release/X stuck while we finish feature/Y):
+    ///      → auto-continue that stuck branch; if "nothing to commit" abort it; then retry our finish.
+    ///   B) The lock belongs to OUR OWN branch (merge conflict during our finish):
+    ///      → ask the user to resolve conflicts, then auto-continue; if "nothing to commit"
+    ///        run "merge --abort" to clear git's state and retry the finish.
+    /// </summary>
+    private bool ResolveInProgressMerge(string type, string name, string flags, string errorText)
+    {
+        // Parse "in progress for branch 'type/name'" from the error message.
+        var m = System.Text.RegularExpressions.Regex.Match(
+            errorText,
+            @"in progress for branch '([^']+)'",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        string stuckBranch = m.Success ? m.Groups[1].Value : string.Empty;
+        string stuckType   = string.Empty;
+        string stuckName   = string.Empty;
+        if (stuckBranch.Length > 0)
+        {
+            int sl = stuckBranch.IndexOf('/');
+            if (sl > 0) { stuckType = stuckBranch[..sl]; stuckName = stuckBranch[(sl + 1)..]; }
+        }
+
+        bool sameOwn = string.Equals(stuckType, type,  StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(stuckName, name, StringComparison.OrdinalIgnoreCase);
+
+        if (!sameOwn && stuckType.Length > 0 && stuckName.Length > 0)
+        {
+            // Scenario A — resolve the OTHER branch's stuck state first.
+            bool resolved = RunFlow(
+                $"flow {stuckType} finish --continue \"{stuckName}\"",
+                append: true, suppressError: true);
+
+            if (!resolved)
+            {
+                string cont = _txtResult.Text;
+                if (cont.Contains("nothing to commit", StringComparison.OrdinalIgnoreCase) ||
+                    cont.Contains("working tree clean", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Merge was already committed — just clean up git-flow's stale lock.
+                    RunFlow($"flow {stuckType} finish --abort \"{stuckName}\"",
+                        append: true, suppressError: true);
+                }
+            }
+
+            // Retry our original finish.
+            bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"",
+                append: true, suppressError: true);
+            if (!ok) ShowFlowError(_txtResult.Text);
+            return ok;
+        }
+        else
+        {
+            // Scenario B — the lock is for our own branch; user may have unresolved conflicts.
+            var answer = MessageBox.Show(
+                $"Há um merge em andamento para '{stuckBranch}'.\n\n" +
+                "Se houver conflitos, resolva-os, faça o commit e clique Sim.\n" +
+                "Se a árvore de trabalho já estiver limpa, clique Sim para limpar o estado e finalizar.",
+                "GitFlow — merge em andamento",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (answer != DialogResult.Yes) return false;
+
+            bool ok = RunFlow($"flow {type} finish --continue \"{name}\"",
+                append: true, suppressError: true);
+
+            if (!ok)
+            {
+                string cont = _txtResult.Text;
+                if (cont.Contains("nothing to commit", StringComparison.OrdinalIgnoreCase) ||
+                    cont.Contains("working tree clean", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Merge was already committed — abort stale git state then retry.
+                    RunFlow("merge --abort", append: true, suppressError: true);
+                    ok = RunFlow($"flow {type} finish {flags}\"{name}\"",
+                        append: true, suppressError: true);
+                }
+                if (!ok) ShowFlowError(_txtResult.Text);
+            }
+            return ok;
+        }
     }
 
     private void ShowAbout()

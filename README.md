@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.85**
+**Versão atual: 1.0.87**
 
 TreeOfLife
 
@@ -42,6 +42,7 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 - Janela **redimensionável** com botões **Minimizar**, **Maximizar** e **Fechar** padrão do Windows (`Sizable`)
 - A janela é **independente** do GitExtensions: minimizar o GitExtensions não afeta a janela ZimerfeldTree
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
+- **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches
 - **Overlay em toda atualização**: o painel de progresso aparece sempre que a árvore é recarregada — abertura inicial, checkout, nova branch, merge, rename, delete, GitFlow, refresh manual e troca de repositório
 - **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe
 - **Botão Cancelar no overlay**: permite abortar o carregamento a qualquer momento (o cancelamento ocorre entre as etapas git, preservando os dados anteriores na árvore)
@@ -141,6 +142,8 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
 - **Finish** — `git flow <tipo> finish [-k] [--no-fetch] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
   - Antes de executar o finish, o plugin executa automaticamente `git fetch` para manter as branches de rastreamento locais sincronizadas com o remoto e evitar divergências; o fetch é omitido quando **No fetch** está marcado
+  - **Auto-resolução de "merge in progress"**: quando o finish falha com `a merge is already in progress for branch '<tipo>/<nome>'`, o plugin detecta automaticamente dois cenários: ① lock pertence a uma branch diferente (ex.: `release/X` travada enquanto se finaliza `feature/Y`) → tenta `--continue` nessa outra branch; se "nothing to commit" executa `--abort` para limpar o lock e retenta o finish original; ② lock pertence à própria branch → solicita ao usuário que resolva conflitos; se "nothing to commit" limpa o estado git com `merge --abort` e retenta automaticamente
+  - A janela GitFlow mantém o foco após cada comando executado
 - **Finish de `release` — fluxo completo automático**: quando o tipo é `release` e o checkbox **No fetch** não está marcado, o painel executa automaticamente em sequência (com as saídas anexadas à janela de resultado):
   1. `git push <remote> release/<nome>` — envia a release para o remoto **antes** do finish, evitando o erro `fatal: couldn't find remote ref release/<nome>` gerado pelo git-flow ao buscar a branch remota
   2. `git flow release finish [-k] "<nome>"`
