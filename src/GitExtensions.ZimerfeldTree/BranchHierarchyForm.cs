@@ -1399,7 +1399,7 @@ public sealed class BranchHierarchyForm : Form
             {
                 _btnPull.Enabled = true;
                 RefreshTree();
-                _notifyRepoChanged?.Invoke();
+                NotifyRepoChanged();
                 if (!ok && !string.IsNullOrEmpty(err))
                     ShowError("Pull falhou", err);
             });
@@ -1416,7 +1416,7 @@ public sealed class BranchHierarchyForm : Form
             {
                 _btnPush.Enabled = true;
                 RefreshTree();
-                _notifyRepoChanged?.Invoke();
+                NotifyRepoChanged();
                 if (!ok && !string.IsNullOrEmpty(err))
                     ShowError("Push falhou", err);
             });
@@ -1432,7 +1432,7 @@ public sealed class BranchHierarchyForm : Form
             bool? result = _openCommitDialog(this);
             if (result.HasValue)
             {
-                if (result.Value) { RefreshTree(); _notifyRepoChanged?.Invoke(); }
+                if (result.Value) { RefreshTree(); NotifyRepoChanged(); }
                 return;
             }
         }
@@ -1453,7 +1453,7 @@ public sealed class BranchHierarchyForm : Form
         if (ok)
         {
             RefreshTree();
-            _notifyRepoChanged?.Invoke();
+            NotifyRepoChanged();
         }
         else if (!string.IsNullOrEmpty(err))
         {
@@ -1482,7 +1482,7 @@ public sealed class BranchHierarchyForm : Form
         if (ok)
         {
             RefreshTree();
-            _notifyRepoChanged?.Invoke();
+            NotifyRepoChanged();
         }
         else ShowError("Erro ao criar branch", err);
     }
@@ -1522,7 +1522,8 @@ public sealed class BranchHierarchyForm : Form
             _postRefreshAction = () => FocusTagNode(tag);
 
         RefreshTree();
-        _notifyRepoChanged?.Invoke();
+        // GitFlow dialog has already closed (modal) — refocusing ZimerfeldTree here is correct.
+        NotifyRepoChanged();
     }
 
     private void FocusTagNode(string tagName)
@@ -1557,6 +1558,7 @@ public sealed class BranchHierarchyForm : Form
             if (ok) RefreshTree();
             else ShowError("Erro no merge", err);
         }
+        RestoreFocus();
     }
 
     private void DoRebase()
@@ -1571,6 +1573,7 @@ public sealed class BranchHierarchyForm : Form
             if (ok) RefreshTree();
             else ShowError("Erro no rebase", err);
         }
+        RestoreFocus();
     }
 
     private void DoRename()
@@ -1585,6 +1588,7 @@ public sealed class BranchHierarchyForm : Form
         var (ok, err) = _svc.RenameBranch(info.FullName, dlg.Value.Trim());
         if (ok) RefreshTree();
         else ShowError("Erro ao renomear", err);
+        RestoreFocus();
     }
 
     private void DoDelete()
@@ -1619,9 +1623,28 @@ public sealed class BranchHierarchyForm : Form
         {
             ShowError("Erro ao excluir", result.err);
         }
+        RestoreFocus();
     }
 
     // ── UI helpers ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Re-activates this window so it keeps focus after an action.
+    /// The window is owner-less, so notifying GitExtensions of a repo change brings the
+    /// GitExtensions main window to the foreground; this puts ZimerfeldTree back on top.
+    /// (The GitFlow window is modal, so it keeps its own focus while open — unaffected.)
+    /// </summary>
+    private void RestoreFocus()
+    {
+        if (!IsDisposed && Visible) Activate();
+    }
+
+    /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
+    private void NotifyRepoChanged()
+    {
+        _notifyRepoChanged?.Invoke();
+        RestoreFocus();
+    }
 
     private bool Confirm(string text, string caption) =>
         MessageBox.Show(text, caption, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;

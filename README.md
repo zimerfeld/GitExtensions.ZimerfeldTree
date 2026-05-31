@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.92**
+**Versão atual: 1.0.93**
 
 TreeOfLife
 
@@ -194,6 +194,7 @@ O arquivo [`TreeOfLifeIcon.cs`](src/GitExtensions.ZimerfeldTree/TreeOfLifeIcon.c
 - A janela permanece aberta enquanto o GitExtensions está em uso
 - Fechar a janela a destrói — necessário reabrir para recarregar dados
 - Singleton: uma única instância por sessão do GitExtensions
+- **Foco persistente após ações**: qualquer ação executada na janela (Pull, Push, Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir) devolve o foco à janela ZimerfeldTree ao concluir. Como a janela é independente (sem owner), notificar o GitExtensions para atualizar sua UI traria a janela principal do GitExtensions para frente; o plugin reativa a ZimerfeldTree logo em seguida. A **única exceção é o botão GitFlow**: ele abre a janela GitFlow (modal), que mantém o próprio foco enquanto estiver aberta
 
 ## Instalação
 
