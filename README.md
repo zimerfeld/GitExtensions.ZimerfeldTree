@@ -191,7 +191,8 @@ Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução v
 |--------|-------|
 | `master` / `main` | **imagem personalizada embutida** (escudo dourado como reserva) |
 | `develop` | **imagem personalizada embutida** (chave + martelo como reserva) |
-| `feature/*` (e nó-pasta "feature") | **imagem personalizada embutida** (folha verde como reserva) |
+| nó-pasta "feature" | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
+| `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva) |
 | `bugfix/*` | joaninha vermelha |
 | `release/*` | **imagem personalizada embutida** (pacote/caixa marrom como reserva) |
 | `hotfix/*` | extintor de incêndio vermelho |
@@ -212,8 +213,9 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 | branch remota (filho de REMOTES) | `Resources/remote-branch.png` | garfo verde |
 | tag (filho de TAGS) | `Resources/tag.png` | etiqueta teal |
 | `master` / `main` | `Resources/master.png` | escudo dourado |
-| `develop` | `Resources/develop_16x16.png` | chave de boca + martelo cruzados |
-| `feature/*` e nó-pasta "feature" | `Resources/feature.png` | folha verde |
+| `develop` | `Resources/develop.png` | chave de boca + martelo cruzados |
+| nó-pasta "feature" | `Resources/feature.png` | galho de branch |
+| `feature/*` (sub-nós) | `Resources/folha.png` | folha verde |
 | `release/*` | `Resources/release.png` | pacote/caixa marrom |
 
 - O plugin permanece **autocontido**: as imagens viajam dentro da DLL, sem depender de arquivos externos na máquina do usuário.

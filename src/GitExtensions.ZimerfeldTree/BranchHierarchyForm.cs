@@ -1013,7 +1013,7 @@ public sealed class BranchHierarchyForm : Form
 
         if (name is "master" or "main")         return NodeIcons.BranchMaster;
         if (name is "develop" or "development") return NodeIcons.BranchDevelop;
-        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeature;
+        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeatureLeaf;
         if (name.StartsWith("bugfix/")  ||
             name.StartsWith("bug/"))            return NodeIcons.BranchBugfix;
         if (name.StartsWith("release/"))        return NodeIcons.BranchRelease;

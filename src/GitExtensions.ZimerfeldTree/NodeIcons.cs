@@ -31,11 +31,13 @@ internal static class NodeIcons
     // GitFlow-specific branch icons
     public const int BranchMaster  = 8;  // master / main   — gold shield
     public const int BranchDevelop = 9;  // develop         — gray open-end wrench
-    public const int BranchFeature = 10; // feature/*       — green leaf
+    public const int BranchFeature = 10; // feature folder  — git branch glyph (embedded)
     public const int BranchBugfix  = 11; // bugfix/*        — red ladybug
     public const int BranchRelease = 12; // release/*       — brown package
     public const int BranchHotfix  = 13; // hotfix/*        — orange warning sign
     public const int BranchSupport = 14; // support/*       — gray gear
+
+    public const int BranchFeatureLeaf = 15; // feature/* leaf  — green leaf (sub-node of feature)
 
     private static ImageList? _list;
 
@@ -66,7 +68,7 @@ internal static class NodeIcons
         // 8  master/main   — custom embedded image (falls back to gold shield)
         _list.Images.Add(LoadEmbedded("master.png") ?? Shield());
         // 9  develop        — custom embedded image (falls back to crossed wrench + hammer)
-        _list.Images.Add(LoadEmbedded("develop_16x16.png") ?? Wrench());
+        _list.Images.Add(LoadEmbedded("develop.png") ?? Wrench());
         // 10 feature/*      — custom embedded image (falls back to green leaf)
         _list.Images.Add(LoadEmbedded("feature.png") ?? Leaf());
         // 11 bugfix/*       — red ladybug
@@ -77,6 +79,8 @@ internal static class NodeIcons
         _list.Images.Add(WarningSign());
         // 14 support/*      — gray gear
         _list.Images.Add(Gear());
+        // 15 feature/* leaf — custom embedded image (falls back to green leaf)
+        _list.Images.Add(LoadEmbedded("folha.png") ?? Leaf());
 
         return _list;
     }
