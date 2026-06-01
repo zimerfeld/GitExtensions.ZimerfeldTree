@@ -599,7 +599,8 @@ public sealed class BranchHierarchyForm : Form
 
         _stepsList = new ListBox
         {
-            Bounds         = new Rectangle(10, 62, 340, 110),
+            // Tall enough to show all 8 progress steps without a vertical scrollbar.
+            Bounds         = new Rectangle(10, 62, 340, 140),
             SelectionMode  = SelectionMode.None,
             BorderStyle    = BorderStyle.Fixed3D,
             IntegralHeight = false,
@@ -609,7 +610,7 @@ public sealed class BranchHierarchyForm : Form
         _btnCancelRefresh = new Button
         {
             Text   = "Cancelar",
-            Bounds = new Rectangle(130, 182, 100, 26)
+            Bounds = new Rectangle(130, 212, 100, 26)
         };
         _btnCancelRefresh.Click += (_, _) =>
         {
@@ -620,7 +621,7 @@ public sealed class BranchHierarchyForm : Form
 
         _loadingOverlay = new Panel
         {
-            Size        = new Size(360, 218),
+            Size        = new Size(360, 248),
             BackColor   = SystemColors.Window,
             BorderStyle = BorderStyle.FixedSingle,
             Visible     = false

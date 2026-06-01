@@ -132,7 +132,7 @@ public sealed class GitFlowForm : Form
                 _txtStartName.Text = DateTime.Now.ToString("yyyyMMddHHmm");
         };
 
-        // Row 2 — expected name (prefix label + text input + Start! button)
+        // Row 2 — expected name (prefix label + text input + Start button)
         var lblName = new Label
         {
             Text      = "Expected name:",
@@ -151,7 +151,7 @@ public sealed class GitFlowForm : Form
         };
         _btnStart = new Button
         {
-            Text   = "Start!",
+            Text   = "Start",
             Bounds = new Rectangle(534, 52, 90, 26),
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
@@ -507,10 +507,18 @@ public sealed class GitFlowForm : Form
         if (name.Length == 0) return;
 
         bool isRelease = string.Equals(type, "release", StringComparison.OrdinalIgnoreCase);
+        bool isHotfix  = string.Equals(type, "hotfix",  StringComparison.OrdinalIgnoreCase);
 
         string flags = string.Empty;
         if (_chkKeep.Checked)    flags += "-k ";
         if (_chkNoFetch.Checked) flags += "--no-fetch ";
+
+        // release/hotfix finish creates an annotated tag. Without -m, git-flow opens an
+        // editor for the tag message; in this non-interactive host that yields an empty
+        // message and git aborts with "fatal: no tag message?". Supply the version as the
+        // tag message so the finish runs unattended.
+        if (isRelease || isHotfix)
+            flags += $"-m \"{name}\" ";
 
         // Fetch before finishing to avoid divergences between local and remote branches.
         if (!_chkNoFetch.Checked)

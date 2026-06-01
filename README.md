@@ -44,7 +44,7 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches
 - **Overlay em toda atualização**: o painel de progresso aparece sempre que a árvore é recarregada — abertura inicial, checkout, nova branch, merge, rename, delete, GitFlow, refresh manual e troca de repositório
-- **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe
+- **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe. A lista é dimensionada para exibir todos os 8 passos de uma vez, sem barra de rolagem vertical
 - **Botão Cancelar no overlay**: permite abortar o carregamento a qualquer momento (o cancelamento ocorre entre as etapas git, preservando os dados anteriores na árvore)
 - **Formulário bloqueado durante carregamento**: todos os campos e botões ficam desabilitados enquanto o overlay está ativo e são reativados ao término (ou ao cancelar)
 - **Botão "Fechar"** centralizado horizontalmente na parte inferior da janela (atalho: tecla **Esc**)
@@ -118,8 +118,6 @@ Exibidos acima da árvore quando há uma branch em checkout:
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: *Zimerfeld: Auto-resumo*) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no ZimerfeldTree divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
 
-Os separadores do menu de contexto são ocultados automaticamente quando todos os itens do grupo correspondente estão escondidos — sem linhas de separação órfãs.
-
 ### Janela GitFlow — comportamento geral
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
@@ -141,13 +139,14 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Publish** — `git flow <tipo> publish "<nome>"`: envia a branch para o remoto
 - **Track** — `git flow <tipo> track "<nome>"`: cria uma branch local que rastreia a branch remota correspondente (útil para branches iniciadas por outra pessoa)
 - **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
-- **Finish** — `git flow <tipo> finish [-k] [--no-fetch] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
+- **Finish** — `git flow <tipo> finish [-k] [--no-fetch] [-m "<nome>"] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
   - Antes de executar o finish, o plugin executa automaticamente `git fetch` para manter as branches de rastreamento locais sincronizadas com o remoto e evitar divergências; o fetch é omitido quando **No fetch** está marcado
+  - **Mensagem da tag automática (`release`/`hotfix`)**: como esses tipos criam uma **tag anotada**, o plugin passa `-m "<nome>"` (a própria versão como mensagem). Sem isso, o git-flow abriria um editor para a mensagem da tag — o que, no processo não-interativo do plugin, resultava em `fatal: no tag message?` e abortava o finish. O `-m` também é aplicado no retry da auto-resolução de "merge in progress"
   - **Auto-resolução de "merge in progress"**: quando o finish falha com `a merge is already in progress for branch '<tipo>/<nome>'`, o plugin aborta o estado travado e retenta o finish original automaticamente. A recuperação tem três níveis: ① `git flow <tipo> finish --abort` para limpar o lock do git-flow; ② `git merge --abort` para limpar o `MERGE_HEAD` do git; ③ **recuperação de deadlock** — o git-flow-next mantém um arquivo de estado persistente (`.git/gitflow/state/*.json`) que sobrevive mesmo quando o git não tem `MERGE_HEAD`; nesse caso os dois aborts falham e o plugin remove o arquivo órfão diretamente. Após a limpeza, volta à branch original e retenta o finish
   - A janela GitFlow mantém o foco após cada comando executado
 - **Finish de `release` — fluxo completo automático**: quando o tipo é `release` e o checkbox **No fetch** não está marcado, o painel executa automaticamente em sequência (com as saídas anexadas à janela de resultado):
   1. `git push <remote> release/<nome>` — envia a release para o remoto **antes** do finish, evitando o erro `fatal: couldn't find remote ref release/<nome>` gerado pelo git-flow ao buscar a branch remota
-  2. `git flow release finish [-k] "<nome>"`
+  2. `git flow release finish [-k] -m "<nome>" "<nome>"` (o `-m` fornece a mensagem da tag anotada, evitando o erro `no tag message?`)
   3. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
   4. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
   5. `git push <remote> refs/tags/<nome>` — envia a **tag** criada pelo finish ao remoto (o git flow só cria a tag localmente)
