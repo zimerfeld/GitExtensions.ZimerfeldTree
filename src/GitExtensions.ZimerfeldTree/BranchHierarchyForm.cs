@@ -258,6 +258,8 @@ public sealed class BranchHierarchyForm : Form
 
         if (showOverlay)
         {
+            // Let the user see the final "Concluído." step for a moment before the overlay closes.
+            await Task.Delay(1000);
             _loadingOverlay.Visible = false;
             SetFormEnabled(true);
         }
@@ -1013,7 +1015,7 @@ public sealed class BranchHierarchyForm : Form
 
         if (name is "master" or "main")         return NodeIcons.BranchMaster;
         if (name is "develop" or "development") return NodeIcons.BranchDevelop;
-        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeature;
+        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeatureLeaf;
         if (name.StartsWith("bugfix/")  ||
             name.StartsWith("bug/"))            return NodeIcons.BranchBugfix;
         if (name.StartsWith("release/"))        return NodeIcons.BranchRelease;
@@ -1491,6 +1493,10 @@ public sealed class BranchHierarchyForm : Form
     private void DoGitFlow()
     {
         using var dlg = new GitFlowForm(_svc);
+
+        // Refresh the tree live when GitFlow mutates the repo (e.g. Start) while still modal.
+        // RefreshTree() runs behind the modal dialog and does not steal its focus.
+        dlg.RepoMutated += RefreshTree;
 
         // Place the two windows side by side, both centered on the current screen.
         var wa     = Screen.FromControl(this).WorkingArea;

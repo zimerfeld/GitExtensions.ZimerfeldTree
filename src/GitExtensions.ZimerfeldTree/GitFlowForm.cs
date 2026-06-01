@@ -51,6 +51,12 @@ public sealed class GitFlowForm : Form
     /// <summary>Set after a successful "release" finish; BranchHierarchyForm reads this to focus the new tag.</summary>
     public string? LastFinishedReleaseTag { get; private set; }
 
+    /// <summary>
+    /// Raised after a git-flow operation mutates the repository while this (modal) window is open,
+    /// so the owning ZimerfeldTree window can refresh its tree without waiting for the dialog to close.
+    /// </summary>
+    public event Action? RepoMutated;
+
     public GitFlowForm(BranchHierarchyService svc)
     {
         _svc = svc;
@@ -470,6 +476,10 @@ public sealed class GitFlowForm : Form
                 else
                     _cboManageBranch.Text = name;
             }
+
+            // Refresh the ZimerfeldTree tree behind this modal window so the new branch
+            // shows up immediately (the parent refresh does not steal focus from here).
+            RepoMutated?.Invoke();
         }
 
         // Restore focus to this form after all UI updates (Clear/combo changes shift focus).
