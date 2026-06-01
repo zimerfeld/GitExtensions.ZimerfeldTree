@@ -54,8 +54,10 @@ public sealed class GitFlowForm : Form
     /// <summary>
     /// Raised after a git-flow operation mutates the repository while this (modal) window is open,
     /// so the owning ZimerfeldTree window can refresh its tree without waiting for the dialog to close.
+    /// The argument is the full name of the affected branch to reveal/select in the tree
+    /// (e.g. "feature/x", "develop"), or <c>null</c> to only refresh.
     /// </summary>
-    public event Action? RepoMutated;
+    public event Action<string?>? RepoMutated;
 
     public GitFlowForm(BranchHierarchyService svc)
     {
@@ -477,12 +479,23 @@ public sealed class GitFlowForm : Form
                     _cboManageBranch.Text = name;
             }
 
-            // Refresh the ZimerfeldTree tree behind this modal window so the new branch
-            // shows up immediately (the parent refresh does not steal focus from here).
-            RepoMutated?.Invoke();
+            // Checkout the new branch and reveal it in the ZimerfeldTree (behind this modal).
+            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
         }
+        else if (!IsDisposed) Activate();
+    }
 
-        // Restore focus to this form after all UI updates (Clear/combo changes shift focus).
+    /// <summary>
+    /// After a successful git-flow op: optionally checks out the affected branch, then asks the
+    /// owner ZimerfeldTree window to refresh its tree and reveal/select that branch. Keeps focus
+    /// on this (modal) window. Pass an empty branch to only refresh.
+    /// </summary>
+    private void RevealInTree(string fullBranch, bool checkout)
+    {
+        fullBranch = (fullBranch ?? string.Empty).Trim();
+        if (checkout && fullBranch.Length > 0)
+            RunFlow($"checkout \"{fullBranch}\"", append: true, suppressError: true);
+        RepoMutated?.Invoke(fullBranch.Length > 0 ? fullBranch : null);
         if (!IsDisposed) Activate();
     }
 
@@ -491,7 +504,8 @@ public sealed class GitFlowForm : Form
         string type = _cboManageType.Text;
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
-        RunFlow($"flow {type} publish \"{name}\"");
+        if (RunFlow($"flow {type} publish \"{name}\""))
+            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
     }
 
     private void DoTrack()
@@ -499,7 +513,8 @@ public sealed class GitFlowForm : Form
         string type = _cboManageType.Text;
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
-        RunFlow($"flow {type} track \"{name}\"");
+        if (RunFlow($"flow {type} track \"{name}\""))
+            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
     }
 
     private void DoUpdate()
@@ -507,7 +522,8 @@ public sealed class GitFlowForm : Form
         string type = _cboManageType.Text;
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
-        RunFlow($"flow {type} update \"{name}\"");
+        if (RunFlow($"flow {type} update \"{name}\""))
+            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
     }
 
     private void DoFinish()
@@ -564,7 +580,14 @@ public sealed class GitFlowForm : Form
         // After a successful "release" finish: push master, push develop,
         // and (if both succeed) checkout develop.
         if (!ok) return;
-        if (!isRelease) return;
+
+        // finish deletes the affected branch and leaves you on its base (e.g. develop).
+        // Reveal whatever branch is now current (no checkout — git-flow already switched).
+        if (!isRelease)
+        {
+            RevealInTree(_svc.GetCurrentBranch(), checkout: false);
+            return;
+        }
 
         LastFinishedReleaseTag = name;
 
@@ -585,12 +608,19 @@ public sealed class GitFlowForm : Form
         // Push the release tag to the remote (git flow finish creates it locally only).
         RunFlow($"push {remote} refs/tags/{name}", append: true, suppressError: true);
 
-        // Delete the remote release branch. git-flow-next usually removes it during finish,
-        // so a "remote ref does not exist" error here is expected and harmless.
+        // Delete the remote release branch only if it still exists. git-flow usually removes it
+        // during finish, so a blind delete prints a noisy "remote ref does not exist" error.
+        // Probe with ls-remote first and skip cleanly (with a friendly note) when it is already gone.
         string remoteReleaseBranch = _svc.GetGitFlowPrefix(type) + name;
-        RunFlow($"push {remote} --delete {remoteReleaseBranch}", append: true, suppressError: true);
+        var (lsOut, lsCode) = _svc.RunGitFlow($"ls-remote --heads {remote} {remoteReleaseBranch}");
+        if (lsCode == 0 && lsOut.Trim().Length > 0)
+            RunFlow($"push {remote} --delete {remoteReleaseBranch}", append: true, suppressError: true);
+        else
+            _txtResult.Text += $"\r\n\r\ncommand - git push {remote} --delete {remoteReleaseBranch}" +
+                               $"\r\n\r\n(pulado: a branch remota '{remoteReleaseBranch}' já não existe)";
 
         RunFlow($"checkout {develop}", append: true);
+        RevealInTree(develop, checkout: false);
     }
 
     /// <summary>
