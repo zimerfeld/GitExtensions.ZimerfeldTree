@@ -122,6 +122,7 @@ O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes n
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
+- Após um **Start** bem-sucedido, a árvore da janela ZimerfeldTree é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta), e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
 
 ### Janela GitFlow — branch base no Start
 
@@ -188,23 +189,37 @@ Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução v
 
 | Branch | Ícone |
 |--------|-------|
-| `master` / `main` | escudo dourado com estrela |
-| `develop` | **imagem personalizada embutida** (ver abaixo) |
-| `feature/*` | folha verde |
+| `master` / `main` | **imagem personalizada embutida** (escudo dourado como reserva) |
+| `develop` | **imagem personalizada embutida** (chave + martelo como reserva) |
+| `feature/*` (e nó-pasta "feature") | **imagem personalizada embutida** (folha verde como reserva) |
 | `bugfix/*` | joaninha vermelha |
-| `release/*` | pacote/caixa marrom |
+| `release/*` | **imagem personalizada embutida** (pacote/caixa marrom como reserva) |
 | `hotfix/*` | extintor de incêndio vermelho |
 | `support/*` | maleta de primeiros socorros |
 
-Branches genéricas usam: garfo laranja (local), garfo verde (remota), etiqueta (tag) e pasta âmbar (nó de caminho).
+Branches locais genéricas usam garfo laranja e nós de caminho usam pasta âmbar. As **seções raiz** (LOCAL, REMOTES, TAGS), o **grupo de remote** (ex.: `origin`), as **branches remotas** e as **tags** também usam imagens personalizadas embutidas (ver abaixo).
 
-#### Ícone personalizado do `develop` (recurso embutido)
+#### Ícones personalizados (recursos embutidos)
 
-O ícone do branch `develop` usa uma **imagem PNG embutida na DLL** (`Resources/develop.png`, declarada como `<EmbeddedResource>` no `.csproj`). Em tempo de execução, `NodeIcons.LoadEmbedded` lê o recurso pelo nome `GitExtensions.ZimerfeldTree.Resources.develop.png` e o redimensiona para 16 × 16 px com interpolação de alta qualidade.
+Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedResource>` condicionais no `.csproj`. Em tempo de execução, `NodeIcons.LoadEmbedded` lê o recurso pelo nome `GitExtensions.ZimerfeldTree.Resources.<arquivo>` e o redimensiona para 16 × 16 px com interpolação de alta qualidade.
 
-- O plugin permanece **autocontido**: a imagem viaja dentro da DLL, sem depender de arquivos externos na máquina do usuário.
-- Se o recurso estiver **ausente ou ilegível**, o ícone cai automaticamente no glifo desenhado de reserva (chave de boca + martelo cruzados em cinza), preservando o comportamento anterior.
-- Para trocar a imagem: substitua `src/GitExtensions.ZimerfeldTree/Resources/develop.png` e refaça o build.
+| Nó | Arquivo | Reserva (glifo desenhado) |
+|----|---------|---------------------------|
+| seção **LOCAL** | `Resources/local.png` | monitor azul-aço |
+| seção **REMOTES** | `Resources/remotes.png` | nuvem azul-escura |
+| seção **TAGS** | `Resources/tags.png` | etiqueta/fita roxa |
+| grupo de remote (`origin`) | `Resources/origin.png` | nuvem azul |
+| branch remota (filho de REMOTES) | `Resources/remote-branch.png` | garfo verde |
+| tag (filho de TAGS) | `Resources/tag.png` | etiqueta teal |
+| `master` / `main` | `Resources/master.png` | escudo dourado |
+| `develop` | `Resources/develop_16x16.png` | chave de boca + martelo cruzados |
+| `feature/*` e nó-pasta "feature" | `Resources/feature.png` | folha verde |
+| `release/*` | `Resources/release.png` | pacote/caixa marrom |
+
+- O plugin permanece **autocontido**: as imagens viajam dentro da DLL, sem depender de arquivos externos na máquina do usuário.
+- Cada `<EmbeddedResource>` é **condicional à existência do arquivo** (`Condition="Exists(...)"`); se o PNG não existir no build, o recurso não é embutido e o nó usa o glifo desenhado de reserva — o build nunca quebra por falta da imagem.
+- Se o recurso estiver **ausente ou ilegível** em tempo de execução, o ícone cai automaticamente na reserva, preservando o comportamento anterior.
+- Para trocar/adicionar uma imagem: coloque o PNG 16 × 16 em `src/GitExtensions.ZimerfeldTree/Resources/<arquivo>.png` e refaça o build.
 
 ### Atalhos de teclado e mouse
 

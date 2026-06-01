@@ -8,7 +8,9 @@ namespace GitExtensions.ZimerfeldTree;
 
 /// <summary>
 /// Generates and caches a 16×16 <see cref="ImageList"/> used by the branch tree.
-/// All icons are rendered at runtime with GDI+ — no embedded resources required.
+/// Most icons are rendered at runtime with GDI+; a few nodes (develop, master, origin,
+/// feature, release) use custom PNGs embedded under <c>Resources\</c> when present, and
+/// fall back to the drawn glyph when the resource is missing or fails to load.
 /// </summary>
 internal static class NodeIcons
 {
@@ -47,30 +49,30 @@ internal static class NodeIcons
 
         // 0  local branch   — orange fork
         _list.Images.Add(Fork(Color.FromArgb(0xE0, 0x78, 0x00)));
-        // 1  remote group   — blue cloud
-        _list.Images.Add(Cloud(Color.FromArgb(0x17, 0x69, 0xCC)));
-        // 2  tag            — teal label
-        _list.Images.Add(TagLabel(Color.FromArgb(0x0E, 0x81, 0x61)));
+        // 1  remote group   — custom embedded image (falls back to blue cloud)
+        _list.Images.Add(LoadEmbedded("origin.png") ?? Cloud(Color.FromArgb(0x17, 0x69, 0xCC)));
+        // 2  tag            — custom embedded image (falls back to teal label)
+        _list.Images.Add(LoadEmbedded("tag.png") ?? TagLabel(Color.FromArgb(0x0E, 0x81, 0x61)));
         // 3  folder         — amber
         _list.Images.Add(FolderIcon());
-        // 4  remote branch  — green fork
-        _list.Images.Add(Fork(Color.FromArgb(0x22, 0x8B, 0x22)));
-        // 5  LOCAL section  — steel-blue monitor
-        _list.Images.Add(Monitor());
-        // 6  REMOTES section — darker-blue cloud
-        _list.Images.Add(Cloud(Color.FromArgb(0x09, 0x4C, 0xAB)));
-        // 7  TAGS section   — purple ribbon
-        _list.Images.Add(Ribbon());
-        // 8  master/main   — gold shield
-        _list.Images.Add(Shield());
+        // 4  remote branch  — custom embedded image (falls back to green fork)
+        _list.Images.Add(LoadEmbedded("remote-branch.png") ?? Fork(Color.FromArgb(0x22, 0x8B, 0x22)));
+        // 5  LOCAL section  — custom embedded image (falls back to steel-blue monitor)
+        _list.Images.Add(LoadEmbedded("local.png") ?? Monitor());
+        // 6  REMOTES section — custom embedded image (falls back to darker-blue cloud)
+        _list.Images.Add(LoadEmbedded("remotes.png") ?? Cloud(Color.FromArgb(0x09, 0x4C, 0xAB)));
+        // 7  TAGS section   — custom embedded image (falls back to purple ribbon)
+        _list.Images.Add(LoadEmbedded("tags.png") ?? Ribbon());
+        // 8  master/main   — custom embedded image (falls back to gold shield)
+        _list.Images.Add(LoadEmbedded("master.png") ?? Shield());
         // 9  develop        — custom embedded image (falls back to crossed wrench + hammer)
-        _list.Images.Add(LoadEmbedded("develop.png") ?? Wrench());
-        // 10 feature/*      — green leaf
-        _list.Images.Add(Leaf());
+        _list.Images.Add(LoadEmbedded("develop_16x16.png") ?? Wrench());
+        // 10 feature/*      — custom embedded image (falls back to green leaf)
+        _list.Images.Add(LoadEmbedded("feature.png") ?? Leaf());
         // 11 bugfix/*       — red ladybug
         _list.Images.Add(Ladybug());
-        // 12 release/*      — brown package
-        _list.Images.Add(Package());
+        // 12 release/*      — custom embedded image (falls back to brown package)
+        _list.Images.Add(LoadEmbedded("release.png") ?? Package());
         // 13 hotfix/*       — orange warning sign
         _list.Images.Add(WarningSign());
         // 14 support/*      — gray gear

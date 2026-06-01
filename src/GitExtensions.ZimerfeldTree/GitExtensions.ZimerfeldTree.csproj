@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.110</Version>
+    <Version>1.0.112</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -43,8 +43,18 @@
   <ItemGroup>
     <!-- Custom branch icons embedded in the DLL (loaded by NodeIcons.LoadEmbedded).
          Resource name becomes: GitExtensions.ZimerfeldTree.Resources.<file>
-         Included only when the file exists; otherwise NodeIcons falls back to Wrench(). -->
-    <EmbeddedResource Include="Resources\develop.png" Condition="Exists('Resources\develop.png')" />
+         Each is included only when the file exists; otherwise NodeIcons falls back to the
+         drawn GDI+ glyph for that node. -->
+    <EmbeddedResource Include="Resources\develop_16x16.png" Condition="Exists('Resources\develop_16x16.png')" />
+    <EmbeddedResource Include="Resources\master.png"  Condition="Exists('Resources\master.png')" />
+    <EmbeddedResource Include="Resources\origin.png"  Condition="Exists('Resources\origin.png')" />
+    <EmbeddedResource Include="Resources\feature.png" Condition="Exists('Resources\feature.png')" />
+    <EmbeddedResource Include="Resources\release.png" Condition="Exists('Resources\release.png')" />
+    <EmbeddedResource Include="Resources\local.png"   Condition="Exists('Resources\local.png')" />
+    <EmbeddedResource Include="Resources\remotes.png" Condition="Exists('Resources\remotes.png')" />
+    <EmbeddedResource Include="Resources\tags.png"    Condition="Exists('Resources\tags.png')" />
+    <EmbeddedResource Include="Resources\tag.png"     Condition="Exists('Resources\tag.png')" />
+    <EmbeddedResource Include="Resources\remote-branch.png" Condition="Exists('Resources\remote-branch.png')" />
   </ItemGroup>
 
   <ItemGroup>

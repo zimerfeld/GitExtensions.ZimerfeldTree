@@ -1492,6 +1492,10 @@ public sealed class BranchHierarchyForm : Form
     {
         using var dlg = new GitFlowForm(_svc);
 
+        // Refresh the tree live when GitFlow mutates the repo (e.g. Start) while still modal.
+        // RefreshTree() runs behind the modal dialog and does not steal its focus.
+        dlg.RepoMutated += RefreshTree;
+
         // Place the two windows side by side, both centered on the current screen.
         var wa     = Screen.FromControl(this).WorkingArea;
         int gap    = 8;
