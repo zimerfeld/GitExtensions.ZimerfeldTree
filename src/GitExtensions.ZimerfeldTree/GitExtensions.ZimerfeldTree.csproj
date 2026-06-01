@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.102</Version>
+    <Version>1.0.107</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -42,8 +42,9 @@
 
   <ItemGroup>
     <!-- Custom branch icons embedded in the DLL (loaded by NodeIcons.LoadEmbedded).
-         Resource name becomes: GitExtensions.ZimerfeldTree.Resources.<file> -->
-    <EmbeddedResource Include="Resources\develop.png" />
+         Resource name becomes: GitExtensions.ZimerfeldTree.Resources.<file>
+         Included only when the file exists; otherwise NodeIcons falls back to Wrench(). -->
+    <EmbeddedResource Include="Resources\develop.png" Condition="Exists('Resources\develop.png')" />
   </ItemGroup>
 
   <ItemGroup>

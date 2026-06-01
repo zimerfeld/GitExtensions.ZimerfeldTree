@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Compila o plugin, incrementa a versao (major.minor.build) e gera o .nupkg.
@@ -77,13 +77,13 @@ Copy-Item $dll $toolsTarget -Force
 # -- 7. Pack -------------------------------------------------------------------
 Write-Host "Gerando pacote $newVersion..."
 
-# Resolve nuget.exe: PATH → tools\ local → download automático
+# Resolve nuget.exe: PATH -> tools\ local -> download automatico
 $nugetCmd = Get-Command nuget -ErrorAction SilentlyContinue
 $nugetExe = if ($nugetCmd) { $nugetCmd.Source } else { $null }
 if (-not $nugetExe) {
     $nugetExe = Join-Path $PSScriptRoot "tools\nuget.exe"
     if (-not (Test-Path $nugetExe)) {
-        Write-Host "nuget.exe nao encontrado — baixando para tools\nuget.exe..."
+        Write-Host "nuget.exe nao encontrado - baixando para tools\nuget.exe..."
         Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" `
                           -OutFile $nugetExe -UseBasicParsing
         Write-Host "Download concluido."
