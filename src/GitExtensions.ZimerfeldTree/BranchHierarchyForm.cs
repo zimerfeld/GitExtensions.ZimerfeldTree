@@ -1494,9 +1494,15 @@ public sealed class BranchHierarchyForm : Form
     {
         using var dlg = new GitFlowForm(_svc);
 
-        // Refresh the tree live when GitFlow mutates the repo (e.g. Start) while still modal.
-        // RefreshTree() runs behind the modal dialog and does not steal its focus.
-        dlg.RepoMutated += RefreshTree;
+        // Refresh the tree live when GitFlow mutates the repo (any button) while still modal, and
+        // reveal/select the affected branch. RefreshTree() runs behind the modal dialog and does
+        // not steal its focus; the reveal runs as a post-refresh action once the tree is rebuilt.
+        dlg.RepoMutated += branch =>
+        {
+            if (!string.IsNullOrEmpty(branch))
+                _postRefreshAction = () => FocusBranchNode(branch);
+            RefreshTree();
+        };
 
         // Place the two windows side by side, both centered on the current screen.
         var wa     = Screen.FromControl(this).WorkingArea;
@@ -1549,6 +1555,31 @@ public sealed class BranchHierarchyForm : Form
         {
             if (node.Tag is BranchInfo bi && bi.FullName == tagName) return node;
             var found = FindTagNode(node.Nodes, tagName);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Expands the LOCAL section and ancestor folders to reveal and select the local branch with
+    /// the given full name (e.g. "feature/x", "develop"). No-op when the branch is not found.
+    /// </summary>
+    private void FocusBranchNode(string fullName)
+    {
+        _localRoot.Expand();
+        var node = FindBranchNode(_localRoot.Nodes, fullName);
+        if (node is null) return;
+        _tree.SelectedNode = node;
+        node.EnsureVisible();   // expands the ancestor path folders automatically
+    }
+
+    private static TreeNode? FindBranchNode(TreeNodeCollection nodes, string fullName)
+    {
+        foreach (TreeNode node in nodes)
+        {
+            if (node.Tag is BranchInfo bi && bi.Type == BranchType.Local && bi.FullName == fullName)
+                return node;
+            var found = FindBranchNode(node.Nodes, fullName);
             if (found != null) return found;
         }
         return null;

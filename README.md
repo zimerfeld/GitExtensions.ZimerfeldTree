@@ -122,7 +122,8 @@ O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes n
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
-- Após um **Start** bem-sucedido, a árvore da janela ZimerfeldTree é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta), e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
+- Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela ZimerfeldTree é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
+- **Checkout + revelar a branch afetada**: após cada botão, o plugin faz `git checkout` da branch afetada e, na árvore, **expande os nós da seção LOCAL até alcançá-la** e a seleciona. Para **Start/Publish/Track/Update** a branch afetada é a própria (`<prefixo><nome>`); para **Finish** (a branch é removida) o plugin revela a branch resultante atual (ex.: `develop`), sem refazer checkout
 
 ### Janela GitFlow — branch base no Start
 
@@ -151,7 +152,7 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
   3. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
   4. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
   5. `git push <remote> refs/tags/<nome>` — envia a **tag** criada pelo finish ao remoto (o git flow só cria a tag localmente)
-  6. `git push <remote> --delete release/<nome>` — remove a **branch remota** da release; o git-flow-next normalmente já a remove durante o finish, então um erro "remote ref does not exist" aqui é esperado e inofensivo (executado com `suppressError`)
+  6. `git push <remote> --delete release/<nome>` — remove a **branch remota** da release, **somente se ela ainda existir**: o plugin antes verifica com `git ls-remote --heads <remote> release/<nome>` e, se a branch já tiver sido removida pelo git-flow durante o finish, **pula o delete** e registra uma nota amigável na janela de resultado, em vez de exibir o erro `unable to delete '...': remote ref does not exist`
   7. `git checkout <develop>`
   
   Ao concluir com sucesso, a seção **TAGS** da árvore é expandida automaticamente e o foco vai para o tag criado pelo finish.
