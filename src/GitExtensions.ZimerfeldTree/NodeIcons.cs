@@ -63,8 +63,8 @@ internal static class NodeIcons
         _list.Images.Add(Ribbon());
         // 8  master/main   — gold shield
         _list.Images.Add(Shield());
-        // 9  develop        — crossed wrench + hammer
-        _list.Images.Add(Wrench());
+        // 9  develop        — custom embedded image (falls back to crossed wrench + hammer)
+        _list.Images.Add(LoadEmbedded("develop.png") ?? Wrench());
         // 10 feature/*      — green leaf
         _list.Images.Add(Leaf());
         // 11 bugfix/*       — red ladybug
@@ -389,6 +389,33 @@ internal static class NodeIcons
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Loads an embedded PNG resource (under <c>Resources\</c>) and rescales it to a 16×16
+    /// 32-bit ARGB bitmap with high-quality interpolation. Returns <c>null</c> when the
+    /// resource is missing or unreadable, letting the caller fall back to a drawn glyph.
+    /// </summary>
+    private static Bitmap? LoadEmbedded(string fileName)
+    {
+        try
+        {
+            var asm = typeof(NodeIcons).Assembly;
+            var resourceName = $"{typeof(NodeIcons).Namespace}.Resources.{fileName}";
+            using var stream = asm.GetManifestResourceStream(resourceName);
+            if (stream is null) return null;
+
+            using var src = new Bitmap(stream);
+            var bmp = Blank();
+            using var g = AA(bmp);
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.DrawImage(src, new Rectangle(0, 0, 16, 16));
+            return bmp;
+        }
+        catch
+        {
+            return null;   // any failure → caller uses the drawn fallback
+        }
+    }
 
     private static Bitmap Blank()
         => new(16, 16, PixelFormat.Format32bppArgb);

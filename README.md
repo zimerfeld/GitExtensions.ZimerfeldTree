@@ -183,6 +183,30 @@ O ícone aparece:
 
 O arquivo [`TreeOfLifeIcon.cs`](src/GitExtensions.ZimerfeldTree/TreeOfLifeIcon.cs) contém toda a lógica de renderização. Não há dependências externas.
 
+### Ícones por tipo de branch
+
+Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução via GDI+ em [`NodeIcons.cs`](src/GitExtensions.ZimerfeldTree/NodeIcons.cs). Os tipos GitFlow têm ícones próprios:
+
+| Branch | Ícone |
+|--------|-------|
+| `master` / `main` | escudo dourado com estrela |
+| `develop` | **imagem personalizada embutida** (ver abaixo) |
+| `feature/*` | folha verde |
+| `bugfix/*` | joaninha vermelha |
+| `release/*` | pacote/caixa marrom |
+| `hotfix/*` | extintor de incêndio vermelho |
+| `support/*` | maleta de primeiros socorros |
+
+Branches genéricas usam: garfo laranja (local), garfo verde (remota), etiqueta (tag) e pasta âmbar (nó de caminho).
+
+#### Ícone personalizado do `develop` (recurso embutido)
+
+O ícone do branch `develop` usa uma **imagem PNG embutida na DLL** (`Resources/develop.png`, declarada como `<EmbeddedResource>` no `.csproj`). Em tempo de execução, `NodeIcons.LoadEmbedded` lê o recurso pelo nome `GitExtensions.ZimerfeldTree.Resources.develop.png` e o redimensiona para 16 × 16 px com interpolação de alta qualidade.
+
+- O plugin permanece **autocontido**: a imagem viaja dentro da DLL, sem depender de arquivos externos na máquina do usuário.
+- Se o recurso estiver **ausente ou ilegível**, o ícone cai automaticamente no glifo desenhado de reserva (chave de boca + martelo cruzados em cinza), preservando o comportamento anterior.
+- Para trocar a imagem: substitua `src/GitExtensions.ZimerfeldTree/Resources/develop.png` e refaça o build.
+
 ### Atalhos de teclado e mouse
 
 - **Duplo clique** em qualquer branch → checkout da branch selecionada

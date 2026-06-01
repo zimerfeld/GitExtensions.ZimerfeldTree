@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.99</Version>
+    <Version>1.0.102</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -39,6 +39,12 @@
       right-click context menu.
     </Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Custom branch icons embedded in the DLL (loaded by NodeIcons.LoadEmbedded).
+         Resource name becomes: GitExtensions.ZimerfeldTree.Resources.<file> -->
+    <EmbeddedResource Include="Resources\develop.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Reference GitExtensions DLLs directly — they must NOT be copied to output -->
