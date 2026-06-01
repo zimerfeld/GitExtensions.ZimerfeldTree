@@ -258,6 +258,8 @@ public sealed class BranchHierarchyForm : Form
 
         if (showOverlay)
         {
+            // Let the user see the final "Concluído." step for a moment before the overlay closes.
+            await Task.Delay(1000);
             _loadingOverlay.Visible = false;
             SetFormEnabled(true);
         }
