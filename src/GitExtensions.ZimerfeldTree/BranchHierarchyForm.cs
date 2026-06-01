@@ -258,6 +258,8 @@ public sealed class BranchHierarchyForm : Form
 
         if (showOverlay)
         {
+            // Let the user see the final "Concluído." step for a moment before the overlay closes.
+            await Task.Delay(1000);
             _loadingOverlay.Visible = false;
             SetFormEnabled(true);
         }
@@ -599,7 +601,8 @@ public sealed class BranchHierarchyForm : Form
 
         _stepsList = new ListBox
         {
-            Bounds         = new Rectangle(10, 62, 340, 110),
+            // Tall enough to show all 8 progress steps without a vertical scrollbar.
+            Bounds         = new Rectangle(10, 62, 340, 140),
             SelectionMode  = SelectionMode.None,
             BorderStyle    = BorderStyle.Fixed3D,
             IntegralHeight = false,
@@ -609,7 +612,7 @@ public sealed class BranchHierarchyForm : Form
         _btnCancelRefresh = new Button
         {
             Text   = "Cancelar",
-            Bounds = new Rectangle(130, 182, 100, 26)
+            Bounds = new Rectangle(130, 212, 100, 26)
         };
         _btnCancelRefresh.Click += (_, _) =>
         {
@@ -620,7 +623,7 @@ public sealed class BranchHierarchyForm : Form
 
         _loadingOverlay = new Panel
         {
-            Size        = new Size(360, 218),
+            Size        = new Size(360, 248),
             BackColor   = SystemColors.Window,
             BorderStyle = BorderStyle.FixedSingle,
             Visible     = false
@@ -1012,7 +1015,7 @@ public sealed class BranchHierarchyForm : Form
 
         if (name is "master" or "main")         return NodeIcons.BranchMaster;
         if (name is "develop" or "development") return NodeIcons.BranchDevelop;
-        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeature;
+        if (name.StartsWith("feature/"))        return NodeIcons.BranchFeatureLeaf;
         if (name.StartsWith("bugfix/")  ||
             name.StartsWith("bug/"))            return NodeIcons.BranchBugfix;
         if (name.StartsWith("release/"))        return NodeIcons.BranchRelease;
@@ -1490,6 +1493,10 @@ public sealed class BranchHierarchyForm : Form
     private void DoGitFlow()
     {
         using var dlg = new GitFlowForm(_svc);
+
+        // Refresh the tree live when GitFlow mutates the repo (e.g. Start) while still modal.
+        // RefreshTree() runs behind the modal dialog and does not steal its focus.
+        dlg.RepoMutated += RefreshTree;
 
         // Place the two windows side by side, both centered on the current screen.
         var wa     = Screen.FromControl(this).WorkingArea;

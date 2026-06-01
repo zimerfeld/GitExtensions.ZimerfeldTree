@@ -1,0 +1,27 @@
+{
+  "collapse-filter": true,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    { "query": "path:\"01 - Projetos\"", "color": { "a": 1, "rgb": 5431378 } },
+    { "query": "path:\"02 - Conhecimento\"", "color": { "a": 1, "rgb": 3450963 } },
+    { "query": "path:\"03 - Decisões\"", "color": { "a": 1, "rgb": 14701138 } },
+    { "query": "path:\"05 - Sessões\"", "color": { "a": 1, "rgb": 9019699 } },
+    { "query": "path:\"06 - Bancos de Dados\"", "color": { "a": 1, "rgb": 11621088 } }
+  ],
+  "collapse-display": true,
+  "showArrow": true,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1.1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.5,
+  "repelStrength": 10,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 1
+}
