@@ -57,7 +57,20 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
                 catch { return null; }
             };
 
-            _form = new BranchHierarchyForm(workDir, notifyChanged, openCommit);
+            // Open the native push dialog in-process; returns true if push was completed.
+            Func<IWin32Window, bool> openPush = owner =>
+            {
+                if (_commands is null) return false;
+                try
+                {
+                    bool pushCompleted = false;
+                    _commands.StartPushDialog(owner, pushOnShow: true, forceWithLease: false, pushCompleted: out pushCompleted);
+                    return pushCompleted;
+                }
+                catch { return false; }
+            };
+
+            _form = new BranchHierarchyForm(workDir, notifyChanged, openCommit, openPush);
             _form.FormClosed += (_, _) => _form = null;
         }
         else
@@ -79,17 +92,21 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         base.Register(commands);
         _commands = commands;
 
-        commands.PostBrowseInitialize  += OnRepositoryChanged;
-        commands.PostCheckoutBranch    += OnBranchChanged;
-        commands.PostCheckoutRevision  += OnBranchChanged;
+        commands.PostBrowseInitialize   += OnRepositoryChanged;
+        commands.PostCheckoutBranch     += OnBranchChanged;
+        commands.PostCheckoutRevision   += OnBranchChanged;
+        commands.PostCommit             += OnBranchChanged;
+        commands.PostRepositoryChanged  += OnExternalChange;
     }
 
     /// <summary>Unsubscribe from all events.</summary>
     public override void Unregister(IGitUICommands commands)
     {
-        commands.PostBrowseInitialize  -= OnRepositoryChanged;
-        commands.PostCheckoutBranch    -= OnBranchChanged;
-        commands.PostCheckoutRevision  -= OnBranchChanged;
+        commands.PostBrowseInitialize   -= OnRepositoryChanged;
+        commands.PostCheckoutBranch     -= OnBranchChanged;
+        commands.PostCheckoutRevision   -= OnBranchChanged;
+        commands.PostCommit             -= OnBranchChanged;
+        commands.PostRepositoryChanged  -= OnExternalChange;
 
         _commands = null;
         base.Unregister(commands);
@@ -110,6 +127,12 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     }
 
     private void OnBranchChanged(object? sender, GitUIPostActionEventArgs e)
+    {
+        if (_form is null || _form.IsDisposed) return;
+        _form.InvokeIfRequired(() => _form.RefreshTree());
+    }
+
+    private void OnExternalChange(object? sender, GitUIEventArgs e)
     {
         if (_form is null || _form.IsDisposed) return;
         _form.InvokeIfRequired(() => _form.RefreshTree());

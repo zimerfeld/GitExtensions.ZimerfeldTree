@@ -20,6 +20,11 @@ public sealed class BranchHierarchyForm : Form
     /// Returns true = commits were made, false = dialog closed without committing, null = unavailable (fall back).
     /// </summary>
     private readonly Func<IWin32Window, bool?>? _openCommitDialog;
+    /// <summary>
+    /// Delegate provided by the plugin that opens the native GitExtensions push dialog in-process.
+    /// Returns true if push was completed, false otherwise.
+    /// </summary>
+    private readonly Func<IWin32Window, bool>? _openPushDialog;
 
     // ── Cached data ───────────────────────────────────────────────────────────
     private List<BranchInfo>             _localBranches  = [];
@@ -97,11 +102,13 @@ public sealed class BranchHierarchyForm : Form
 
     // ─────────────────────────────────────────────────────────────────────────
     public BranchHierarchyForm(string workingDir, Action? notifyRepoChanged = null,
-        Func<IWin32Window, bool?>? openCommitDialog = null)
+        Func<IWin32Window, bool?>? openCommitDialog = null,
+        Func<IWin32Window, bool>? openPushDialog = null)
     {
         _svc = new BranchHierarchyService(workingDir);
         _notifyRepoChanged  = notifyRepoChanged;
         _openCommitDialog   = openCommitDialog;
+        _openPushDialog     = openPushDialog;
         _treeStateByRepo    = LoadTreeState();
         InitializeComponent();
         LoadRepositories();
@@ -1435,6 +1442,12 @@ public sealed class BranchHierarchyForm : Form
 
     private void DoPush()
     {
+        if (_openPushDialog != null)
+        {
+            bool pushed = _openPushDialog(this);
+            if (pushed) { RefreshTree(); NotifyRepoChanged(); }
+            return;
+        }
         var (ok, err) = _svc.OpenPushWindow();
         if (!ok) ShowError("Erro ao abrir a janela de Push", err);
     }
