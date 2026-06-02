@@ -171,7 +171,6 @@ public sealed class BranchHierarchyService
     /// <summary>Returns all tags.</summary>
     public List<BranchInfo> GetTags()
     {
-        var currentTag = GetCurrentTagName();
         var result = new List<BranchInfo>();
         try
         {
@@ -180,25 +179,13 @@ public sealed class BranchHierarchyService
             {
                 result.Add(new BranchInfo
                 {
-                    FullName  = line,
-                    Type      = BranchType.Tag,
-                    IsCurrent = !string.IsNullOrEmpty(currentTag) && line == currentTag
+                    FullName = line,
+                    Type     = BranchType.Tag,
                 });
             }
         }
         catch { }
         return result;
-    }
-
-    /// <summary>Returns the exact tag name when HEAD points directly at a tagged commit (detached HEAD on a tag), otherwise empty.</summary>
-    private string GetCurrentTagName()
-    {
-        try
-        {
-            var (stdout, _, code) = RunGitFull("describe --exact-match --tags HEAD");
-            return code == 0 ? stdout.Trim() : string.Empty;
-        }
-        catch { return string.Empty; }
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────
