@@ -64,7 +64,7 @@ public sealed class GitFlowForm : Form
         _svc = svc;
 
         Text            = "ZimerfeldTree - GitFlow";
-        Size            = new Size(662, 824);
+        Size            = new Size(688, 824);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -112,7 +112,7 @@ public sealed class GitFlowForm : Form
         _grpStart = new GroupBox
         {
             Text   = "Start branch",
-            Bounds = new Rectangle(8, 36, 638, 120),
+            Bounds = new Rectangle(8, 36, 664, 120),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -154,13 +154,13 @@ public sealed class GitFlowForm : Form
         };
         _txtStartName = new TextBox
         {
-            Bounds = new Rectangle(172, 54, 356, 22),
+            Bounds = new Rectangle(172, 54, 382, 22),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _btnStart = new Button
         {
             Text   = "Start",
-            Bounds = new Rectangle(534, 52, 90, 26),
+            Bounds = new Rectangle(560, 52, 90, 26),
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
         _btnStart.Click += (_, _) => DoStart();
@@ -175,7 +175,7 @@ public sealed class GitFlowForm : Form
 
         _cboBasedOn = new ComboBox
         {
-            Bounds        = new Rectangle(202, 82, 322, 24),
+            Bounds        = new Rectangle(202, 82, 348, 24),
             DropDownStyle = ComboBoxStyle.DropDownList,
             Enabled       = false,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
@@ -192,7 +192,7 @@ public sealed class GitFlowForm : Form
         _grpManage = new GroupBox
         {
             Text   = "Manage existing branches",
-            Bounds = new Rectangle(8, 164, 638, 192),
+            Bounds = new Rectangle(8, 164, 664, 192),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -226,7 +226,7 @@ public sealed class GitFlowForm : Form
         };
         _cboManageBranch = new ComboBox
         {
-            Bounds        = new Rectangle(172, 52, 452, 24),
+            Bounds        = new Rectangle(172, 52, 478, 24),
             DropDownStyle = ComboBoxStyle.DropDown,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
@@ -249,7 +249,7 @@ public sealed class GitFlowForm : Form
         _chkKeep = new CheckBox
         {
             Text    = "Keep branch after finish",
-            Bounds  = new Rectangle(444, 114, 182, 20),
+            Bounds  = new Rectangle(486, 114, 170, 20),
             Checked = true  // default: keep branch; overridden by saved settings on Load
         };
         _chkKeep.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
@@ -257,7 +257,7 @@ public sealed class GitFlowForm : Form
         _chkNoFetch = new CheckBox
         {
             Text   = "No fetch (--no-fetch)",
-            Bounds = new Rectangle(444, 136, 182, 20)
+            Bounds = new Rectangle(486, 136, 170, 20)
         };
         _chkNoFetch.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
 
@@ -277,7 +277,7 @@ public sealed class GitFlowForm : Form
         _grpResult = new GroupBox
         {
             Text   = "Result of git flow command run",
-            Bounds = new Rectangle(8, 364, 638, 362),
+            Bounds = new Rectangle(8, 364, 664, 362),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _txtResult = new TextBox
@@ -287,7 +287,7 @@ public sealed class GitFlowForm : Form
             ScrollBars = ScrollBars.Both,
             WordWrap   = false,
             BackColor  = SystemColors.Window,
-            Bounds     = new Rectangle(10, 22, 618, 310),
+            Bounds     = new Rectangle(10, 22, 644, 310),
             Anchor     = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Font       = new Font("Consolas", 9f)
         };
@@ -302,7 +302,7 @@ public sealed class GitFlowForm : Form
             Text         = "Fechar",
             Width        = 90,
             Height       = 28,
-            Bounds       = new Rectangle(286, 736, 90, 28),
+            Bounds       = new Rectangle(299, 736, 90, 28),
             Anchor       = AnchorStyles.Bottom,
             DialogResult = DialogResult.Cancel
         };

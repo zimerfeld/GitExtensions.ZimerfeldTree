@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.120</Version>
+    <Version>1.0.126</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -56,6 +56,18 @@
     <EmbeddedResource Include="Resources\tags.png"    Condition="Exists('Resources\tags.png')" />
     <EmbeddedResource Include="Resources\tag.png"     Condition="Exists('Resources\tag.png')" />
     <EmbeddedResource Include="Resources\remote-branch.png" Condition="Exists('Resources\remote-branch.png')" />
+    <!-- Context menu icons -->
+    <EmbeddedResource Include="Resources\ctx-commit.png"     Condition="Exists('Resources\ctx-commit.png')" />
+    <EmbeddedResource Include="Resources\ctx-checkout.png"   Condition="Exists('Resources\ctx-checkout.png')" />
+    <EmbeddedResource Include="Resources\ctx-new-branch.png" Condition="Exists('Resources\ctx-new-branch.png')" />
+    <EmbeddedResource Include="Resources\ctx-merge.png"      Condition="Exists('Resources\ctx-merge.png')" />
+    <EmbeddedResource Include="Resources\ctx-rebase.png"     Condition="Exists('Resources\ctx-rebase.png')" />
+    <EmbeddedResource Include="Resources\ctx-rename.png"     Condition="Exists('Resources\ctx-rename.png')" />
+    <EmbeddedResource Include="Resources\ctx-delete.png"     Condition="Exists('Resources\ctx-delete.png')" />
+    <EmbeddedResource Include="Resources\ctx-gitflow.png"    Condition="Exists('Resources\ctx-gitflow.png')" />
+    <EmbeddedResource Include="Resources\ctx-expand.png"     Condition="Exists('Resources\ctx-expand.png')" />
+    <EmbeddedResource Include="Resources\ctx-collapse.png"   Condition="Exists('Resources\ctx-collapse.png')" />
+    <EmbeddedResource Include="Resources\ctx-refresh.png"    Condition="Exists('Resources\ctx-refresh.png')" />
   </ItemGroup>
 
   <ItemGroup>
