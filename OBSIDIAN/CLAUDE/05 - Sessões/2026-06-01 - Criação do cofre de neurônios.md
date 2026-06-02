@@ -17,12 +17,12 @@ Criar um "cofre de neurônios" no Obsidian em `C:\NUGET\ZimerfeldTree\OBSIDIAN\C
 - Configurado o Obsidian (`.obsidian/`): app, core-plugins, templates, graph
 - Nota principal [[🧠 HOME - Cofre de Neurônios]] com MOC e blocos Dataview
 - Notas de índice: [[🧭 Como usar este cofre]], [[🔑 Fatos-Chave]], [[📥 Inbox]]
-- Notas de contexto: [[Renato]], [[RTK]], [[00 - DB2 Visão Geral]]
+- Notas de contexto: [[Renato]], [[RTK]]
 - 4 templates (Projeto, Sessão, ADR, Conhecimento)
 
 ## 🧠 Aprendizados / decisões
 - Idioma de trabalho: PT-BR
-- Ambiente Windows; usa RTK e DB2 (4 instâncias, 2FA)
+- Ambiente Windows; usa RTK
 - Protocolo de memória definido em [[🧭 Como usar este cofre]]
 
 ## 🗺️ Mapeamento de projetos (feito nesta sessão)

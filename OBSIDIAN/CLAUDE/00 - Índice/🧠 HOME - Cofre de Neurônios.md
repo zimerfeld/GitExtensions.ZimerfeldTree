@@ -18,16 +18,15 @@ tags: [moc, home, indice]
 - [[🧭 Como usar este cofre]] — protocolo de leitura/escrita do Claude
 
 ### 🗂️ Áreas
-| Pasta | Conteúdo |
-|-------|----------|
-| `01 - Projetos` | Um arquivo por projeto/repositório |
-| `02 - Conhecimento` | Conceitos técnicos, padrões, snippets reutilizáveis |
-| `03 - Decisões` | ADRs — registros de decisões de arquitetura |
-| `04 - Pessoas e Contexto` | Preferências do Renato, equipe, contexto de negócio |
-| `05 - Sessões` | Log cronológico de cada sessão de trabalho |
-| `06 - Bancos de Dados` | DB2 (HSGUCA, HSGUWEB, DB2CA, DBWEB), tabelas, queries |
-| `07 - Ferramentas` | RTK, Obsidian, CLIs, MCP servers |
-| `99 - Templates` | Modelos de notas |
+| Pasta                     | Conteúdo                                              |
+| ------------------------- | ----------------------------------------------------- |
+| `01 - Projetos`           | Um arquivo por projeto/repositório                    |
+| `02 - Conhecimento`       | Conceitos técnicos, padrões, snippets reutilizáveis   |
+| `03 - Decisões`           | ADRs — registros de decisões de arquitetura           |
+| `04 - Pessoas e Contexto` | Preferências do Renato, equipe, contexto de negócio   |
+| `05 - Sessões`            | Log cronológico de cada sessão de trabalho            |
+| `07 - Ferramentas`        | RTK, Obsidian, CLIs, MCP servers                      |
+| `99 - Templates`          | Modelos de notas                                      |
 
 ## 🔥 Atalhos de projetos
 ```dataview
@@ -46,7 +45,7 @@ LIMIT 10
 ```
 
 ## 🏷️ Tags principais
-#projeto #decisao #conhecimento #sessao #db2 #ferramenta #preferencia
+#projeto #decisao #conhecimento #sessao #ferramenta #preferencia
 
 ---
 _Cofre criado em 2026-06-01 por Claude. Mantido automaticamente a cada sessão._

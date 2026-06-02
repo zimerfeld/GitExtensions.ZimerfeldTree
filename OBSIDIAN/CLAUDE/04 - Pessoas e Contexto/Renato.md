@@ -14,13 +14,11 @@ tags: [preferencia, contexto, pessoa]
 
 ## Preferências de trabalho
 - Usa **RTK** para economizar tokens — ver [[RTK]]
-- Trabalha com **DB2** (4 instâncias) — ver [[06 - Bancos de Dados]]
 - Valoriza engenharia de software bem-feita e organização
 
 ## Regras a respeitar
 > [!important]
 > - Não commitar/pushar sem pedido explícito
-> - DB2 tem 2FA: nunca reutilizar senha, sempre pedir fresca
 > - Manter este cofre de memória atualizado a cada sessão
 
 ## Projetos em `C:\NUGET\ZimerfeldTree`

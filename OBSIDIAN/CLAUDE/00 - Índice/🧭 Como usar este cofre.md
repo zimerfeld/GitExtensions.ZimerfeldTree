@@ -18,7 +18,6 @@ tags: [meta, protocolo]
 | Tomamos uma decisão de arquitetura | `03 - Decisões/ADR-XXXX.md` |
 | Preferência ou contexto do Renato | `04 - Pessoas e Contexto/Renato.md` |
 | Terminei uma sessão de trabalho | `05 - Sessões/AAAA-MM-DD-tema.md` |
-| Detalhe de tabela/query DB2 | `06 - Bancos de Dados/` |
 | Configuração de ferramenta | `07 - Ferramentas/` |
 
 ## 🔗 Regras de escrita
@@ -27,7 +26,7 @@ tags: [meta, protocolo]
 3. **Atomicidade**: uma ideia por nota quando possível.
 4. **Datas em ISO** `AAAA-MM-DD`.
 5. Use **callouts** (`> [!note]`, `> [!warning]`) para destaques.
-6. Nada de segredos/senhas — DB2 usa 2FA, senha pedida a cada vez.
+6. Nada de segredos/senhas no cofre.
 
 ## 🧩 Plugins recomendados (opcionais)
 - **Dataview** — ativa as listas dinâmicas da [[🧠 HOME - Cofre de Neurônios|HOME]].
