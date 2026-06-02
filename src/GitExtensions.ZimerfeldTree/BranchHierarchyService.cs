@@ -171,6 +171,12 @@ public sealed class BranchHierarchyService
     /// <summary>Returns all tags.</summary>
     public List<BranchInfo> GetTags()
     {
+        // A tag is "current" only when HEAD is detached exactly at that tag's commit.
+        // When HEAD is on a branch (even if the branch tip is tagged), no tag is current —
+        // this avoids the newly-created release tag appearing as checked-out after "finish".
+        bool headDetached = GetCurrentBranch() == "HEAD";
+        string currentTag = headDetached ? GetCurrentTagName() : string.Empty;
+
         var result = new List<BranchInfo>();
         try
         {
@@ -179,13 +185,25 @@ public sealed class BranchHierarchyService
             {
                 result.Add(new BranchInfo
                 {
-                    FullName = line,
-                    Type     = BranchType.Tag,
+                    FullName  = line,
+                    Type      = BranchType.Tag,
+                    IsCurrent = !string.IsNullOrEmpty(currentTag) && line == currentTag
                 });
             }
         }
         catch { }
         return result;
+    }
+
+    /// <summary>Returns the exact tag name when HEAD is detached at a tagged commit, otherwise empty.</summary>
+    private string GetCurrentTagName()
+    {
+        try
+        {
+            var (stdout, _, code) = RunGitFull("describe --exact-match --tags HEAD");
+            return code == 0 ? stdout.Trim() : string.Empty;
+        }
+        catch { return string.Empty; }
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────

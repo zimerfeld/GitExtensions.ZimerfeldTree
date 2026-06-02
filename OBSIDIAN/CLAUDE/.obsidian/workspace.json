@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01 - Projetos/GitExtensions.ZimerfeldTree.md",
+                "file": "02 - Conhecimento/Interface GitFlow — botões e fluxos.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "GitExtensions.ZimerfeldTree"
+              "title": "Interface GitFlow — botões e fluxos"
             }
           }
         ]
@@ -183,22 +183,23 @@
   },
   "active": "2d02b52cbf766074",
   "lastOpenFiles": [
-    "00 - Índice/🧭 Como usar este cofre.md",
-    "00 - Índice/🧠 HOME - Cofre de Neurônios.md",
-    "00 - Índice/🔑 Fatos-Chave.md",
-    "00 - Índice/📥 Inbox.md",
-    "99 - Templates/Template - Sessão.md",
-    "01 - Projetos/GitExtensions.ZimerfeldTree.md.tmp.14248.52a13061b12b",
-    "05 - Sessões/2026-06-01 - Ícone customizado do develop.md",
-    "05 - Sessões/2026-06-01 - Criação do cofre de neurônios.md.tmp.14248.4f324cbaa800",
     "02 - Conhecimento/git flow - chaves de config (CLI).md",
-    "02 - Conhecimento/git flow - chaves de config (CLI).md.tmp.14248.3d6e10786174",
-    "02 - Conhecimento/Plugin MEF para GitExtensions.md",
     "01 - Projetos/GitExtensions.ZimerfeldTree.md",
+    "99 - Templates/Template - Sessão.md",
     "99 - Templates/Template - Projeto.md",
     "99 - Templates/Template - Decisão (ADR).md",
     "99 - Templates/Template - Conhecimento.md",
     "07 - Ferramentas/RTK.md",
+    "07 - Ferramentas/Dependências do ZimerfeldTree.md",
+    "00 - Índice/🧭 Como usar este cofre.md",
+    "00 - Índice/🧠 HOME - Cofre de Neurônios.md",
+    "00 - Índice/🔑 Fatos-Chave.md",
+    "00 - Índice/📥 Inbox.md",
+    "01 - Projetos/GitExtensions.ZimerfeldTree.md.tmp.14248.52a13061b12b",
+    "05 - Sessões/2026-06-01 - Ícone customizado do develop.md",
+    "05 - Sessões/2026-06-01 - Criação do cofre de neurônios.md.tmp.14248.4f324cbaa800",
+    "02 - Conhecimento/git flow - chaves de config (CLI).md.tmp.14248.3d6e10786174",
+    "02 - Conhecimento/Plugin MEF para GitExtensions.md",
     "06 - Bancos de Dados/00 - DB2 Visão Geral.md",
     "05 - Sessões/2026-06-01 - Criação do cofre de neurônios.md",
     "04 - Pessoas e Contexto/Renato.md"

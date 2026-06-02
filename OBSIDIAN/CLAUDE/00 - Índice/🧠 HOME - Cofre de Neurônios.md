@@ -25,7 +25,7 @@ tags: [moc, home, indice]
 | `03 - Decisões`           | ADRs — registros de decisões de arquitetura           |
 | `04 - Pessoas e Contexto` | Preferências do Renato, equipe, contexto de negócio   |
 | `05 - Sessões`            | Log cronológico de cada sessão de trabalho            |
-| `07 - Ferramentas`        | RTK, Obsidian, CLIs, MCP servers                      |
+| `07 - Ferramentas`        | RTK, Obsidian, CLIs, MCP servers, dependências do plugin |
 | `99 - Templates`          | Modelos de notas                                      |
 
 ## 🔥 Atalhos de projetos

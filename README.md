@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.130**
+**Versão atual: 1.0.132**
 
 TreeOfLife
 
@@ -239,6 +239,51 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 - Fechar a janela a destrói — necessário reabrir para recarregar dados
 - Singleton: uma única instância por sessão do GitExtensions
 - **Foco persistente após ações**: qualquer ação executada na janela (Pull, Push, Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir) devolve o foco à janela ZimerfeldTree ao concluir. Como a janela é independente (sem owner), notificar o GitExtensions para atualizar sua UI traria a janela principal do GitExtensions para frente; o plugin reativa a ZimerfeldTree logo em seguida. A **única exceção é o botão GitFlow**: ele abre a janela GitFlow (modal), que mantém o próprio foco enquanto estiver aberta
+
+## Dependências
+
+### Obrigatórias para uso
+
+| Programa | Versão mínima | Download | Função |
+|----------|---------------|----------|--------|
+| **Git for Windows** | qualquer | https://git-scm.com/download/win | Executa todos os comandos git (branch, checkout, pull, push, commit, tag…) |
+| **GitExtensions** | 4.x (.NET 9) | https://github.com/gitextensions/gitextensions/releases | Aplicação host que carrega o plugin; fornece diálogos nativos de Commit, Push e Pull |
+| **Plugin ZimerfeldTree** | — | `C:\Program Files\GitExtensions\Plugins\` (build local ou release) | O plugin em si |
+
+**Instalação do Git for Windows:** baixar o instalador `.exe` e, na tela *"Adjusting your PATH"*, selecionar **"Git from command line and also from 3rd-party software"**.
+
+**Instalação do GitExtensions:** baixar o instalador `.msi` da release 4.x; ele instala o .NET 9 Desktop Runtime automaticamente.
+
+> **Atenção:** GitExtensions 3.x (`.NET Framework 4.8`) é incompatível — o plugin requer `net9.0-windows`.
+
+---
+
+### Condicional — apenas para funcionalidades GitFlow
+
+| Programa | Download | Função |
+|----------|----------|--------|
+| **git-flow-next** | https://github.com/nicola-gh/git-flow-next | Fornece o subcomando `git flow` (start, finish, publish, track, update) |
+
+**Por que git-flow-next e não git-flow clássico?** O plugin usa os comandos `update` e `track`, ausentes no git-flow original e na edição AVH. Também trata o estado persistente `.git/gitflow/state/*.json` exclusivo do git-flow-next.
+
+**Instalação no Windows via Scoop:**
+```powershell
+scoop install git-flow-next
+```
+**Verificar:** `git flow version`
+
+**Configurar repositório:** `git flow init` (aceitar padrões ou configurar prefixos manualmente).
+
+---
+
+### Condicional — apenas para build / desenvolvimento
+
+| Programa | Download | Função |
+|----------|----------|--------|
+| **.NET SDK 9** | https://dotnet.microsoft.com/download/dotnet/9.0 | Compilar `net9.0-windows` |
+| **NuGet CLI** | https://www.nuget.org/downloads | Gerar `.nupkg` (usado por `build.ps1`) |
+
+---
 
 ## Instalação
 

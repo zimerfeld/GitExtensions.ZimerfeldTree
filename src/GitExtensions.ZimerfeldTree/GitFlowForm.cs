@@ -550,9 +550,10 @@ public sealed class GitFlowForm : Form
         if (!_chkNoFetch.Checked)
             RunFlow("fetch", append: false, suppressError: true);
 
-        // For release branches (without --no-fetch): push to origin first so git-flow's
-        // remote fetch finds the branch and avoids "couldn't find remote ref release/X".
-        if (isRelease && !_chkNoFetch.Checked)
+        // Publish branch to origin before finishing so the remote is up-to-date.
+        // For release this also prevents "couldn't find remote ref release/X" during git-flow's fetch.
+        // Skipped when --no-fetch is checked (user explicitly opts out of remote operations).
+        if (!_chkNoFetch.Checked)
         {
             string pushRemote = _svc.GetDefaultRemote();
             if (pushRemote.Length > 0)
