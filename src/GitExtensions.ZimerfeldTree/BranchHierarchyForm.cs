@@ -502,6 +502,17 @@ public sealed class BranchHierarchyForm : Form
         _tree.Nodes.AddRange([_localRoot, _remotesRoot, _tagsRoot]);
     }
 
+    private static Image? LoadMenuIcon(string fileName)
+    {
+        try
+        {
+            using var stream = typeof(BranchHierarchyForm).Assembly
+                .GetManifestResourceStream($"GitExtensions.ZimerfeldTree.Resources.{fileName}");
+            return stream is null ? null : new Bitmap(stream);
+        }
+        catch { return null; }
+    }
+
     private void BuildContextMenu()
     {
         _miCommit    = new ToolStripMenuItem("Commit");
@@ -515,6 +526,18 @@ public sealed class BranchHierarchyForm : Form
         _miExpand    = new ToolStripMenuItem("Expandir tudo");
         _miCollapse  = new ToolStripMenuItem("Recolher tudo");
         _miRefresh   = new ToolStripMenuItem("Atualizar");
+
+        _miCommit   .Image = LoadMenuIcon("ctx-commit.png");
+        _miCheckout .Image = LoadMenuIcon("ctx-checkout.png");
+        _miNewBranch.Image = LoadMenuIcon("ctx-new-branch.png");
+        _miMerge    .Image = LoadMenuIcon("ctx-merge.png");
+        _miRebase   .Image = LoadMenuIcon("ctx-rebase.png");
+        _miRename   .Image = LoadMenuIcon("ctx-rename.png");
+        _miDelete   .Image = LoadMenuIcon("ctx-delete.png");
+        _miGitFlow  .Image = LoadMenuIcon("ctx-gitflow.png");
+        _miExpand   .Image = LoadMenuIcon("ctx-expand.png");
+        _miCollapse .Image = LoadMenuIcon("ctx-collapse.png");
+        _miRefresh  .Image = LoadMenuIcon("ctx-refresh.png");
 
         _miCommit   .Click += (_, _) => DoCommit();
         _miCheckout .Click += (_, _) => DoCheckout();
@@ -1412,19 +1435,8 @@ public sealed class BranchHierarchyForm : Form
 
     private void DoPush()
     {
-        _btnPush.Enabled = false;
-        _ = Task.Run(() => _svc.Push()).ContinueWith(t =>
-        {
-            var (ok, err) = t.Result;
-            BeginInvoke(() =>
-            {
-                _btnPush.Enabled = true;
-                RefreshTree();
-                NotifyRepoChanged();
-                if (!ok && !string.IsNullOrEmpty(err))
-                    ShowError("Push falhou", err);
-            });
-        });
+        var (ok, err) = _svc.OpenPushWindow();
+        if (!ok) ShowError("Erro ao abrir a janela de Push", err);
     }
 
     private void DoCommit()

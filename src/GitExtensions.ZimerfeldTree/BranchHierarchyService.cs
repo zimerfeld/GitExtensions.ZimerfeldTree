@@ -83,6 +83,22 @@ public sealed class BranchHierarchyService
         catch { return 0; }
     }
 
+    /// <summary>Opens the GitExtensions Push dialog for the current working directory.</summary>
+    public (bool ok, string err) OpenPushWindow()
+    {
+        try
+        {
+            string exe = Process.GetCurrentProcess().MainModule?.FileName ?? "GitExtensions.exe";
+            Process.Start(new ProcessStartInfo(exe, "push")
+            {
+                WorkingDirectory = WorkingDir,
+                UseShellExecute  = false
+            });
+            return (true, string.Empty);
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     /// <summary>Opens the GitExtensions Commit window for the current working directory.</summary>
     public (bool ok, string err) OpenCommitWindow()
     {

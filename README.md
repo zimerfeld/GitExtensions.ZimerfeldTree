@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.120**
+**Versão atual: 1.0.125**
 
 TreeOfLife
 
@@ -71,7 +71,7 @@ Coração central dourado + borda verde círculo 2.2 px em (16,15)
 Exibidos acima da árvore quando há uma branch em checkout:
 
 - **Pull** — executa `git pull --tags`: traz commits da branch rastreada **e** todas as tags do remoto, garantindo que tags de releases criadas em outras máquinas apareçam na seção TAGS
-- **Push** — executa `git push` para a branch atual; o botão mostra `Push ↑N` quando há commits locais pendentes
+- **Push** / **Push ↑N** — abre o diálogo nativo de Push do GitExtensions (remote, URL, branch destino e opções avançadas); o contador `↑N` mostra quantos commits locais ainda não foram enviados ao remoto
 - **Commit** / **Commit (N)** — abre a janela de Commit nativa do GitExtensions; o contador `(N)` só aparece quando há alterações pendentes; sem alterações o botão e o item do menu de contexto mostram apenas `Commit`
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 
@@ -102,19 +102,21 @@ Exibidos acima da árvore quando há uma branch em checkout:
 
 ### Menu de contexto (botão direito)
 
-| Item                    | Disponível para                                                                     |
-| ----------------------- | ----------------------------------------------------------------------------------- |
-| Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
-| Checkout                | Local, remota, tag                                                                  |
-| Nova branch daqui…      | Local, tag                                                                          |
-| Mesclar na branch atual | Local                                                                               |
-| Rebase na branch atual  | Local                                                                               |
-| Renomear…               | Local                                                                               |
-| Excluir…                | Local, remota, tag                                                                  |
-| GitFlow…                | Branch (local/remota/tag)                                                           |
-| Expandir tudo           | Sempre                                                                              |
-| Recolher tudo           | Sempre                                                                              |
-| Atualizar               | Sempre                                                                              |
+Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.png`):
+
+| Ícone | Item                    | Disponível para                                                                     |
+| ----- | ----------------------- | ----------------------------------------------------------------------------------- |
+| ✅ verde | Commit (N)           | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
+| → azul  | Checkout             | Local, remota, tag                                                                  |
+| Y teal  | Nova branch daqui…   | Local, tag                                                                          |
+| V roxo  | Mesclar na branch atual | Local                                                                            |
+| ↑ laranja | Rebase na branch atual | Local                                                                          |
+| ✏️ âmbar | Renomear…            | Local                                                                               |
+| ✖ vermelho | Excluir…          | Local, remota, tag                                                                  |
+| graph   | GitFlow…             | Branch (local/remota/tag)                                                           |
+| ◤◥◣◢   | Expandir tudo        | Sempre                                                                              |
+| ◣◢◤◥   | Recolher tudo        | Sempre                                                                              |
+| ↻ azul  | Atualizar            | Sempre                                                                              |
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: *Zimerfeld: Auto-resumo*) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no ZimerfeldTree divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
 
