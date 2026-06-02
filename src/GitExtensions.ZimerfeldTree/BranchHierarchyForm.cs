@@ -1450,26 +1450,46 @@ public sealed class BranchHierarchyForm : Form
         var info = SelectedBranch();
         if (info is null) return;
 
-        var (ok, err) = info.Type == BranchType.Remote
-            ? _svc.CheckoutRemoteAsLocal(info.FullName)
-            : _svc.Checkout(info.FullName);
+        (bool ok, string err) result = (false, string.Empty);
 
-        if (ok)
+        if (info.Type == BranchType.Remote)
+        {
+            result = _svc.CheckoutRemoteAsLocal(info.FullName);
+
+            if (!result.ok && result.err.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            {
+                string localName = info.FullName.Contains('/')
+                    ? info.FullName[(info.FullName.IndexOf('/') + 1)..]
+                    : info.FullName;
+
+                using var dlg = new CheckoutBranchExistsDialog(localName, info.FullName);
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+                result = dlg.Choice switch
+                {
+                    CheckoutExistsChoice.ResetLocal   => _svc.Checkout(localName),
+                    CheckoutExistsChoice.CreateCustom => _svc.CheckoutRemoteAsLocal(info.FullName, dlg.CustomBranchName),
+                    CheckoutExistsChoice.Detached     => _svc.CheckoutDetached(info.FullName),
+                    _                                 => (false, "Opção inválida.")
+                };
+            }
+        }
+        else
+        {
+            result = _svc.Checkout(info.FullName);
+        }
+
+        if (result.ok)
         {
             RefreshTree();
             NotifyRepoChanged();
         }
-        else if (!string.IsNullOrEmpty(err))
+        else if (!string.IsNullOrEmpty(result.err))
         {
-            // If branch cannot be deleted due to uncommitted changes, offer force option
-            if (err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
-            {
-                MessageBox.Show(err, "Checkout falhou", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+            if (result.err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
+                MessageBox.Show(result.err, "Checkout falhou", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             else
-            {
-                MessageBox.Show(err, "Checkout falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+                MessageBox.Show(result.err, "Checkout falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -1702,6 +1722,90 @@ public sealed class BranchHierarchyForm : Form
         public const string RemoteGroup = "section:remote-group";
         public const string Folder      = "section:folder";
         public const string Empty       = "section:empty";
+    }
+}
+
+// ── Checkout branch-exists dialog ────────────────────────────────────────────
+
+internal enum CheckoutExistsChoice { ResetLocal, CreateCustom, Detached }
+
+/// <summary>
+/// Shown when checking out an origin branch whose local counterpart already exists.
+/// Mirrors the GitExtensions "Checkout branch" dialog options.
+/// </summary>
+internal sealed class CheckoutBranchExistsDialog : Form
+{
+    private readonly RadioButton _rbReset;
+    private readonly RadioButton _rbCustom;
+    private readonly RadioButton _rbDetached;
+    private readonly TextBox     _customName;
+
+    public CheckoutExistsChoice Choice { get; private set; }
+    public string CustomBranchName => _customName.Text.Trim();
+
+    public CheckoutBranchExistsDialog(string localName, string remoteName)
+    {
+        Text            = "Checkout branch";
+        Size            = new Size(480, 190);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox     = false;
+        MinimizeBox     = false;
+        StartPosition   = FormStartPosition.CenterParent;
+        Font            = new Font("Segoe UI", 9f);
+        Icon            = TreeOfLifeIcon.ForForm();
+
+        string defaultCustom = remoteName.Replace('/', '_');
+
+        _rbReset = new RadioButton
+        {
+            Text    = "Reset local branch with the name:",
+            Bounds  = new Rectangle(10, 16, 236, 22),
+            Checked = true
+        };
+        var lblLocal = new Label
+        {
+            Text      = $"'{localName}'",
+            Bounds    = new Rectangle(248, 18, 210, 16),
+            AutoSize  = false,
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+
+        _rbCustom = new RadioButton
+        {
+            Text   = "Create local branch with custom name:",
+            Bounds = new Rectangle(10, 48, 250, 22)
+        };
+        _customName = new TextBox
+        {
+            Text    = defaultCustom,
+            Bounds  = new Rectangle(262, 46, 196, 22),
+            Enabled = false
+        };
+
+        _rbDetached = new RadioButton
+        {
+            Text   = "Checkout the commit (in detached head)",
+            Bounds = new Rectangle(10, 80, 450, 22)
+        };
+
+        var btnCheckout = new Button
+        {
+            Text         = "Checkout",
+            Bounds       = new Rectangle(376, 120, 82, 28),
+            DialogResult = DialogResult.OK
+        };
+
+        _rbCustom.CheckedChanged += (_, _) => _customName.Enabled = _rbCustom.Checked;
+
+        btnCheckout.Click += (_, _) =>
+        {
+            Choice = _rbReset.Checked   ? CheckoutExistsChoice.ResetLocal
+                   : _rbCustom.Checked  ? CheckoutExistsChoice.CreateCustom
+                   : CheckoutExistsChoice.Detached;
+        };
+
+        Controls.AddRange([_rbReset, lblLocal, _rbCustom, _customName, _rbDetached, btnCheckout]);
+        AcceptButton = btnCheckout;
     }
 }
 

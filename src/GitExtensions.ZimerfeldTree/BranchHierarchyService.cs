@@ -111,6 +111,8 @@ public sealed class BranchHierarchyService
             string raw = RunGit("branch --format=%(refname:short)", out _);
             foreach (var line in SplitLines(raw))
             {
+                // git emits "(HEAD detached at <ref>)" as a pseudo-entry when HEAD is detached — skip it
+                if (line.StartsWith("(")) continue;
                 result.Add(new BranchInfo
                 {
                     FullName = line,
@@ -153,17 +155,34 @@ public sealed class BranchHierarchyService
     /// <summary>Returns all tags.</summary>
     public List<BranchInfo> GetTags()
     {
+        var currentTag = GetCurrentTagName();
         var result = new List<BranchInfo>();
         try
         {
             string raw = RunGit("tag --sort=-version:refname", out _);
             foreach (var line in SplitLines(raw))
             {
-                result.Add(new BranchInfo { FullName = line, Type = BranchType.Tag });
+                result.Add(new BranchInfo
+                {
+                    FullName  = line,
+                    Type      = BranchType.Tag,
+                    IsCurrent = !string.IsNullOrEmpty(currentTag) && line == currentTag
+                });
             }
         }
         catch { }
         return result;
+    }
+
+    /// <summary>Returns the exact tag name when HEAD points directly at a tagged commit (detached HEAD on a tag), otherwise empty.</summary>
+    private string GetCurrentTagName()
+    {
+        try
+        {
+            var (stdout, _, code) = RunGitFull("describe --exact-match --tags HEAD");
+            return code == 0 ? stdout.Trim() : string.Empty;
+        }
+        catch { return string.Empty; }
     }
 
     // ── Mutations ────────────────────────────────────────────────────────────
@@ -179,16 +198,29 @@ public sealed class BranchHierarchyService
     }
 
     /// <summary>Creates a local tracking branch from a remote-tracking branch and checks it out.</summary>
-    public (bool ok, string error) CheckoutRemoteAsLocal(string remoteBranch)
+    /// <param name="remoteBranch">Remote ref, e.g. "origin/feature/login".</param>
+    /// <param name="customLocalName">When non-null, uses this name instead of stripping the remote prefix.</param>
+    public (bool ok, string error) CheckoutRemoteAsLocal(string remoteBranch, string? customLocalName = null)
     {
         // remoteBranch = "origin/feature/login"  →  localName = "feature/login"
-        string localName = remoteBranch.Contains('/')
+        string localName = customLocalName ?? (remoteBranch.Contains('/')
             ? remoteBranch[(remoteBranch.IndexOf('/') + 1)..]
-            : remoteBranch;
+            : remoteBranch);
         try
         {
             var (_, err, code) = RunGitFull(
                 $"checkout -b \"{EscapeArg(localName)}\" --track \"{EscapeArg(remoteBranch)}\"");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Checks out a ref in detached HEAD mode.</summary>
+    public (bool ok, string error) CheckoutDetached(string refName)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"checkout --detach \"{EscapeArg(refName)}\"");
             return code == 0 ? (true, string.Empty) : (false, err.Trim());
         }
         catch (Exception ex) { return (false, ex.Message); }

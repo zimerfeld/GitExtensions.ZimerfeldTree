@@ -1,12 +1,12 @@
 ---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-01
+atualizado: 2026-06-02
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.99
-repo: C:\NUGET\ZimerfeldTree
+versao: 1.0.117
+repo: C:\GitExtensions\ZimerfeldTree
 ---
 
 # 🌳 GitExtensions.ZimerfeldTree
@@ -59,6 +59,9 @@ C:\NUGET\ZimerfeldTree\
 - **Hierarquia otimizada:** um único `git log --all` constrói o grafo de commits em memória, pais via BFS → **O(commits)** em vez de O(N²×subprocesso)
 - Seletor de **Working Directory** (combo lido de `%APPDATA%\GitExtensions\GitExtensions\GitExtensions.settings`) e branch atual em negrito
 - Integração **Git Flow** (ver [[git flow - chaves de config (CLI)]])
+- **Checkout de TAG com destaque visual** — detecta `HEAD` apontando para tag via `git describe --exact-match --tags HEAD`; tag aparece com `[colchetes]`, negrito e cor de destaque (igual a branch local em checkout)
+- **Checkout de branch Origin — branch local já existente** — ao tentar `git checkout -b <local> --track <remota>` e a branch local já existir, exibe diálogo com 3 opções: _Reset local_ / _Create custom name_ / _Checkout detached_; replica comportamento nativo do GitExtensions
+- **Filtro do pseudo-nó `(HEAD detached at …)`** — `git branch --format=%(refname:short)` emite essa entrada em detached HEAD; é filtrada antes de popular a seção LOCAL, evitando erro `pathspec did not match` ao tentar checkout
 
 ## 🛠️ Build / instalação
 ```powershell
@@ -79,7 +82,7 @@ tools\update-dll.ps1   # atualiza só a DLL
 > O GitExtensions grava config no formato interno dele, mas o plugin usa o **git flow CLI** que espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual no README: **1.0.99**; csproj `<Version>1.0.100`, `AssemblyVersion 1.0.99.0`
+- Versão atual: **1.0.117** (README + csproj + nuspec em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
@@ -90,6 +93,7 @@ tools\update-dll.ps1   # atualiza só a DLL
 ## 📜 Histórico de sessões
 - [[2026-06-01 - Criação do cofre de neurônios]] — mapeamento inicial do projeto
 - [[2026-06-01 - Ícone customizado do develop]] — develop passa a usar PNG embutido (aguardando arquivo)
+- [[2026-06-02 - Checkout TAG, Origin e HEAD detached]] — destaque visual de TAG em checkout, diálogo "branch já existe" para Origin, filtro do pseudo-nó `(HEAD detached at …)` no LOCAL
 
 ## 🔗 Relacionado
 - [[Plugin MEF para GitExtensions]]

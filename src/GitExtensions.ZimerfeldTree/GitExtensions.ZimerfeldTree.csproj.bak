@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Target Windows-only WinForms; must match the runtime GitExtensions uses (net9.0) -->
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+
+    <!-- Output assembly name must match what install.ps1 / nuspec reference -->
+    <AssemblyName>GitExtensions.Plugins.ZimerfeldTree</AssemblyName>
+    <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
+
+    <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
+<<<<<<< develop
+    <Version>1.0.119</Version>
+=======
+    <Version>1.0.117</Version>
+>>>>>>> local
+    <AssemblyVersion>1.0.99.0</AssemblyVersion>
+    <FileVersion>1.0.99.0</FileVersion>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- Plugin DLLs are loaded by GitExtensions — do not produce a standalone exe -->
+    <OutputType>Library</OutputType>
+
+    <!-- Strip debug symbols from Release builds to keep the DLL lean -->
+    <DebugType Condition="'$(Configuration)'=='Release'">none</DebugType>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
+
+    <!-- Benign: GitExtensions DLLs pull WindowsBase 8.0 while the net9 ref pack supplies 4.0.
+         The runtime resolves the correct assembly at load time, so demote MSB3277 to a message. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+
+    <!-- Metadata shown in Windows Explorer / NuGet Gallery -->
+    <Product>GitExtensions ZimerfeldTree Plugin</Product>
+    <Company>Zimerfeld</Company>
+    <Copyright>Copyright © 2026 Zimerfeld</Copyright>
+    <Description>
+      GitExtensions plugin that displays branches hierarchically as a path-based tree,
+      grouped into LOCAL, REMOTES and TAGS sections with real-time filtering and a rich
+      right-click context menu.
+    </Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Custom branch icons embedded in the DLL (loaded by NodeIcons.LoadEmbedded).
+         Resource name becomes: GitExtensions.ZimerfeldTree.Resources.<file>
+         Each is included only when the file exists; otherwise NodeIcons falls back to the
+         drawn GDI+ glyph for that node. -->
+    <EmbeddedResource Include="Resources\develop.png" Condition="Exists('Resources\develop.png')" />
+    <EmbeddedResource Include="Resources\master.png"  Condition="Exists('Resources\master.png')" />
+    <EmbeddedResource Include="Resources\origin.png"  Condition="Exists('Resources\origin.png')" />
+    <EmbeddedResource Include="Resources\feature.png" Condition="Exists('Resources\feature.png')" />
+    <EmbeddedResource Include="Resources\folha.png" Condition="Exists('Resources\folha.png')" />
+    <EmbeddedResource Include="Resources\release.png" Condition="Exists('Resources\release.png')" />
+    <EmbeddedResource Include="Resources\local.png"   Condition="Exists('Resources\local.png')" />
+    <EmbeddedResource Include="Resources\remotes.png" Condition="Exists('Resources\remotes.png')" />
+    <EmbeddedResource Include="Resources\tags.png"    Condition="Exists('Resources\tags.png')" />
+    <EmbeddedResource Include="Resources\tag.png"     Condition="Exists('Resources\tag.png')" />
+    <EmbeddedResource Include="Resources\remote-branch.png" Condition="Exists('Resources\remote-branch.png')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reference GitExtensions DLLs directly — they must NOT be copied to output -->
+    <Reference Include="GitExtensions.Extensibility">
+      <HintPath>C:\Program Files\GitExtensions\GitExtensions.Extensibility.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GitUIPluginInterfaces">
+      <HintPath>C:\Program Files\GitExtensions\GitUIPluginInterfaces.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition">
+      <HintPath>C:\Program Files\GitExtensions\System.ComponentModel.Composition.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
