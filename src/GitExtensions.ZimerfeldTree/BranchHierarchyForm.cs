@@ -30,6 +30,7 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
+    private int                          _pendingChangesCount;        // cached from background task; used by UpdatePullPushButtons
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -200,6 +201,7 @@ public sealed class BranchHierarchyForm : Form
                         b.AheadCount   = ti.ahead;
                         b.BehindCount  = ti.behind;
                     }
+                _pendingChangesCount = _svc.GetPendingChangesCount();
                 ip?.Report((100, "Concluído."));
             }, token);
         }
@@ -1278,8 +1280,7 @@ public sealed class BranchHierarchyForm : Form
         int ahead  = current.AheadCount;
         _btnPull.Text = behind > 0 ? $"Pull (↓{behind})" : "Pull";
         _btnPush.Text = ahead  > 0 ? $"Push (↑{ahead})"  : "Push";
-        int pending = _svc.GetPendingChangesCount();
-        _btnCommitDedicated.Text = pending > 0 ? $"Commit ({pending})" : "Commit";
+        _btnCommitDedicated.Text = _pendingChangesCount > 0 ? $"Commit ({_pendingChangesCount})" : "Commit";
     }
 
     private BranchInfo? SelectedBranch()

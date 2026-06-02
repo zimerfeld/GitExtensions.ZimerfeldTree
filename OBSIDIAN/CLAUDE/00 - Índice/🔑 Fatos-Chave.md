@@ -1,7 +1,7 @@
 ---
 tipo: referencia
 criado: 2026-06-01
-atualizado: 2026-06-01
+atualizado: 2026-06-02
 tags: [fatos-chave, referencia]
 ---
 
@@ -17,9 +17,9 @@ tags: [fatos-chave, referencia]
 - Ver [[Renato]] para preferências detalhadas
 
 ## 📁 Caminhos importantes
-- Cofre de memória (este): `C:\NUGET\ZimerfeldTree\OBSIDIAN\CLAUDE`
-- Raiz de projetos: `C:\NUGET\ZimerfeldTree`
-- `C:\NUGET\ZimerfeldTree` **é** o repositório do projeto [[GitExtensions.ZimerfeldTree]] (C#, plugin GitExtensions)
+- Cofre de memória (este): `C:\GitExtensions\ZimerfeldTree\OBSIDIAN\CLAUDE`
+- Raiz de projetos: `C:\GitExtensions\ZimerfeldTree`
+- `C:\GitExtensions\ZimerfeldTree` **é** o repositório do projeto [[GitExtensions.ZimerfeldTree]] (C#, plugin GitExtensions)
 - GitExtensions instalado em: `C:\Program Files\GitExtensions\`
 
 ## 🛠️ Ferramentas ativas
