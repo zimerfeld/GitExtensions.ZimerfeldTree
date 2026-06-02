@@ -1446,6 +1446,7 @@ public sealed class BranchHierarchyForm : Form
         {
             bool pushed = _openPushDialog(this);
             if (pushed) { RefreshTree(); NotifyRepoChanged(); }
+            else RestoreFocus();
             return;
         }
         var (ok, err) = _svc.OpenPushWindow();
@@ -1462,6 +1463,7 @@ public sealed class BranchHierarchyForm : Form
             if (result.HasValue)
             {
                 if (result.Value) { RefreshTree(); NotifyRepoChanged(); }
+                else RestoreFocus();
                 return;
             }
         }
@@ -1716,11 +1718,14 @@ public sealed class BranchHierarchyForm : Form
     /// Re-activates this window so it keeps focus after an action.
     /// The window is owner-less, so notifying GitExtensions of a repo change brings the
     /// GitExtensions main window to the foreground; this puts ZimerfeldTree back on top.
+    /// BeginInvoke ensures Activate() runs after any pending window-activation messages
+    /// (including the GitExtensions window that _notifyRepoChanged may raise asynchronously).
     /// (The GitFlow window is modal, so it keeps its own focus while open — unaffected.)
     /// </summary>
     private void RestoreFocus()
     {
-        if (!IsDisposed && Visible) Activate();
+        if (!IsDisposed && Visible)
+            BeginInvoke(() => { if (!IsDisposed && Visible) Activate(); });
     }
 
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
