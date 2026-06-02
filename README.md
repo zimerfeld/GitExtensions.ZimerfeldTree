@@ -4,29 +4,6 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 **Versão atual: 1.0.132**
 
-TreeOfLife
-
-· · ← frutos dourados (apical)
-\/ ← bifurcação apical
-|
-· /|\ · ← galho nível 3 + frutos
-/ | \
- ·/ \|/ \· ← galho nível 2 + frutos
-\ | /
-· \|/ · ← galho nível 1 + frutos
-⊙ ← "coração da vida" (fruto dourado central)
-|
-·/|\· ← raízes nível 1 + 2
-|
-───────────── ← dentro de um círculo verde
-Elemento Cor Detalhe
-Círculo verde-escuro (#145A29) fundo verde-claro #E8F5E9
-Tronco verde-escuro 2 px, caps arredondados
-Galhos (3 níveis) verde-escuro 1.5 → 0.9 px, afinando para o topo
-Raízes (2 pares) verde-escuro 1.2 → 0.9 px
-Frutos/folhas dourado (#D4A017) círculos 1.5 px nos galhos, 1.0 px nas raízes
-Coração central dourado + borda verde círculo 2.2 px em (16,15)
-
 ---
 
 ## Funcionalidades
@@ -115,8 +92,8 @@ Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.pn
 | ✏️ âmbar | Renomear…            | Local                                                                               |
 | ✖ vermelho | Excluir…          | Local, remota, tag                                                                  |
 | graph   | GitFlow…             | Branch (local/remota/tag)                                                           |
-| ◤◥◣◢   | Expandir tudo        | Sempre                                                                              |
-| ◣◢◤◥   | Recolher tudo        | Sempre                                                                              |
+| +   | Expandir tudo        | Sempre                                                                              |
+| -   | Recolher tudo        | Sempre                                                                              |
 | ↻ azul  | Atualizar            | Sempre                                                                              |
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: *Zimerfeld: Auto-resumo*) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no ZimerfeldTree divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
@@ -169,18 +146,7 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 
 Quando um comando git flow falha, o resultado é exibido na janela e um aviso é mostrado. Se o erro indicar uma **branch base/produção ausente** (ex.: `couldn't find remote ref main`, `start point branch 'main' does not exist`), a mensagem orienta a verificar as branches existentes e a configuração `gitflow.branch.*`, e sugere marcar **No fetch** quando a falha for ao buscar do remoto.
 
-### Ícone "Árvore da Vida"
-
-O plugin usa um ícone gerado em tempo de execução via GDI+ (sem imagens externas ou recursos embutidos). O design é uma **Árvore da Vida** simétrica dentro de um círculo:
-
-- **Círculo** com fundo verde-claro e borda verde-escura
-- **Tronco** central vertical (verde-escuro, cantos arredondados)
-- **Galhos** em 3 níveis + bifurcação apical — cada nível mais fino e mais estreito
-- **Raízes** em 2 pares curvos abaixo do tronco
-- **Frutos/folhas** dourados nos extremos de cada galho e raiz
-- **"Coração da vida"** — fruto dourado central no tronco, representando a força vital
-
-O ícone aparece:
+### Ícones
 
 - No **menu Plugins** do GitExtensions (16 × 16 px)
 - Na **barra de título** da janela do plugin e na barra de tarefas do Windows (ICO multi-size: 32 + 16 px, formato PNG-encoded Vista+)
@@ -287,25 +253,35 @@ scoop install git-flow-next
 
 ## Instalação
 
-### Instalação Powershell/Terminal as Administrator
+### Opção A — Via PowerShell (recomendado)
 
-cd C:\GitExtensions\ZimerfeldTree\tools
-.\install.ps1
-
-### Instalação Manual
-
-1. Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
-   ```
-   C:\Program Files\GitExtensions\Plugins\
-   ```
-2. Reinicie o GitExtensions
-3. O plugin aparece em **Plugins → ZimerfeldTree**
-
-### Via NuGet (repositório local)
+Execute o PowerShell **como Administrador**:
 
 ```powershell
-Install-Package GitExtensions.ZimerfeldTree -Source C:\NUGET
+cd C:\GitExtensions\ZimerfeldTree\tools
+.\install.ps1
 ```
+
+### Opção B — Manual
+
+Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
+
+```
+C:\Program Files\GitExtensions\Plugins\
+```
+
+Reinicie o GitExtensions.
+
+---
+
+## Desinstalação
+
+```powershell
+cd C:\GitExtensions\ZimerfeldTree\tools
+.\uninstall.ps1
+```
+
+A remoção da DLL não afeta nenhuma outra parte do GitExtensions.
 
 ---
 
@@ -313,7 +289,7 @@ Install-Package GitExtensions.ZimerfeldTree -Source C:\NUGET
 
 ### A hierarquia é por nome, não por parentesco de commits
 
-O plugin agrupa branches usando o separador `/` do nome — **não** pelo histórico de commits do git. `master` e `develop` são irmãos porque nenhum deles contém `/`:
+O plugin agrupa branches usando o separador `/` do nome — **não** pelo histórico de commits do git. `master` e `develop` são pai e filho porque develop for gerada a partir de master `/`:
 
 ```
 LOCAL
