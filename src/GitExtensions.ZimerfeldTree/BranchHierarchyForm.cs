@@ -60,9 +60,10 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripStatusLabel _statusLbl = null!;
 
     // ── Bottom panel ──────────────────────────────────────────────────────────
-    private Panel    _bottomPanel       = null!;
-    private Button   _btnClose          = null!;
-    private CheckBox _chkShowDebug = null!;
+    private Panel    _bottomPanel              = null!;
+    private Button   _btnClose                = null!;
+    private CheckBox _chkShowDebug            = null!;
+    private CheckBox _chkHabilitarGitFlowInit = null!;
 
     // ── Loading overlay ───────────────────────────────────────────────────────
     private Panel       _loadingOverlay   = null!;
@@ -350,8 +351,13 @@ public sealed class BranchHierarchyForm : Form
 
         CancelButton = _btnClose;
 
-        // Restore tooltip-debug state.
-        Load += (_, _) => ApplyControlTooltips(_chkShowDebug.Checked);
+        // Restore debug state and button enable state.
+        Load += (_, _) =>
+        {
+            ApplyControlTooltips(_chkShowDebug.Checked);
+            _chkHabilitarGitFlowInit.Visible = _chkShowDebug.Checked;
+            UpdateGitFlowInitButton();
+        };
 
         // Trigger the async initial load once the window is fully painted.
         Shown += (_, _) => _ = RefreshTreeAsync(showOverlay: true);
@@ -679,8 +685,8 @@ public sealed class BranchHierarchyForm : Form
 
         _chkShowDebug = new CheckBox
         {
-            Name    = "chkShowDebug",
-            Text    = "Debug",
+            Name     = "chkShowDebug",
+            Text     = "Show Debug",
             AutoSize = true,
             Checked  = LoadShowControlIds()
         };
@@ -688,21 +694,35 @@ public sealed class BranchHierarchyForm : Form
         {
             SaveShowControlIds(_chkShowDebug.Checked);
             ApplyControlTooltips(_chkShowDebug.Checked);
+            _chkHabilitarGitFlowInit.Visible = _chkShowDebug.Checked;
+            UpdateGitFlowInitButton();
         };
+
+        _chkHabilitarGitFlowInit = new CheckBox
+        {
+            Name     = "chkHabilitarGitFlowInit",
+            Text     = "Habilitar GitFlowInit",
+            AutoSize = true,
+            Visible  = false   // shown only when chkShowDebug is checked
+        };
+        _chkHabilitarGitFlowInit.CheckedChanged += (_, _) => UpdateGitFlowInitButton();
 
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 36 };
         _bottomPanel.Controls.Add(_btnClose);
         _bottomPanel.Controls.Add(_chkShowDebug);
+        _bottomPanel.Controls.Add(_chkHabilitarGitFlowInit);
 
-        // Centre the Fechar button; pin the checkbox to the left — both vertically centred.
+        // Centre Fechar; pin checkboxes to the left (chkShowDebug, then chkHabilitarGitFlowInit).
         _bottomPanel.Layout += (_, _) =>
         {
+            int cy = (_bottomPanel.Height - _btnClose.Height) / 2;
             _btnClose.Location = new Point(
-                (_bottomPanel.Width  - _btnClose.Width) / 2,
-                (_bottomPanel.Height - _btnClose.Height) / 2);
+                (_bottomPanel.Width - _btnClose.Width) / 2, cy);
             _chkShowDebug.Location = new Point(
-                8,
-                (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+                8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+            _chkHabilitarGitFlowInit.Location = new Point(
+                8 + _chkShowDebug.Width + 8,
+                (_bottomPanel.Height - _chkHabilitarGitFlowInit.Height) / 2);
         };
     }
 
@@ -805,6 +825,8 @@ public sealed class BranchHierarchyForm : Form
             _warnLabel.ForeColor = Color.DarkRed;
             _btnGitFlow.Text    = "Organizar como GitFlow";
         }
+
+        UpdateGitFlowInitButton();
     }
 
     private List<string> GetGitFlowViolations()
@@ -1377,8 +1399,9 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlowDedicated.TabIndex = 3;
 
         // Bottom panel
-        _btnClose         .TabIndex = 0;
-        _chkShowDebug.TabIndex = 1;
+        _btnClose                .TabIndex = 0;
+        _chkShowDebug            .TabIndex = 1;
+        _chkHabilitarGitFlowInit .TabIndex = 2;
     }
 
     /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
@@ -1392,7 +1415,8 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlowDedicated.Enabled = enabled;
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
-        _chkShowDebug  .Enabled = enabled;
+        _chkShowDebug            .Enabled = enabled;
+        _chkHabilitarGitFlowInit .Enabled = enabled;
     }
 
     private void UpdateStatus()
@@ -1645,6 +1669,54 @@ public sealed class BranchHierarchyForm : Form
         else ShowError("Erro ao criar branch", err);
     }
 
+    // ── GitFlow init helpers ─────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns true when all 8 standard git-flow config keys are set to their default values
+    /// AND both <c>main</c> and <c>develop</c> branches exist locally.
+    /// Used to decide whether to enable <see cref="_btnGitFlowInit"/>.
+    /// </summary>
+    private bool IsGitFlowConfigured()
+    {
+        (string key, string expected)[] checks =
+        [
+            ("gitflow.branch.main",     "main"),
+            ("gitflow.branch.develop",    "develop"),
+            ("gitflow.prefix.feature",    "feature/"),
+            ("gitflow.prefix.bugfix",     "bugfix/"),
+            ("gitflow.prefix.release",    "release/"),
+            ("gitflow.prefix.hotfix",     "hotfix/"),
+            ("gitflow.prefix.support",    "support/"),
+            ("gitflow.prefix.versiontag", ""),
+        ];
+
+        foreach (var (key, expected) in checks)
+        {
+            var (output, code) = _svc.RunGitFlow($"config --get {key}");
+            if (code != 0 || output.Trim() != expected)
+                return false;
+        }
+
+        // Also require that both branches actually exist.
+        var (_, masterCode)  = _svc.RunGitFlow("rev-parse --verify refs/heads/main");
+        var (_, developCode) = _svc.RunGitFlow("rev-parse --verify refs/heads/develop");
+        return masterCode == 0 && developCode == 0;
+    }
+
+    /// <summary>
+    /// Refreshes the enabled state of <see cref="_btnGitFlowInit"/>:
+    /// disabled when already configured, unless the debug override checkbox is checked.
+    /// </summary>
+    private void UpdateGitFlowInitButton()
+    {
+        if (_chkShowDebug.Checked && _chkHabilitarGitFlowInit.Checked)
+        {
+            _btnGitFlowInit.Enabled = true;
+            return;
+        }
+        _btnGitFlowInit.Enabled = !IsGitFlowConfigured();
+    }
+
     // ── Tooltip debug ────────────────────────────────────────────────────────
 
     private void ApplyControlTooltips(bool show)
@@ -1666,10 +1738,14 @@ public sealed class BranchHierarchyForm : Form
 
     private void DoGitFlowInit()
     {
+        const string masterBranch  = "main";
+        const string developBranch = "develop";
+
+        // ── 1. Apply all standard git-flow config keys ────────────────────────
         (string key, string value)[] configs =
         [
-            ("gitflow.branch.master",     "main"),
-            ("gitflow.branch.develop",    "develop"),
+            ("gitflow.branch.main",     masterBranch),
+            ("gitflow.branch.develop",    developBranch),
             ("gitflow.prefix.feature",    "feature/"),
             ("gitflow.prefix.bugfix",     "bugfix/"),
             ("gitflow.prefix.release",    "release/"),
@@ -1686,14 +1762,67 @@ public sealed class BranchHierarchyForm : Form
                 errors.AppendLine($"  {key}: {output.Trim()}");
         }
 
+        // ── 2. Create missing branches ────────────────────────────────────────
+        // Detect whether the repository has any commits at all.
+        // An empty repo has an unborn HEAD; git branch <name> would fail because there
+        // is no valid object to point the new ref at.
+        var (_, headCode) = _svc.RunGitFlow("rev-parse HEAD");
+        if (headCode != 0)
+        {
+            // Empty repo: redirect the unborn HEAD to main and create an empty initial
+            // commit so that branches can be created normally afterwards.
+            _svc.RunGitFlow($"symbolic-ref HEAD refs/heads/{masterBranch}");
+            var (commitOut, commitCode) = _svc.RunGitFlow(
+                "commit --allow-empty -m \"chore: Initial commit\"");
+            if (commitCode != 0)
+            {
+                errors.AppendLine($"  Commit inicial em '{masterBranch}': {commitOut.Trim()}");
+            }
+            else
+            {
+                // main now exists; create develop from it
+                var (out3, code3) = _svc.RunGitFlow($"branch {developBranch}");
+                if (code3 != 0)
+                    errors.AppendLine($"  branch {developBranch}: {out3.Trim()}");
+            }
+        }
+        else
+        {
+            // main — create from HEAD if absent
+            var (_, masterExists) = _svc.RunGitFlow($"rev-parse --verify refs/heads/{masterBranch}");
+            if (masterExists != 0)
+            {
+                var (out2, code2) = _svc.RunGitFlow($"branch {masterBranch}");
+                if (code2 != 0)
+                    errors.AppendLine($"  branch {masterBranch}: {out2.Trim()}");
+            }
+
+            // develop — create from main if absent
+            var (_, developExists) = _svc.RunGitFlow($"rev-parse --verify refs/heads/{developBranch}");
+            if (developExists != 0)
+            {
+                var (out3, code3) = _svc.RunGitFlow($"branch {developBranch} {masterBranch}");
+                if (code3 != 0)
+                    errors.AppendLine($"  branch {developBranch}: {out3.Trim()}");
+            }
+        }
+
+        // ── 3. Report result ──────────────────────────────────────────────────
         if (errors.Length == 0)
+        {
+            _svc.Checkout(developBranch);
             MessageBox.Show("GitFlow inicializado com sucesso.", "GitFlow Initialize",
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
         else
+        {
             MessageBox.Show($"Alguns comandos falharam:\n{errors}", "GitFlow Initialize",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
 
+        _chkHabilitarGitFlowInit.Checked = false;
         RefreshTree();
+        UpdateGitFlowInitButton();
     }
 
     private void DoGitFlow()

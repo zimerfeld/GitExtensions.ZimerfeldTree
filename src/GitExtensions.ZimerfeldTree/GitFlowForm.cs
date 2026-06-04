@@ -640,7 +640,7 @@ public sealed class GitFlowForm : Form
 
         LastFinishedReleaseTag = name;
 
-        string master  = _svc.GetGitFlowBranchName("master");
+        string master  = _svc.GetGitFlowBranchName("main");
         string develop = _svc.GetGitFlowBranchName("develop");
         string remote  = _svc.GetDefaultRemote();
         if (remote.Length == 0)

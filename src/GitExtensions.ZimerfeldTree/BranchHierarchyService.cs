@@ -465,7 +465,7 @@ public sealed class BranchHierarchyService
 
     /// <summary>
     /// Returns the actual local branch name configured for a git flow role
-    /// (e.g. "master" → reads <c>gitflow.branch.master</c> which may be set to "main").
+    /// (e.g. "main" → reads <c>gitflow.branch.main</c> which is set to "main").
     /// Falls back to the role name itself when the config key is missing.
     /// </summary>
     public string GetGitFlowBranchName(string role)

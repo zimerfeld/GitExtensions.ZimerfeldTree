@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.140**
+**Versão atual: 1.0.146**
 
 ---
 
@@ -114,7 +114,7 @@ O botão **GitFlow Initialize** fica na janela ZimerfeldTree, abaixo do painel d
 
 | Chave | Valor padrão |
 |---|---|
-| `gitflow.branch.master` | `main` |
+| `gitflow.branch.main` | `main` |
 | `gitflow.branch.develop` | `develop` |
 | `gitflow.prefix.feature` | `feature/` |
 | `gitflow.prefix.bugfix` | `bugfix/` |
@@ -156,7 +156,7 @@ O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem
 - **Finish de `release` — fluxo completo automático**: quando o tipo é `release` e o checkbox **No fetch** não está marcado, o painel executa automaticamente em sequência (com as saídas anexadas à janela de resultado):
   1. `git push <remote> release/<nome>` — envia a release para o remoto **antes** do finish, evitando o erro `fatal: couldn't find remote ref release/<nome>` gerado pelo git-flow ao buscar a branch remota
   2. `git flow release finish [-k] -m "<nome>" "<nome>"` (o `-m` fornece a mensagem da tag anotada, evitando o erro `no tag message?`)
-  3. `git push <remote> <master>` (nome lido de `gitflow.branch.master`)
+  3. `git push <remote> <master>` (nome lido de `gitflow.branch.main`)
   4. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
   5. `git push <remote> refs/tags/<nome>` — envia a **tag** criada pelo finish ao remoto (o git flow só cria a tag localmente)
   6. `git push <remote> --delete release/<nome>` — remove a **branch remota** da release, **somente se ela ainda existir**: o plugin antes verifica com `git ls-remote --heads <remote> release/<nome>` e, se a branch já tiver sido removida pelo git-flow durante o finish, **pula o delete** e registra uma nota amigável na janela de resultado, em vez de exibir o erro `unable to delete '...': remote ref does not exist`
