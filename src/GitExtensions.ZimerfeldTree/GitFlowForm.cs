@@ -11,6 +11,8 @@ namespace GitExtensions.ZimerfeldTree;
 public sealed class GitFlowForm : Form
 {
     private readonly BranchHierarchyService _svc;
+    private readonly bool _showControlIds;
+    private readonly ToolTip _mainTooltip = new ToolTip();
 
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -59,9 +61,10 @@ public sealed class GitFlowForm : Form
     /// </summary>
     public event Action<string?>? RepoMutated;
 
-    public GitFlowForm(BranchHierarchyService svc)
+    public GitFlowForm(BranchHierarchyService svc, bool showControlIds = false)
     {
-        _svc = svc;
+        _svc            = svc;
+        _showControlIds = showControlIds;
 
         Text            = "ZimerfeldTree - GitFlow";
         Size            = new Size(688, 824);
@@ -81,7 +84,12 @@ public sealed class GitFlowForm : Form
         CancelButton = _btnClose;
 
         SetTabOrder();
-        Load += (_, _) => { InitData(); ApplySettings(); };
+        Load += (_, _) =>
+        {
+            InitData();
+            ApplySettings();
+            if (_showControlIds) ApplyControlTooltips();
+        };
     }
 
     // ── Build UI ────────────────────────────────────────────────────────────
@@ -90,12 +98,14 @@ public sealed class GitFlowForm : Form
     {
         _lblHead = new Label
         {
+            Name      = "lblHead",
             TextAlign = ContentAlignment.MiddleCenter,
             Bounds    = new Rectangle(120, 10, 400, 20),
             Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _lnkAbout = new LinkLabel
         {
+            Name      = "lnkAbout",
             Text      = "About GitFlow",
             AutoSize  = true,
             Anchor    = AnchorStyles.Top | AnchorStyles.Right,
@@ -111,6 +121,7 @@ public sealed class GitFlowForm : Form
         // "Start branch" is now the GroupBox title — no separate lblType inside.
         _grpStart = new GroupBox
         {
+            Name   = "grpStart",
             Text   = "Start branch",
             Bounds = new Rectangle(8, 36, 664, 120),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
@@ -119,12 +130,14 @@ public sealed class GitFlowForm : Form
         // Row 1 — type selector (col label x=12, col input x=108)
         var lblType = new Label
         {
+            Name      = "lblStartType",
             Text      = "Type:",
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 24, 90, 22)
         };
         _cboStartType = new ComboBox
         {
+            Name          = "cboStartType",
             Bounds        = new Rectangle(108, 22, 180, 24),
             DropDownStyle = ComboBoxStyle.DropDownList
         };
@@ -143,22 +156,26 @@ public sealed class GitFlowForm : Form
         // Row 2 — expected name (prefix label + text input + Start button)
         var lblName = new Label
         {
+            Name      = "lblStartName",
             Text      = "Expected name:",
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 54, 90, 22)
         };
         _lblStartPrefix = new Label
         {
+            Name      = "lblStartPrefix",
             TextAlign = ContentAlignment.MiddleRight,
             Bounds    = new Rectangle(108, 54, 60, 22)
         };
         _txtStartName = new TextBox
         {
+            Name   = "txtStartName",
             Bounds = new Rectangle(172, 54, 382, 22),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _btnStart = new Button
         {
+            Name   = "btnStart",
             Text   = "Start",
             Bounds = new Rectangle(560, 52, 90, 26),
             Anchor = AnchorStyles.Top | AnchorStyles.Right
@@ -168,6 +185,7 @@ public sealed class GitFlowForm : Form
         // Row 3 — optional base branch
         _chkBasedOn = new CheckBox
         {
+            Name   = "chkBasedOn",
             Text   = "based on:",
             Bounds = new Rectangle(108, 84, 90, 22)
         };
@@ -175,6 +193,7 @@ public sealed class GitFlowForm : Form
 
         _cboBasedOn = new ComboBox
         {
+            Name          = "cboBasedOn",
             Bounds        = new Rectangle(202, 82, 348, 24),
             DropDownStyle = ComboBoxStyle.DropDownList,
             Enabled       = false,
@@ -191,6 +210,7 @@ public sealed class GitFlowForm : Form
     {
         _grpManage = new GroupBox
         {
+            Name   = "grpManage",
             Text   = "Manage existing branches",
             Bounds = new Rectangle(8, 164, 664, 192),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
@@ -199,12 +219,14 @@ public sealed class GitFlowForm : Form
         // Row 1 — type selector (aligned with grpStart: label x=12, input x=108)
         var lblType = new Label
         {
+            Name      = "lblManageType",
             Text      = "Type:",
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 24, 90, 22)
         };
         _cboManageType = new ComboBox
         {
+            Name          = "cboManageType",
             Bounds        = new Rectangle(108, 22, 180, 24),
             DropDownStyle = ComboBoxStyle.DropDownList
         };
@@ -214,18 +236,21 @@ public sealed class GitFlowForm : Form
         // Row 2 — branch selector (same column positions as grpStart name row)
         var lblBranch = new Label
         {
+            Name      = "lblManageBranch",
             Text      = "Branch:",
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 54, 90, 22)
         };
         _lblManagePrefix = new Label
         {
+            Name      = "lblManagePrefix",
             Text      = "/",
             TextAlign = ContentAlignment.MiddleRight,
             Bounds    = new Rectangle(108, 54, 60, 22)
         };
         _cboManageBranch = new ComboBox
         {
+            Name          = "cboManageBranch",
             Bounds        = new Rectangle(172, 52, 478, 24),
             DropDownStyle = ComboBoxStyle.DropDown,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
@@ -233,21 +258,22 @@ public sealed class GitFlowForm : Form
 
         // ── Buttons row: 4 × 140 px, gap 18 px, left margin 12 px ──────────────
         // (12)[Publish 140](18)[Track 140](18)[Update 140](18)[Finish 140](12) = 638 ✓
-        _btnPublish = new Button { Text = "Publish", Bounds = new Rectangle( 12, 84, 140, 26) };
+        _btnPublish = new Button { Name = "btnPublish", Text = "Publish", Bounds = new Rectangle( 12, 84, 140, 26) };
         _btnPublish.Click += (_, _) => DoPublish();
 
-        _btnTrack = new Button { Text = "Track",   Bounds = new Rectangle(170, 84, 140, 26) };
+        _btnTrack = new Button { Name = "btnTrack", Text = "Track",   Bounds = new Rectangle(170, 84, 140, 26) };
         _btnTrack.Click += (_, _) => DoTrack();
 
-        _btnUpdate = new Button { Text = "Update",  Bounds = new Rectangle(328, 84, 140, 26) };
+        _btnUpdate = new Button { Name = "btnUpdate", Text = "Update",  Bounds = new Rectangle(328, 84, 140, 26) };
         _btnUpdate.Click += (_, _) => DoUpdate();
 
-        _btnFinish = new Button { Text = "Finish",  Bounds = new Rectangle(486, 84, 140, 26) };
+        _btnFinish = new Button { Name = "btnFinish", Text = "Finish",  Bounds = new Rectangle(486, 84, 140, 26) };
         _btnFinish.Click += (_, _) => DoFinish();
 
         // ── Checkboxes stacked below the Finish button ─────────────────────────
         _chkKeep = new CheckBox
         {
+            Name    = "chkKeep",
             Text    = "Keep branch after finish",
             Bounds  = new Rectangle(486, 114, 170, 20),
             Checked = true  // default: keep branch; overridden by saved settings on Load
@@ -256,6 +282,7 @@ public sealed class GitFlowForm : Form
 
         _chkNoFetch = new CheckBox
         {
+            Name   = "chkNoFetch",
             Text   = "No fetch (--no-fetch)",
             Bounds = new Rectangle(486, 136, 170, 20)
         };
@@ -276,12 +303,14 @@ public sealed class GitFlowForm : Form
         // Height reduced by 48 px to leave room for the Fechar button below.
         _grpResult = new GroupBox
         {
+            Name   = "grpResult",
             Text   = "Result of git flow command run",
             Bounds = new Rectangle(8, 364, 664, 362),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
         _txtResult = new TextBox
         {
+            Name       = "txtResult",
             Multiline  = true,
             ReadOnly   = true,
             ScrollBars = ScrollBars.Both,
@@ -299,6 +328,7 @@ public sealed class GitFlowForm : Form
     {
         _btnClose = new Button
         {
+            Name         = "btnClose",
             Text         = "Fechar",
             Width        = 90,
             Height       = 28,
@@ -340,6 +370,24 @@ public sealed class GitFlowForm : Form
 
         // grpResult
         _txtResult.TabIndex = 0;
+    }
+
+    // ── Tooltip debug ────────────────────────────────────────────────────────
+
+    private void ApplyControlTooltips()
+    {
+        _mainTooltip.RemoveAll();
+        SetTooltipsRecursive(this, _mainTooltip);
+    }
+
+    private static void SetTooltipsRecursive(Control parent, ToolTip tip)
+    {
+        foreach (Control c in parent.Controls)
+        {
+            if (c.Name.Length > 0)
+                tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}\nNome: {c.Text}");
+            SetTooltipsRecursive(c, tip);
+        }
     }
 
     // ── Settings persistence (checkboxes) ───────────────────────────────────

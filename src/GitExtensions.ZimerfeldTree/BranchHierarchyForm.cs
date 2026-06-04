@@ -48,6 +48,8 @@ public sealed class BranchHierarchyForm : Form
     private Panel            _warnPanel   = null!;
     private Label            _warnLabel   = null!;
     private Button           _btnGitFlow          = null!;
+    private Panel            _gitFlowInitPanel    = null!;
+    private Button           _btnGitFlowInit      = null!;
     private Button           _btnGitFlowDedicated = null!;
     private Panel            _gitFlowButtonPanel  = null!;
     private Button           _btnPull             = null!;
@@ -57,6 +59,11 @@ public sealed class BranchHierarchyForm : Form
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
 
+    // ── Bottom panel ──────────────────────────────────────────────────────────
+    private Panel    _bottomPanel       = null!;
+    private Button   _btnClose          = null!;
+    private CheckBox _chkShowDebug = null!;
+
     // ── Loading overlay ───────────────────────────────────────────────────────
     private Panel       _loadingOverlay   = null!;
     private ProgressBar _progressBar      = null!;
@@ -65,6 +72,9 @@ public sealed class BranchHierarchyForm : Form
     private Button      _btnCancelRefresh = null!;
     private bool        _isRefreshing;
     private CancellationTokenSource? _refreshCts;
+
+    // ── Tooltip engine ────────────────────────────────────────────────────────
+    private readonly ToolTip _mainTooltip = new ToolTip();
 
     // ── Tree expand/collapse state persistence ────────────────────────────────
     /// <summary>Per-repo set of expanded node paths (key = workingDir, value = stable path strings).</summary>
@@ -77,9 +87,31 @@ public sealed class BranchHierarchyForm : Form
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "GitExtensions", "ZimerfeldTree.treestate.json");
 
-    // ── Bottom panel ──────────────────────────────────────────────────────────
-    private Panel  _bottomPanel = null!;
-    private Button _btnClose    = null!;
+    private static readonly string UiSettingsPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GitExtensions", "ZimerfeldTree.uisettings.json");
+
+    private static bool LoadShowControlIds()
+    {
+        try
+        {
+            if (!File.Exists(UiSettingsPath)) return false;
+            return File.ReadAllText(UiSettingsPath).Contains("\"showControlIds\":true");
+        }
+        catch { return false; }
+    }
+
+    private static void SaveShowControlIds(bool value)
+    {
+        try
+        {
+            string dir = Path.GetDirectoryName(UiSettingsPath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            File.WriteAllText(UiSettingsPath,
+                $"{{\"showControlIds\":{(value ? "true" : "false")}}}");
+        }
+        catch { }
+    }
 
     // ── Tree section roots ────────────────────────────────────────────────────
     private TreeNode _localRoot   = null!;
@@ -294,6 +326,7 @@ public sealed class BranchHierarchyForm : Form
         BuildTopPanel();
         BuildFilterPanel();
         BuildWarnPanel();
+        BuildGitFlowInitPanel();
         BuildGitFlowButtonPanel();
         BuildTreeView();
         BuildContextMenu();
@@ -304,17 +337,21 @@ public sealed class BranchHierarchyForm : Form
 
         // Layout order (Dock fills from bottom and top inward, Fill takes the remainder).
         // Added last = topmost for DockStyle.Top; visual order top→bottom:
-        //   _topPanel, _filterPanel, _warnPanel, _gitFlowButtonPanel, _tree (Fill), _bottomPanel, _status
+        //   _topPanel, _gitFlowInitPanel, _filterPanel, _warnPanel, _gitFlowButtonPanel, _tree (Fill), _bottomPanel, _status
         Controls.Add(_tree);                // Fill
         Controls.Add(_gitFlowButtonPanel);  // Top — just above the tree
         Controls.Add(_warnPanel);           // Top
         Controls.Add(_filterPanel);         // Top
+        Controls.Add(_gitFlowInitPanel);    // Top — GitFlow Initialize button (above filter)
         Controls.Add(_topPanel);            // Top (topmost)
         Controls.Add(_status);         // Bottom
         Controls.Add(_bottomPanel);    // Bottom (above status)
         Controls.Add(_loadingOverlay); // Floats above everything (BringToFront when shown)
 
         CancelButton = _btnClose;
+
+        // Restore tooltip-debug state.
+        Load += (_, _) => ApplyControlTooltips(_chkShowDebug.Checked);
 
         // Trigger the async initial load once the window is fully painted.
         Shown += (_, _) => _ = RefreshTreeAsync(showOverlay: true);
@@ -325,10 +362,11 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildTopPanel()
     {
-        _topPanel = new Panel { Dock = DockStyle.Top, Height = 72 };
+        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 72 };
 
         var table = new TableLayoutPanel
         {
+            Name        = "tblTop",
             Dock        = DockStyle.Fill,
             ColumnCount = 1,
             RowCount    = 3,
@@ -342,6 +380,7 @@ public sealed class BranchHierarchyForm : Form
 
         _lblWD = new Label
         {
+            Name     = "lblWD",
             Text     = "Working Directory:",
             AutoSize = true,
             Font     = new Font(Font, FontStyle.Bold),
@@ -350,6 +389,7 @@ public sealed class BranchHierarchyForm : Form
 
         _cboRepo = new ComboBox
         {
+            Name          = "cboRepo",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Dock          = DockStyle.Fill,
             Margin        = new Padding(0, 0, 0, 2)
@@ -358,6 +398,7 @@ public sealed class BranchHierarchyForm : Form
 
         _lblBranch = new Label
         {
+            Name     = "lblBranch",
             AutoSize = true,
             Text     = "Branch: ",
             Margin   = Padding.Empty
@@ -372,10 +413,11 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildFilterPanel()
     {
-        _filterPanel = new Panel { Dock = DockStyle.Top, Height = 28, Padding = new Padding(4, 2, 4, 2) };
+        _filterPanel = new Panel { Name = "filterPanel", Dock = DockStyle.Top, Height = 28, Padding = new Padding(4, 2, 4, 2) };
 
         _txtFilter = new TextBox
         {
+            Name            = "txtFilter",
             Dock            = DockStyle.Fill,
             PlaceholderText = "Filtrar branches..."
         };
@@ -383,6 +425,7 @@ public sealed class BranchHierarchyForm : Form
 
         _btnRefresh = new Button
         {
+            Name   = "btnRefresh",
             Text   = "↺",
             Dock   = DockStyle.Right,
             Width  = 32,
@@ -399,6 +442,7 @@ public sealed class BranchHierarchyForm : Form
     {
         _warnLabel = new Label
         {
+            Name      = "warnLabel",
             Dock      = DockStyle.Fill,
             Text      = string.Empty,
             ForeColor = Color.DarkRed,
@@ -409,6 +453,7 @@ public sealed class BranchHierarchyForm : Form
 
         _btnGitFlow = new Button
         {
+            Name  = "btnGitFlow",
             Dock  = DockStyle.Right,
             Width = 160,
             Text  = "Organizar como GitFlow"
@@ -417,6 +462,7 @@ public sealed class BranchHierarchyForm : Form
 
         _warnPanel = new Panel
         {
+            Name    = "warnPanel",
             Dock    = DockStyle.Top,
             Height  = 26,
             Visible = false,
@@ -426,19 +472,47 @@ public sealed class BranchHierarchyForm : Form
         _warnPanel.Controls.Add(_btnGitFlow);
     }
 
+    private void BuildGitFlowInitPanel()
+    {
+        _btnGitFlowInit = new Button
+        {
+            Name   = "btnGitFlowInit",
+            Width  = 160,
+            Height = 22,
+            Text   = "GitFlow Initialize"
+        };
+        _btnGitFlowInit.Click += (_, _) => DoGitFlowInit();
+
+        _gitFlowInitPanel = new Panel
+        {
+            Name    = "gitFlowInitPanel",
+            Dock    = DockStyle.Top,
+            Height  = 26,
+            Padding = new Padding(4, 2, 4, 2)
+        };
+        _gitFlowInitPanel.Controls.Add(_btnGitFlowInit);
+
+        // Keep button centred horizontally whenever the panel is laid out.
+        _gitFlowInitPanel.Layout += (_, _) =>
+            _btnGitFlowInit.Location = new Point(
+                (_gitFlowInitPanel.Width  - _btnGitFlowInit.Width)  / 2,
+                (_gitFlowInitPanel.Height - _btnGitFlowInit.Height) / 2);
+    }
+
     private void BuildGitFlowButtonPanel()
     {
-        _btnPull = new Button { Text = "Pull", Width = 80, Height = 24, Visible = false };
+        _btnPull = new Button { Name = "btnPull", Text = "Pull", Width = 80, Height = 24, Visible = false };
         _btnPull.Click += (_, _) => DoPull();
 
-        _btnPush = new Button { Text = "Push", Width = 80, Height = 24, Visible = false };
+        _btnPush = new Button { Name = "btnPush", Text = "Push", Width = 80, Height = 24, Visible = false };
         _btnPush.Click += (_, _) => DoPush();
 
-        _btnCommitDedicated = new Button { Text = "Commit", Width = 80, Height = 24, Visible = false };
+        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 80, Height = 24, Visible = false };
         _btnCommitDedicated.Click += (_, _) => DoCommit();
 
         _btnGitFlowDedicated = new Button
         {
+            Name    = "btnGitFlowDedicated",
             Text    = "GitFlow",
             Width   = 120,
             Height  = 24,
@@ -448,7 +522,7 @@ public sealed class BranchHierarchyForm : Form
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
 
-        _gitFlowButtonPanel = new Panel { Dock = DockStyle.Top, Height = 32 };
+        _gitFlowButtonPanel = new Panel { Name = "gitFlowButtonPanel", Dock = DockStyle.Top, Height = 32 };
         _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated]);
 
         // All buttons left-aligned with uniform 4 px gap; only visible ones consume space.
@@ -473,6 +547,7 @@ public sealed class BranchHierarchyForm : Form
     {
         _tree = new TreeView
         {
+            Name          = "tree",
             Dock          = DockStyle.Fill,
             ShowLines     = true,
             ShowPlusMinus = true,
@@ -594,6 +669,7 @@ public sealed class BranchHierarchyForm : Form
     {
         _btnClose = new Button
         {
+            Name         = "btnClose",
             Text         = "Fechar",
             Width        = 80,
             Height       = 26,
@@ -601,20 +677,40 @@ public sealed class BranchHierarchyForm : Form
         };
         _btnClose.Click += (_, _) => Close();
 
-        _bottomPanel = new Panel { Dock = DockStyle.Bottom, Height = 36 };
-        _bottomPanel.Controls.Add(_btnClose);
+        _chkShowDebug = new CheckBox
+        {
+            Name    = "chkShowDebug",
+            Text    = "Debug",
+            AutoSize = true,
+            Checked  = LoadShowControlIds()
+        };
+        _chkShowDebug.CheckedChanged += (_, _) =>
+        {
+            SaveShowControlIds(_chkShowDebug.Checked);
+            ApplyControlTooltips(_chkShowDebug.Checked);
+        };
 
-        // Keep button centred horizontally whenever the panel is laid out.
+        _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 36 };
+        _bottomPanel.Controls.Add(_btnClose);
+        _bottomPanel.Controls.Add(_chkShowDebug);
+
+        // Centre the Fechar button; pin the checkbox to the left — both vertically centred.
         _bottomPanel.Layout += (_, _) =>
+        {
             _btnClose.Location = new Point(
                 (_bottomPanel.Width  - _btnClose.Width) / 2,
                 (_bottomPanel.Height - _btnClose.Height) / 2);
+            _chkShowDebug.Location = new Point(
+                8,
+                (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+        };
     }
 
     private void BuildLoadingOverlay()
     {
         _loadingTitle = new Label
         {
+            Name      = "loadingTitle",
             Text      = "Carregando dados do repositório",
             AutoSize  = false,
             TextAlign = ContentAlignment.MiddleCenter,
@@ -624,6 +720,7 @@ public sealed class BranchHierarchyForm : Form
 
         _progressBar = new ProgressBar
         {
+            Name    = "progressBar",
             Bounds  = new Rectangle(10, 38, 340, 20),
             Minimum = 0,
             Maximum = 100,
@@ -633,6 +730,7 @@ public sealed class BranchHierarchyForm : Form
 
         _stepsList = new ListBox
         {
+            Name           = "stepsList",
             // Tall enough to show all 8 progress steps without a vertical scrollbar.
             Bounds         = new Rectangle(10, 62, 340, 140),
             SelectionMode  = SelectionMode.None,
@@ -643,6 +741,7 @@ public sealed class BranchHierarchyForm : Form
 
         _btnCancelRefresh = new Button
         {
+            Name   = "btnCancelRefresh",
             Text   = "Cancelar",
             Bounds = new Rectangle(130, 212, 100, 26)
         };
@@ -655,6 +754,7 @@ public sealed class BranchHierarchyForm : Form
 
         _loadingOverlay = new Panel
         {
+            Name        = "loadingOverlay",
             Size        = new Size(360, 248),
             BackColor   = SystemColors.Window,
             BorderStyle = BorderStyle.FixedSingle,
@@ -1250,11 +1350,12 @@ public sealed class BranchHierarchyForm : Form
     {
         // Panels on the form — visual order top→bottom
         _topPanel           .TabIndex = 0;
-        _filterPanel        .TabIndex = 1;
-        _warnPanel          .TabIndex = 2;
-        _gitFlowButtonPanel .TabIndex = 3;
-        _tree               .TabIndex = 4;
-        _bottomPanel        .TabIndex = 5;
+        _gitFlowInitPanel   .TabIndex = 1;
+        _filterPanel        .TabIndex = 2;
+        _warnPanel          .TabIndex = 3;
+        _gitFlowButtonPanel .TabIndex = 4;
+        _tree               .TabIndex = 5;
+        _bottomPanel        .TabIndex = 6;
 
         // Top panel (only interactive control)
         _cboRepo.TabIndex = 0;
@@ -1266,6 +1367,9 @@ public sealed class BranchHierarchyForm : Form
         // Warn panel — right→left
         _btnGitFlow.TabIndex = 0;
 
+        // GitFlow init panel
+        _btnGitFlowInit.TabIndex = 0;
+
         // GitFlow button panel — left→right
         _btnPull            .TabIndex = 0;
         _btnPush            .TabIndex = 1;
@@ -1273,7 +1377,8 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlowDedicated.TabIndex = 3;
 
         // Bottom panel
-        _btnClose.TabIndex = 0;
+        _btnClose         .TabIndex = 0;
+        _chkShowDebug.TabIndex = 1;
     }
 
     /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
@@ -1283,9 +1388,11 @@ public sealed class BranchHierarchyForm : Form
         _txtFilter          .Enabled = enabled;
         _btnRefresh         .Enabled = enabled;
         _btnGitFlow         .Enabled = enabled;
+        _btnGitFlowInit     .Enabled = enabled;
         _btnGitFlowDedicated.Enabled = enabled;
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
+        _chkShowDebug  .Enabled = enabled;
     }
 
     private void UpdateStatus()
@@ -1538,9 +1645,60 @@ public sealed class BranchHierarchyForm : Form
         else ShowError("Erro ao criar branch", err);
     }
 
+    // ── Tooltip debug ────────────────────────────────────────────────────────
+
+    private void ApplyControlTooltips(bool show)
+    {
+        _mainTooltip.RemoveAll();
+        if (!show) return;
+        SetTooltipsRecursive(this, _mainTooltip);
+    }
+
+    private static void SetTooltipsRecursive(Control parent, ToolTip tip)
+    {
+        foreach (Control c in parent.Controls)
+        {
+            if (c.Name.Length > 0)
+                tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}\nNome: {c.Text}");
+            SetTooltipsRecursive(c, tip);
+        }
+    }
+
+    private void DoGitFlowInit()
+    {
+        (string key, string value)[] configs =
+        [
+            ("gitflow.branch.master",     "main"),
+            ("gitflow.branch.develop",    "develop"),
+            ("gitflow.prefix.feature",    "feature/"),
+            ("gitflow.prefix.bugfix",     "bugfix/"),
+            ("gitflow.prefix.release",    "release/"),
+            ("gitflow.prefix.hotfix",     "hotfix/"),
+            ("gitflow.prefix.support",    "support/"),
+            ("gitflow.prefix.versiontag", ""),
+        ];
+
+        var errors = new System.Text.StringBuilder();
+        foreach (var (key, value) in configs)
+        {
+            var (output, code) = _svc.RunGitFlow($"config {key} \"{value}\"");
+            if (code != 0)
+                errors.AppendLine($"  {key}: {output.Trim()}");
+        }
+
+        if (errors.Length == 0)
+            MessageBox.Show("GitFlow inicializado com sucesso.", "GitFlow Initialize",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        else
+            MessageBox.Show($"Alguns comandos falharam:\n{errors}", "GitFlow Initialize",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+        RefreshTree();
+    }
+
     private void DoGitFlow()
     {
-        using var dlg = new GitFlowForm(_svc);
+        using var dlg = new GitFlowForm(_svc, _chkShowDebug.Checked);
 
         // Refresh the tree live when GitFlow mutates the repo (any button) while still modal, and
         // reveal/select the affected branch. RefreshTree() runs behind the modal dialog and does

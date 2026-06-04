@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.132**
+**Versão atual: 1.0.140**
 
 ---
 
@@ -53,6 +53,16 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - Após cada Push, Pull ou Commit (seja pelos botões ou pela janela principal do GitExtensions), a árvore é **atualizada automaticamente** e os contadores dos botões (`↑N`, `↓N`, `(N)`) são recalculados
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 
+### Checkbox "Mostrar IDs" (debug de controles)
+
+O checkbox **Mostrar IDs**, localizado na borda inferior esquerda da janela ZimerfeldTree, ativa tooltips de identificação em todos os controles do plugin:
+
+- **Linha 1 do tooltip:** `ID: <nome interno do controle>` — identificador único (campo C# / Name do WinForms)
+- **Linha 2 do tooltip:** `Nome: <texto visível>` — Text do controle
+- Funciona em ambas as janelas: ZimerfeldTree e a janela GitFlow (aberta em seguida)
+- O estado do checkbox é **persistido** entre sessões em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
+- Útil para desenvolvimento e manutenção do plugin
+
 ### Persistência de estado da árvore
 
 - O estado de expansão/recolhimento de cada nó é **salvo automaticamente** por Working Directory
@@ -97,6 +107,23 @@ Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.pn
 | ↻ azul  | Atualizar            | Sempre                                                                              |
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: *Zimerfeld: Auto-resumo*) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no ZimerfeldTree divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
+
+### Botão GitFlow Initialize
+
+O botão **GitFlow Initialize** fica na janela ZimerfeldTree, abaixo do painel de aviso GitFlow (faixa com o botão "Organizar como GitFlow" / "Restaurar hierarquia real"), e está sempre visível. Ao clicar, aplica de uma vez as chaves de configuração padrão do GitFlow no repositório atual:
+
+| Chave | Valor padrão |
+|---|---|
+| `gitflow.branch.master` | `main` |
+| `gitflow.branch.develop` | `develop` |
+| `gitflow.prefix.feature` | `feature/` |
+| `gitflow.prefix.bugfix` | `bugfix/` |
+| `gitflow.prefix.release` | `release/` |
+| `gitflow.prefix.hotfix` | `hotfix/` |
+| `gitflow.prefix.support` | `support/` |
+| `gitflow.prefix.versiontag` | *(vazio)* |
+
+Equivale a executar `git config <chave> <valor>` para cada linha. Útil para inicializar um repositório novo no padrão GitFlow sem precisar rodar `git flow init` interativo. Em caso de sucesso completo, uma mensagem de confirmação é exibida; se algum comando falhar, os erros são listados.
 
 ### Janela GitFlow — comportamento geral
 
