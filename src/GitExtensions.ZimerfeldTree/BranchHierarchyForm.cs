@@ -61,11 +61,10 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripStatusLabel _statusLbl = null!;
 
     // ── Bottom panel ──────────────────────────────────────────────────────────
-    private Panel    _bottomPanel              = null!;
-    private Button   _btnClose                = null!;
-    private CheckBox _chkShowDebug            = null!;
-    private CheckBox _chkHabilitarGitFlowInit = null!;
-    private LinkLabel _lnkAbout               = null!;
+    private Panel    _bottomPanel  = null!;
+    private Button   _btnClose    = null!;
+    private CheckBox _chkShowDebug = null!;
+    private LinkLabel _lnkAbout   = null!;
 
     // ── Loading overlay ───────────────────────────────────────────────────────
     private Panel       _loadingOverlay   = null!;
@@ -360,7 +359,6 @@ public sealed class BranchHierarchyForm : Form
         {
             _lnkAbout.BringToFront();
             ApplyControlTooltips(_chkShowDebug.Checked);
-            _chkHabilitarGitFlowInit.Visible = _chkShowDebug.Checked;
             UpdateGitFlowInitButton();
             LayoutGitFlowButtons();
         };
@@ -374,7 +372,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildTopPanel()
     {
-        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 72 };
+        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 78 };
 
         var table = new TableLayoutPanel
         {
@@ -431,7 +429,7 @@ public sealed class BranchHierarchyForm : Form
             Text     = "About Tree",
             AutoSize = true,
             Anchor   = AnchorStyles.Top | AnchorStyles.Right,
-            Location = new Point(ClientSize.Width - 100, 8)
+            Location = new Point(ClientSize.Width - 100, 6)
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAboutTree();
     }
@@ -712,25 +710,13 @@ public sealed class BranchHierarchyForm : Form
         {
             SaveShowControlIds(_chkShowDebug.Checked);
             ApplyControlTooltips(_chkShowDebug.Checked);
-            _chkHabilitarGitFlowInit.Visible = _chkShowDebug.Checked;
-            UpdateGitFlowInitButton();
         };
-
-        _chkHabilitarGitFlowInit = new CheckBox
-        {
-            Name     = "chkHabilitarGitFlowInit",
-            Text     = "Habilitar GitFlowInit",
-            AutoSize = true,
-            Visible  = false   // shown only when chkShowDebug is checked
-        };
-        _chkHabilitarGitFlowInit.CheckedChanged += (_, _) => UpdateGitFlowInitButton();
 
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 36 };
         _bottomPanel.Controls.Add(_btnClose);
         _bottomPanel.Controls.Add(_chkShowDebug);
-        _bottomPanel.Controls.Add(_chkHabilitarGitFlowInit);
 
-        // Centre Fechar; pin checkboxes to the left (chkShowDebug, then chkHabilitarGitFlowInit).
+        // Centre Fechar; pin chkShowDebug to the left.
         _bottomPanel.Layout += (_, _) =>
         {
             int cy = (_bottomPanel.Height - _btnClose.Height) / 2;
@@ -738,9 +724,6 @@ public sealed class BranchHierarchyForm : Form
                 (_bottomPanel.Width - _btnClose.Width) / 2, cy);
             _chkShowDebug.Location = new Point(
                 8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
-            _chkHabilitarGitFlowInit.Location = new Point(
-                8 + _chkShowDebug.Width + 8,
-                (_bottomPanel.Height - _chkHabilitarGitFlowInit.Height) / 2);
         };
     }
 
@@ -1417,9 +1400,8 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlowDedicated.TabIndex = 3;
 
         // Bottom panel
-        _btnClose                .TabIndex = 0;
-        _chkShowDebug            .TabIndex = 1;
-        _chkHabilitarGitFlowInit .TabIndex = 2;
+        _btnClose    .TabIndex = 0;
+        _chkShowDebug.TabIndex = 1;
     }
 
     /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
@@ -1434,8 +1416,7 @@ public sealed class BranchHierarchyForm : Form
         _btnVoltar          .Enabled = enabled;
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
-        _chkShowDebug            .Enabled = enabled;
-        _chkHabilitarGitFlowInit .Enabled = enabled;
+        _chkShowDebug       .Enabled = enabled;
     }
 
     private void UpdateStatus()
@@ -1725,15 +1706,10 @@ public sealed class BranchHierarchyForm : Form
 
     /// <summary>
     /// Refreshes the enabled state of <see cref="_btnGitFlowInit"/>:
-    /// disabled when already configured, unless the debug override checkbox is checked.
+    /// enabled when the working directory does not follow the GitFlow pattern, disabled when it does.
     /// </summary>
     private void UpdateGitFlowInitButton()
     {
-        if (_chkShowDebug.Checked && _chkHabilitarGitFlowInit.Checked)
-        {
-            _btnGitFlowInit.Enabled = true;
-            return;
-        }
         _btnGitFlowInit.Enabled = !IsGitFlowConfigured();
     }
 
@@ -1864,7 +1840,6 @@ public sealed class BranchHierarchyForm : Form
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
-        _chkHabilitarGitFlowInit.Checked = false;
         RefreshTree();
         UpdateGitFlowInitButton();
     }
@@ -2130,9 +2105,10 @@ public sealed class BranchHierarchyForm : Form
             "Botões:\n\n" +
             "  ↺ (Atualizar)\n" +
             "    Recarrega a árvore de branches lendo o repositório git atual.\n\n" +
-            "  Organizar como GitFlow\n" +
+            "  Organizar como GitFlow / Restaurar hierarquia geral\n" +
             "    Reorganiza a árvore seguindo a hierarquia GitFlow\n" +
-            "    (main, develop, feature/*, release/*, hotfix/*, support/*).\n\n" +
+            "    (main, develop, feature/*, release/*, hotfix/*, support/*).\n" +
+            "    Ou exibe conforme estado real.\n\n" +
             "  GitFlow Initialize\n" +
             "    Inicializa o GitFlow no repositório atual (git flow init).\n" +
             "    Visível apenas no modo de depuração.\n\n" +
@@ -2152,13 +2128,13 @@ public sealed class BranchHierarchyForm : Form
             "    Abre a janela de restauração: restaurar arquivo de commit,\n" +
             "    cherry-pick e reset de branch.\n\n" +
             "Menu de contexto (clique com botão direito em uma branch):\n\n" +
-            "  Checkout        — Faz checkout da branch selecionada.\n" +
+            "  Checkout           — Faz checkout da branch selecionada.\n" +
             "  Nova branch daqui… — Cria nova branch a partir desta.\n" +
-            "  Mesclar         — git merge da branch selecionada na atual.\n" +
-            "  Rebase          — git rebase da atual na selecionada.\n" +
-            "  Renomear…       — Renomeia a branch.\n" +
-            "  Excluir…        — Exclui a branch.\n" +
-            "  GitFlow…        — Abre janela GitFlow para esta branch.",
+            "  Mesclar            — git merge da branch selecionada na atual.\n" +
+            "  Rebase             — git rebase da atual na selecionada.\n" +
+            "  Renomear…          — Renomeia a branch.\n" +
+            "  Excluir…           — Exclui a branch.\n" +
+            "  GitFlow…           — Abre janela GitFlow para esta branch.",
             "About Tree", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
