@@ -65,6 +65,7 @@ public sealed class BranchHierarchyForm : Form
     private Button   _btnClose                = null!;
     private CheckBox _chkShowDebug            = null!;
     private CheckBox _chkHabilitarGitFlowInit = null!;
+    private LinkLabel _lnkAbout               = null!;
 
     // ── Loading overlay ───────────────────────────────────────────────────────
     private Panel       _loadingOverlay   = null!;
@@ -326,6 +327,7 @@ public sealed class BranchHierarchyForm : Form
         Icon            = TreeOfLifeIcon.ForForm();
 
         BuildTopPanel();
+        BuildAboutLink();
         BuildFilterPanel();
         BuildWarnPanel();
         BuildGitFlowInitPanel();
@@ -348,6 +350,7 @@ public sealed class BranchHierarchyForm : Form
         Controls.Add(_topPanel);            // Top (topmost)
         Controls.Add(_status);         // Bottom
         Controls.Add(_bottomPanel);    // Bottom (above status)
+        Controls.Add(_lnkAbout);       // Floats top-right over _topPanel
         Controls.Add(_loadingOverlay); // Floats above everything (BringToFront when shown)
 
         CancelButton = _btnClose;
@@ -417,6 +420,19 @@ public sealed class BranchHierarchyForm : Form
         table.Controls.Add(_lblBranch, 0, 2);
 
         _topPanel.Controls.Add(table);
+    }
+
+    private void BuildAboutLink()
+    {
+        _lnkAbout = new LinkLabel
+        {
+            Name     = "lnkAbout",
+            Text     = "About Tree",
+            AutoSize = true,
+            Anchor   = AnchorStyles.Top | AnchorStyles.Right,
+            Location = new Point(ClientSize.Width - 100, 8)
+        };
+        _lnkAbout.LinkClicked += (_, _) => ShowAboutTree();
     }
 
     private void BuildFilterPanel()
@@ -1903,7 +1919,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void DoRestore()
     {
-        using var dlg = new RestoreForm(_svc);
+        using var dlg = new RestoreForm(_svc, _chkShowDebug.Checked);
 
         dlg.RepoMutated += branch =>
         {
@@ -2106,6 +2122,44 @@ public sealed class BranchHierarchyForm : Form
 
     private void ShowError(string caption, string message) =>
         MessageBox.Show(message, caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
+
+    private void ShowAboutTree()
+    {
+        MessageBox.Show(
+            "Botões:\n\n" +
+            "  ↺ (Atualizar)\n" +
+            "    Recarrega a árvore de branches lendo o repositório git atual.\n\n" +
+            "  Organizar como GitFlow\n" +
+            "    Reorganiza a árvore seguindo a hierarquia GitFlow\n" +
+            "    (main, develop, feature/*, release/*, hotfix/*, support/*).\n\n" +
+            "  GitFlow Initialize\n" +
+            "    Inicializa o GitFlow no repositório atual (git flow init).\n" +
+            "    Visível apenas no modo de depuração.\n\n" +
+            "  Pull / Pull (↓N)\n" +
+            "    Puxa commits do remoto para a branch atual (git pull).\n" +
+            "    O número entre parênteses indica commits a receber.\n\n" +
+            "  Push / Push (↑N)\n" +
+            "    Envia commits locais para o remoto (git push).\n" +
+            "    O número entre parênteses indica commits a enviar.\n\n" +
+            "  Commit / Commit (N)\n" +
+            "    Abre o diálogo de commit do GitExtensions.\n" +
+            "    O número entre parênteses indica arquivos com mudanças pendentes.\n\n" +
+            "  GitFlow\n" +
+            "    Abre a janela GitFlow para a branch atual:\n" +
+            "    Publish, Track, Update e Finish.\n\n" +
+            "  Voltar Versão\n" +
+            "    Abre a janela de restauração: restaurar arquivo de commit,\n" +
+            "    cherry-pick e reset de branch.\n\n" +
+            "Menu de contexto (clique com botão direito em uma branch):\n\n" +
+            "  Checkout        — Faz checkout da branch selecionada.\n" +
+            "  Nova branch daqui… — Cria nova branch a partir desta.\n" +
+            "  Mesclar         — git merge da branch selecionada na atual.\n" +
+            "  Rebase          — git rebase da atual na selecionada.\n" +
+            "  Renomear…       — Renomeia a branch.\n" +
+            "  Excluir…        — Exclui a branch.\n" +
+            "  GitFlow…        — Abre janela GitFlow para esta branch.",
+            "About Tree", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Tag sentinel values for non-branch tree nodes

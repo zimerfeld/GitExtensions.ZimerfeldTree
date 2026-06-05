@@ -10,6 +10,8 @@ namespace GitExtensions.ZimerfeldTree;
 public sealed class RestoreForm : Form
 {
     private readonly BranchHierarchyService _svc;
+    private readonly bool    _showControlIds;
+    private readonly ToolTip _mainTooltip = new ToolTip();
 
     // ── Header ──
     private Label     _lblHead  = null!;
@@ -48,9 +50,10 @@ public sealed class RestoreForm : Form
     /// </summary>
     public event Action<string?>? RepoMutated;
 
-    public RestoreForm(BranchHierarchyService svc)
+    public RestoreForm(BranchHierarchyService svc, bool showControlIds = false)
     {
-        _svc = svc;
+        _svc            = svc;
+        _showControlIds = showControlIds;
 
         Text            = "ZimerfeldTree - Restore";
         Size            = new Size(560, 720);
@@ -69,7 +72,11 @@ public sealed class RestoreForm : Form
         BuildCloseButton();
 
         CancelButton = _btnClose;
-        Load += (_, _) => InitData();
+        Load += (_, _) =>
+        {
+            InitData();
+            if (_showControlIds) ApplyControlTooltips();
+        };
     }
 
     // ── Build UI ────────────────────────────────────────────────────────────
@@ -430,6 +437,25 @@ public sealed class RestoreForm : Form
             "    --hard   Desfaz commits e DESCARTA todas as mudanças locais.\n\n" +
             "Dica: use 'git log --oneline' para localizar o hash desejado.",
             "About Restore", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    // ── Tooltip debug ────────────────────────────────────────────────────────
+
+    private void ApplyControlTooltips()
+    {
+        _mainTooltip.RemoveAll();
+        SetTooltipsRecursive(this, _mainTooltip);
+        _mainTooltip.SetToolTip(this, $"TYPE: {GetType().Name}\nHandle: 0x{Handle.ToInt64():X}");
+    }
+
+    private static void SetTooltipsRecursive(Control parent, ToolTip tip)
+    {
+        foreach (Control c in parent.Controls)
+        {
+            if (c.Name.Length > 0)
+                tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}");
+            SetTooltipsRecursive(c, tip);
+        }
     }
 
     private static string Clean(string s) => s.Trim().Replace("\"", "");
