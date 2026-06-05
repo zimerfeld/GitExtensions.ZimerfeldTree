@@ -1731,7 +1731,7 @@ public sealed class BranchHierarchyForm : Form
         foreach (Control c in parent.Controls)
         {
             if (c.Name.Length > 0)
-                tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}\nNome: {c.Text}");
+                tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}");
             SetTooltipsRecursive(c, tip);
         }
     }
