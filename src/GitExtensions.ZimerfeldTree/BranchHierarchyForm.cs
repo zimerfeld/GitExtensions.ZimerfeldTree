@@ -51,6 +51,7 @@ public sealed class BranchHierarchyForm : Form
     private Panel            _gitFlowInitPanel    = null!;
     private Button           _btnGitFlowInit      = null!;
     private Button           _btnGitFlowDedicated = null!;
+    private Button           _btnVoltar           = null!;
     private Panel            _gitFlowButtonPanel  = null!;
     private Button           _btnPull             = null!;
     private Button           _btnPush             = null!;
@@ -528,8 +529,18 @@ public sealed class BranchHierarchyForm : Form
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
 
+        _btnVoltar = new Button
+        {
+            Name    = "btnVoltar",
+            Text    = "Voltar Versão",
+            Width   = 120,
+            Height  = 24,
+            Visible = false
+        };
+        _btnVoltar.Click += (_, _) => DoRestore();
+
         _gitFlowButtonPanel = new Panel { Name = "gitFlowButtonPanel", Dock = DockStyle.Top, Height = 32 };
-        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated]);
+        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated, _btnVoltar]);
         // Positions are set explicitly by LayoutGitFlowButtons() — no Layout event so resize doesn't move buttons.
     }
 
@@ -1403,6 +1414,7 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlow         .Enabled = enabled;
         _btnGitFlowInit     .Enabled = enabled;
         _btnGitFlowDedicated.Enabled = enabled;
+        _btnVoltar          .Enabled = enabled;
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
         _chkShowDebug            .Enabled = enabled;
@@ -1424,6 +1436,7 @@ public sealed class BranchHierarchyForm : Form
         _btnPush            .Visible = hasBranch;
         _btnCommitDedicated .Visible = hasBranch;
         _btnGitFlowDedicated.Visible = hasBranch;
+        _btnVoltar          .Visible = hasBranch;
         LayoutGitFlowButtons(); // reposition buttons after visibility change
         if (!hasBranch) return;
 
@@ -1736,7 +1749,8 @@ public sealed class BranchHierarchyForm : Form
         {
             _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
         }
-        _btnGitFlowDedicated.Location = new Point(x, y);
+        _btnGitFlowDedicated.Location = new Point(x, y); x += _btnGitFlowDedicated.Width + 4;
+        _btnVoltar.Location = new Point(x, y);
     }
 
     private static void SetTooltipsRecursive(Control parent, ToolTip tip)
@@ -1884,6 +1898,47 @@ public sealed class BranchHierarchyForm : Form
 
         RefreshTree();
         // GitFlow dialog has already closed (modal) — refocusing ZimerfeldTree here is correct.
+        NotifyRepoChanged();
+    }
+
+    private void DoRestore()
+    {
+        using var dlg = new RestoreForm(_svc);
+
+        dlg.RepoMutated += branch =>
+        {
+            if (!string.IsNullOrEmpty(branch))
+                _postRefreshAction = () => FocusBranchNode(branch);
+            RefreshTree();
+        };
+
+        // Place the two windows side by side, both centered on the current screen.
+        var wa     = Screen.FromControl(this).WorkingArea;
+        int gap    = 8;
+        int totalW = Width + gap + dlg.Width;
+
+        if (wa.Width >= totalW)
+        {
+            int leftX = wa.Left + (wa.Width  - totalW) / 2;
+            int topY  = wa.Top  + Math.Max(0, (wa.Height - Math.Max(Height, dlg.Height)) / 2);
+            Location     = new Point(leftX, topY);
+            dlg.Location = new Point(leftX + Width + gap, topY);
+        }
+        else
+        {
+            dlg.Location = new Point(
+                Math.Max(wa.Left, Location.X + (Width  - dlg.Width)  / 2),
+                Math.Max(wa.Top,  Location.Y + (Height - dlg.Height) / 2));
+        }
+
+        dlg.ShowDialog(this);
+
+        // Recentre this window on the screen after the Restore dialog closes.
+        Location = new Point(
+            wa.Left + (wa.Width  - Width)  / 2,
+            wa.Top  + (wa.Height - Height) / 2);
+
+        RefreshTree();
         NotifyRepoChanged();
     }
 

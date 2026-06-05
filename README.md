@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.153**
+**Versão atual: 1.0.154**
 
 ---
 
@@ -43,7 +43,7 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - Campo de pesquisa filtra branches em todas as seções simultaneamente
 - Filtro preserva nós pai que possuem filhos correspondentes
 
-### Botões Pull / Push / Commit / GitFlow
+### Botões Pull / Push / Commit / GitFlow / Voltar Versão
 
 Exibidos acima da árvore quando há uma branch em checkout:
 
@@ -52,6 +52,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - **Commit** / **Commit (N)** — abre a janela de Commit nativa do GitExtensions; o contador `(N)` só aparece quando há alterações pendentes; sem alterações o botão e o item do menu de contexto mostram apenas `Commit`
 - Após cada Push, Pull ou Commit (seja pelos botões ou pela janela principal do GitExtensions), a árvore é **atualizada automaticamente** e os contadores dos botões (`↑N`, `↓N`, `(N)`) são recalculados
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
+- **Voltar Versão** — abre a janela **ZimerfeldRestore** com três operações de restauração de histórico (ver seção abaixo)
 
 ### Tecla F3 — foco rápido na ZimerfeldTree
 
@@ -138,6 +139,50 @@ O botão **GitFlow Initialize** fica na janela ZimerfeldTree, abaixo do painel d
 | `gitflow.prefix.versiontag` | *(vazio)* |
 
 Equivale a executar `git config <chave> <valor>` para cada linha. Útil para inicializar um repositório novo no padrão GitFlow sem precisar rodar `git flow init` interativo. Em caso de sucesso completo, uma mensagem de confirmação é exibida; se algum comando falhar, os erros são listados.
+
+### Janela Restore (Voltar Versão)
+
+Abre ao clicar em **Voltar Versão** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
+
+#### Restaurar Arquivo
+
+Recupera um arquivo específico do estado de um commit antigo e o coloca como staged, pronto para commit:
+
+```
+git checkout <hash> -- "<arquivo>"
+```
+
+Campos: **Commit hash** + **Arquivo (caminho relativo)**. Exemplo: `src/Foo/Bar.cs`.
+
+#### Cherry-Pick
+
+Aplica um ou mais commits sobre a branch atual:
+
+```
+git cherry-pick <hash>
+git cherry-pick <hash-antigo>..<hash-recente>   # range
+```
+
+Campo **Commit(s)** aceita hash simples ou intervalo com `..`.
+
+#### Reset Branch
+
+Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (padrão: `develop`), informe o commit hash de destino e escolha o modo:
+
+| Modo | Efeito |
+|---|---|
+| `--mixed` | Desfaz commits; mudanças voltam como **unstaged** (padrão) |
+| `--soft` | Desfaz commits; mudanças voltam como **staged** |
+| `--hard` | Desfaz commits e **DESCARTA** todas as mudanças — irreversível (pede confirmação) |
+
+Se a branch selecionada não for a atual, o plugin executa `git checkout <branch>`, aplica o reset e retorna à branch original automaticamente.
+
+#### Comportamento da janela
+
+- A janela Restore é posicionada ao lado de ZimerfeldTree, ambas centralizadas na tela (mesmo comportamento da janela GitFlow)
+- Após cada operação bem-sucedida, a árvore de ZimerfeldTree é atualizada em background sem perder o foco da janela Restore
+- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada
+- Link **About Restore** no canto superior direito descreve cada operação
 
 ### Janela GitFlow — comportamento geral
 
