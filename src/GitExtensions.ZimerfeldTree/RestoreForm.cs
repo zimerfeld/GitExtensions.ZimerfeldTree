@@ -343,14 +343,13 @@ public sealed class RestoreForm : Form
 
     private List<CommitRef> LoadCommitRefs()
     {
-        var (output, _) = _svc.RunGitFlow(
-            "for-each-ref --format=%(refname:short) %(objectname:short) refs/heads");
+        var (output, _) = _svc.RunGitFlow("log --oneline --all -200");
         var refs = new List<CommitRef>();
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
             var parts = line.Trim().Split(' ', 2);
-            if (parts.Length == 2 && parts[0].Length > 0 && parts[1].Length > 0)
-                refs.Add(new CommitRef(parts[0], parts[1]));
+            if (parts.Length == 2 && parts[0].Length >= 7)
+                refs.Add(new CommitRef(parts[1], parts[0]));
         }
         return refs;
     }
