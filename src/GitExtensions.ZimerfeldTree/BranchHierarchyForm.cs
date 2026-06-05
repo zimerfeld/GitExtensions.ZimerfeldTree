@@ -357,6 +357,7 @@ public sealed class BranchHierarchyForm : Form
             ApplyControlTooltips(_chkShowDebug.Checked);
             _chkHabilitarGitFlowInit.Visible = _chkShowDebug.Checked;
             UpdateGitFlowInitButton();
+            LayoutGitFlowButtons();
         };
 
         // Trigger the async initial load once the window is fully painted.
@@ -522,7 +523,6 @@ public sealed class BranchHierarchyForm : Form
             Text    = "GitFlow",
             Width   = 120,
             Height  = 24,
-            Anchor  = AnchorStyles.None,
             Font    = new Font(Font, FontStyle.Bold),
             Visible = false
         };
@@ -530,23 +530,7 @@ public sealed class BranchHierarchyForm : Form
 
         _gitFlowButtonPanel = new Panel { Name = "gitFlowButtonPanel", Dock = DockStyle.Top, Height = 32 };
         _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated]);
-
-        // All buttons left-aligned with uniform 4 px gap; only visible ones consume space.
-        _gitFlowButtonPanel.Layout += (_, _) =>
-        {
-            int y = (_gitFlowButtonPanel.Height - 24) / 2;
-            int x = 8;
-            if (_btnPull.Visible)
-            {
-                _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
-                _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
-            }
-            if (_btnCommitDedicated.Visible)
-            {
-                _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
-            }
-            _btnGitFlowDedicated.Location = new Point(x, y);
-        };
+        // Positions are set explicitly by LayoutGitFlowButtons() — no Layout event so resize doesn't move buttons.
     }
 
     private void BuildTreeView()
@@ -661,7 +645,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildStatusStrip()
     {
-        _status    = new StatusStrip();
+        _status    = new StatusStrip { SizingGrip = false };
         _statusLbl = new ToolStripStatusLabel
         {
             Text      = "Local: 0  |  Remoto: 0  |  Tags: 0",
@@ -1434,7 +1418,7 @@ public sealed class BranchHierarchyForm : Form
         _btnPush            .Visible = hasBranch;
         _btnCommitDedicated .Visible = hasBranch;
         _btnGitFlowDedicated.Visible = hasBranch;
-        _gitFlowButtonPanel.PerformLayout(); // reposition buttons after visibility change
+        LayoutGitFlowButtons(); // reposition buttons after visibility change
         if (!hasBranch) return;
 
         int behind = current!.BehindCount;
@@ -1724,6 +1708,29 @@ public sealed class BranchHierarchyForm : Form
         _mainTooltip.RemoveAll();
         if (!show) return;
         SetTooltipsRecursive(this, _mainTooltip);
+        // Also show the window's own TYPE and Handle (HWND) — visible on hover over any uncovered area.
+        _mainTooltip.SetToolTip(this, $"TYPE: {GetType().Name}\nHandle: 0x{Handle.ToInt64():X}");
+    }
+
+    /// <summary>
+    /// Repositions all buttons in <see cref="_gitFlowButtonPanel"/> left-to-right with a 4 px gap.
+    /// Called explicitly on load and whenever button visibility changes so that horizontal
+    /// resize of the window does NOT trigger automatic repositioning.
+    /// </summary>
+    private void LayoutGitFlowButtons()
+    {
+        int y = (_gitFlowButtonPanel.Height - 24) / 2;
+        int x = 8;
+        if (_btnPull.Visible)
+        {
+            _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
+            _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
+        }
+        if (_btnCommitDedicated.Visible)
+        {
+            _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
+        }
+        _btnGitFlowDedicated.Location = new Point(x, y);
     }
 
     private static void SetTooltipsRecursive(Control parent, ToolTip tip)
@@ -2013,6 +2020,17 @@ public sealed class BranchHierarchyForm : Form
     {
         if (!IsDisposed && Visible)
             BeginInvoke(() => { if (!IsDisposed && Visible) Activate(); });
+    }
+
+    /// <summary>
+    /// Brings this window to the front after a commit completes in the GitExtensions Commit dialog.
+    /// Called by the plugin's PostCommit event handler so the tree stays visible after committing.
+    /// Uses BeginInvoke to ensure activation runs after the commit dialog has fully closed.
+    /// </summary>
+    public void FocusAfterCommit()
+    {
+        if (!IsDisposed && Visible)
+            BeginInvoke(() => { if (!IsDisposed && Visible) { BringToFront(); Activate(); } });
     }
 
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>

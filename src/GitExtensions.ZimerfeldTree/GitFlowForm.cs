@@ -378,6 +378,8 @@ public sealed class GitFlowForm : Form
     {
         _mainTooltip.RemoveAll();
         SetTooltipsRecursive(this, _mainTooltip);
+        // Also show the window's own TYPE and Handle (HWND) on hover over any uncovered area.
+        _mainTooltip.SetToolTip(this, $"TYPE: {GetType().Name}\nHandle: 0x{Handle.ToInt64():X}");
     }
 
     private static void SetTooltipsRecursive(Control parent, ToolTip tip)

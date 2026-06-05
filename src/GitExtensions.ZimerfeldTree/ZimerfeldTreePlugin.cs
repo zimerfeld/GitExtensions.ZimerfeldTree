@@ -22,6 +22,9 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     // Used to open the native commit dialog so Commit Template plugins are visible.
     private IGitUICommands? _commands;
 
+    // F3 global shortcut filter — intercepts F3 anywhere in the GitExtensions process.
+    private F3MessageFilter? _f3Filter;
+
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public ZimerfeldTreePlugin() : base(false)
@@ -95,8 +98,16 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         commands.PostBrowseInitialize   += OnRepositoryChanged;
         commands.PostCheckoutBranch     += OnBranchChanged;
         commands.PostCheckoutRevision   += OnBranchChanged;
-        commands.PostCommit             += OnBranchChanged;
+        commands.PostCommit             += OnPostCommit;   // dedicated: also restores focus
         commands.PostRepositoryChanged  += OnExternalChange;
+
+        // Register F3 as a process-wide shortcut that brings ZimerfeldTree to the front.
+        // Guard against double-registration if Register is called more than once per session.
+        if (_f3Filter is null)
+        {
+            _f3Filter = new F3MessageFilter(() => _form);
+            Application.AddMessageFilter(_f3Filter);
+        }
     }
 
     /// <summary>Unsubscribe from all events.</summary>
@@ -105,8 +116,14 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         commands.PostBrowseInitialize   -= OnRepositoryChanged;
         commands.PostCheckoutBranch     -= OnBranchChanged;
         commands.PostCheckoutRevision   -= OnBranchChanged;
-        commands.PostCommit             -= OnBranchChanged;
+        commands.PostCommit             -= OnPostCommit;
         commands.PostRepositoryChanged  -= OnExternalChange;
+
+        if (_f3Filter != null)
+        {
+            Application.RemoveMessageFilter(_f3Filter);
+            _f3Filter = null;
+        }
 
         _commands = null;
         base.Unregister(commands);
@@ -132,10 +149,55 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         _form.InvokeIfRequired(() => _form.RefreshTree());
     }
 
+    // Separate handler for PostCommit: refreshes the tree AND restores focus to ZimerfeldTree,
+    // so the window comes back to the front after the GitExtensions Commit dialog closes.
+    private void OnPostCommit(object? sender, GitUIPostActionEventArgs e)
+    {
+        if (_form is null || _form.IsDisposed) return;
+        _form.InvokeIfRequired(() =>
+        {
+            _form.RefreshTree();
+            _form.FocusAfterCommit();
+        });
+    }
+
     private void OnExternalChange(object? sender, GitUIEventArgs e)
     {
         if (_form is null || _form.IsDisposed) return;
         _form.InvokeIfRequired(() => _form.RefreshTree());
+    }
+}
+
+// ── F3 process-wide keyboard shortcut ────────────────────────────────────────
+
+/// <summary>
+/// Intercepts F3 anywhere inside the GitExtensions process and brings ZimerfeldTree to the front.
+/// Text-input controls (TextBox, RichTextBox, ComboBox) are excluded so find/filter F3 keys
+/// are not swallowed while the user is typing.
+/// </summary>
+internal sealed class F3MessageFilter(Func<BranchHierarchyForm?> getForm) : IMessageFilter
+{
+    private const int WM_KEYDOWN = 0x0100;
+    private const int VK_F3     = 0x72;
+
+    public bool PreFilterMessage(ref Message m)
+    {
+        if (m.Msg != WM_KEYDOWN || (int)m.WParam != VK_F3) return false;
+
+        var form = getForm();
+        if (form is null || form.IsDisposed) return false;
+
+        // Let F3 pass through when the user is typing in a text input.
+        var focused = Control.FromHandle(m.HWnd);
+        if (focused is TextBox or RichTextBox or ComboBox) return false;
+
+        form.InvokeIfRequired(() =>
+        {
+            if (!form.Visible) form.Show();
+            form.BringToFront();
+            form.Activate();
+        });
+        return true; // consumed — GitExtensions does not process this F3
     }
 }
 

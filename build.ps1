@@ -7,6 +7,17 @@
 
 $ErrorActionPreference = "Stop"
 
+# -- 0. Fechar GitExtensions e plugins antes de compilar ----------------------
+$geProcs = Get-Process -Name GitExtensions -ErrorAction SilentlyContinue
+if ($geProcs) {
+    Write-Host "Fechando GitExtensions e plugins..."
+    $geProcs | Stop-Process -Force
+    Start-Sleep -Milliseconds 800
+    Write-Host "GitExtensions encerrado."
+} else {
+    Write-Host "GitExtensions nao esta em execucao."
+}
+
 $nuspec  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\GitExtensions.ZimerfeldTree.nuspec"
 $csproj  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\GitExtensions.ZimerfeldTree.csproj"
 $outDir  = $PSScriptRoot
