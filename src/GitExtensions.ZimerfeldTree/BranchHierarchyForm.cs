@@ -482,6 +482,7 @@ public sealed class BranchHierarchyForm : Form
             Name  = "btnGitFlow",
             Dock  = DockStyle.Right,
             Width = 160,
+            Height = 24,
             Text  = "Organizar como GitFlow"
         };
         _btnGitFlow.Click += BtnGitFlow_Click;
@@ -490,7 +491,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name    = "warnPanel",
             Dock    = DockStyle.Top,
-            Height  = 26,
+            Height  = 28,
             Visible = false,
             Padding = new Padding(4, 2, 4, 2)
         };
@@ -504,7 +505,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnGitFlowInit",
             Width  = 160,
-            Height = 22,
+            Height = 24,
             Text   = "GitFlow Initialize"
         };
         _btnGitFlowInit.Click += (_, _) => DoGitFlowInit();
@@ -513,7 +514,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name    = "gitFlowInitPanel",
             Dock    = DockStyle.Top,
-            Height  = 26,
+            Height  = 28,
             Padding = new Padding(4, 2, 4, 2)
         };
         _gitFlowInitPanel.Controls.Add(_btnGitFlowInit);
@@ -1413,7 +1414,7 @@ public sealed class BranchHierarchyForm : Form
         _txtFilter          .Enabled = enabled;
         _btnRefresh         .Enabled = enabled;
         _btnGitFlow         .Enabled = enabled;
-        _btnGitFlowInit     .Enabled = enabled;
+        _btnGitFlowInit     .Enabled = enabled && !IsGitFlowConfigured();
         _btnGitFlowDedicated.Enabled = enabled;
         _btnVoltar          .Enabled = enabled;
         _tree               .Enabled = enabled;
