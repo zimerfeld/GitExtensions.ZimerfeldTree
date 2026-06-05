@@ -131,6 +131,12 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         Application.Idle += handler;
     }
 
+    // Situation 3 — visual hint: traverse the GitExtensions MainMenuStrip to find the
+    // ZimerfeldTree plugin item and stamp ShortcutKeys=F3 so the menu shows "ZimerfeldTree … F3".
+    // The GitExtensions plugin API does not expose ShortcutKeys directly, so we reach into
+    // the host form's menu at first Idle, after all plugin items have been added.
+    // ShortcutKeys also covers Situation 1: when _form is null the filter passes F3 through
+    // and WinForms fires the menu item's Click (→ Execute()) via normal accelerator processing.
     private static void ApplyF3ToPluginMenuItem()
     {
         foreach (Form f in Application.OpenForms)
@@ -141,14 +147,16 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             foreach (ToolStripItem top in menuStrip.Items)
             {
                 if (top is not ToolStripMenuItem pluginsMenu) continue;
+                if (pluginsMenu.Text is null) continue;
                 if (!pluginsMenu.Text.Contains("Plugin", StringComparison.OrdinalIgnoreCase)) continue;
 
                 foreach (ToolStripItem sub in pluginsMenu.DropDownItems)
                 {
                     if (sub is not ToolStripMenuItem item) continue;
+                    if (item.Text is null) continue;
                     if (!item.Text.Contains("ZimerfeldTree", StringComparison.OrdinalIgnoreCase)) continue;
 
-                    item.ShortcutKeys    = Keys.F3;
+                    item.ShortcutKeys     = Keys.F3;
                     item.ShowShortcutKeys = true;
                     return;
                 }
@@ -231,15 +239,22 @@ internal sealed class F3MessageFilter(Func<BranchHierarchyForm?> getForm) : IMes
         if (m.Msg != WM_KEYDOWN || (int)m.WParam != VK_F3) return false;
 
         var form = getForm();
+
+        // Situation 1 — form not yet open: return false so WinForms delivers the key to the
+        // GitExtensions form, where ShortcutKeys=F3 on the plugin menu item fires Execute().
         if (form is null || form.IsDisposed) return false;
 
         // Let F3 pass through when the user is typing in a text input.
         var focused = Control.FromHandle(m.HWnd);
         if (focused is TextBox or RichTextBox or ComboBox) return false;
 
+        // Situation 2 — form already open: consume F3 and bring the window to the front.
+        // Restore first: BringToFront/Activate do not unminimize a minimized window.
         form.InvokeIfRequired(() =>
         {
             if (!form.Visible) form.Show();
+            if (form.WindowState == FormWindowState.Minimized)
+                form.WindowState = FormWindowState.Normal;
             form.BringToFront();
             form.Activate();
         });

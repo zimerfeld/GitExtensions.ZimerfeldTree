@@ -658,7 +658,7 @@ public sealed class BranchHierarchyForm : Form
     // Suppresses the StatusStrip sizing-grip image that SizingGrip=false alone does not remove.
     private sealed class NoGripRenderer : ToolStripProfessionalRenderer
     {
-        protected override void DrawStatusStripSizingGrip(ToolStripRenderEventArgs e) { }
+        protected override void OnRenderStatusStripSizingGrip(ToolStripRenderEventArgs e) { }
     }
 
     private void BuildBottomPanel()
