@@ -1,6 +1,8 @@
 // RestoreForm.cs — Git restore/cherry-pick/reset window for ZimerfeldTree plugin
 // MIT License — Copyright (c) 2026 Zimerfeld
 
+using System.Text.Json;
+
 namespace GitExtensions.ZimerfeldTree;
 
 /// <summary>
@@ -13,29 +15,33 @@ public sealed class RestoreForm : Form
     private readonly bool    _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
 
+    private static readonly string SettingsFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GitExtensions", "ZimerfeldRestore.settings.json");
+
     // ── Header ──
     private Label     _lblHead  = null!;
     private LinkLabel _lnkAbout = null!;
 
     // ── Restore File ──
     private GroupBox _grpRestoreFile = null!;
-    private TextBox  _txtRestoreHash = null!;
+    private ComboBox _cboRestoreHash = null!;
     private TextBox  _txtRestoreFile = null!;
     private Button   _btnRestoreFile = null!;
 
     // ── Cherry-Pick ──
     private GroupBox _grpCherryPick = null!;
-    private TextBox  _txtCherryHash = null!;
+    private ComboBox _cboCherryHash = null!;
     private Button   _btnCherryPick = null!;
 
     // ── Reset Branch ──
-    private GroupBox    _grpReset     = null!;
-    private ComboBox    _cboBranch    = null!;
-    private TextBox     _txtResetHash = null!;
-    private RadioButton _rdMixed      = null!;
-    private RadioButton _rdSoft       = null!;
-    private RadioButton _rdHard       = null!;
-    private Button      _btnReset     = null!;
+    private GroupBox    _grpReset    = null!;
+    private ComboBox    _cboBranch   = null!;
+    private ComboBox    _cboResetHash = null!;
+    private RadioButton _rdMixed     = null!;
+    private RadioButton _rdSoft      = null!;
+    private RadioButton _rdHard      = null!;
+    private Button      _btnReset    = null!;
 
     // ── Result ──
     private GroupBox _grpResult = null!;
@@ -71,12 +77,13 @@ public sealed class RestoreForm : Form
         BuildResultGroup();
         BuildCloseButton();
 
-        CancelButton = _btnClose;
-        Load += (_, _) =>
+        CancelButton  = _btnClose;
+        Load         += (_, _) =>
         {
             InitData();
             if (_showControlIds) ApplyControlTooltips();
         };
+        FormClosing  += (_, _) => SaveSettings();
     }
 
     // ── Build UI ────────────────────────────────────────────────────────────
@@ -119,11 +126,12 @@ public sealed class RestoreForm : Form
             Bounds    = new Rectangle(12, 26, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
-        _txtRestoreHash = new TextBox
+        _cboRestoreHash = new ComboBox
         {
-            Name            = "txtRestoreHash",
-            PlaceholderText = "ex.: abc1234",
-            Bounds          = new Rectangle(106, 24, 200, 22)
+            Name          = "cboRestoreHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(106, 24, 270, 22),
+            DropDownWidth = 380
         };
 
         var lblFile = new Label
@@ -148,7 +156,7 @@ public sealed class RestoreForm : Form
         };
         _btnRestoreFile.Click += BtnRestoreFile_Click;
 
-        _grpRestoreFile.Controls.AddRange([lblHash, _txtRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile]);
+        _grpRestoreFile.Controls.AddRange([lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile]);
         Controls.Add(_grpRestoreFile);
     }
 
@@ -169,11 +177,12 @@ public sealed class RestoreForm : Form
             Bounds    = new Rectangle(12, 22, 76, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
-        _txtCherryHash = new TextBox
+        _cboCherryHash = new ComboBox
         {
-            Name            = "txtCherryHash",
-            PlaceholderText = "hash ou intervalo (ex.: abc..def)",
-            Bounds          = new Rectangle(92, 20, 286, 22)
+            Name          = "cboCherryHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(92, 20, 286, 22),
+            DropDownWidth = 380
         };
         _btnCherryPick = new Button
         {
@@ -183,7 +192,7 @@ public sealed class RestoreForm : Form
         };
         _btnCherryPick.Click += BtnCherryPick_Click;
 
-        _grpCherryPick.Controls.AddRange([lblHash, _txtCherryHash, _btnCherryPick]);
+        _grpCherryPick.Controls.AddRange([lblHash, _cboCherryHash, _btnCherryPick]);
         Controls.Add(_grpCherryPick);
     }
 
@@ -218,11 +227,12 @@ public sealed class RestoreForm : Form
             Bounds    = new Rectangle(12, 54, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
-        _txtResetHash = new TextBox
+        _cboResetHash = new ComboBox
         {
-            Name            = "txtResetHash",
-            PlaceholderText = "ex.: abc1234 ou HEAD~3",
-            Bounds          = new Rectangle(106, 52, 210, 22)
+            Name          = "cboResetHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(106, 52, 270, 22),
+            DropDownWidth = 380
         };
 
         _rdMixed = new RadioButton
@@ -251,7 +261,7 @@ public sealed class RestoreForm : Form
         };
         _btnReset.Click += BtnReset_Click;
 
-        _grpReset.Controls.AddRange([lblBranch, _cboBranch, lblHash, _txtResetHash, _rdMixed, _rdSoft, _rdHard, _btnReset]);
+        _grpReset.Controls.AddRange([lblBranch, _cboBranch, lblHash, _cboResetHash, _rdMixed, _rdSoft, _rdHard, _btnReset]);
         Controls.Add(_grpReset);
     }
 
@@ -311,9 +321,111 @@ public sealed class RestoreForm : Form
 
         _cboBranch.Items.AddRange(branches.Cast<object>().ToArray());
 
-        string? develop = branches.FirstOrDefault(b => b == "develop");
-        if (develop != null)       _cboBranch.SelectedItem  = develop;
-        else if (branches.Count > 0) _cboBranch.SelectedIndex = 0;
+        var refs = LoadCommitRefs();
+        foreach (var r in refs)
+        {
+            _cboRestoreHash.Items.Add(r);
+            _cboCherryHash.Items.Add(r);
+            _cboResetHash.Items.Add(r);
+        }
+
+        var saved = LoadSettings();
+        RestoreSettings(saved, refs, branches);
+
+        // fallback: if no saved branch selection, pick develop or index 0
+        if (_cboBranch.SelectedItem is null)
+        {
+            string? develop = branches.FirstOrDefault(b => b == "develop");
+            if (develop != null) _cboBranch.SelectedItem  = develop;
+            else if (branches.Count > 0) _cboBranch.SelectedIndex = 0;
+        }
+    }
+
+    private List<CommitRef> LoadCommitRefs()
+    {
+        var (output, _) = _svc.RunGitFlow(
+            "for-each-ref --format=%(refname:short) %(objectname:short) refs/heads");
+        var refs = new List<CommitRef>();
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Trim().Split(' ', 2);
+            if (parts.Length == 2 && parts[0].Length > 0 && parts[1].Length > 0)
+                refs.Add(new CommitRef(parts[0], parts[1]));
+        }
+        return refs;
+    }
+
+    // ── Persistence ──────────────────────────────────────────────────────────
+
+    private static Dictionary<string, string> LoadSettings()
+    {
+        try
+        {
+            if (!File.Exists(SettingsFilePath)) return [];
+            using var doc = JsonDocument.Parse(File.ReadAllText(SettingsFilePath));
+            var dict = new Dictionary<string, string>();
+            foreach (var prop in doc.RootElement.EnumerateObject())
+                dict[prop.Name] = prop.Value.GetString() ?? string.Empty;
+            return dict;
+        }
+        catch { return []; }
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            string dir = Path.GetDirectoryName(SettingsFilePath)!;
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            var settings = new Dictionary<string, string>
+            {
+                ["restoreHash"] = HashOf(_cboRestoreHash),
+                ["restoreFile"] = _txtRestoreFile.Text.Trim(),
+                ["cherryHash"]  = HashOf(_cboCherryHash),
+                ["resetBranch"] = _cboBranch.SelectedItem as string ?? string.Empty,
+                ["resetHash"]   = HashOf(_cboResetHash),
+                ["resetMode"]   = _rdHard.Checked ? "hard" : _rdSoft.Checked ? "soft" : "mixed"
+            };
+            File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings));
+        }
+        catch { }
+    }
+
+    private void RestoreSettings(Dictionary<string, string> saved, List<CommitRef> refs, List<string> branches)
+    {
+        if (saved.TryGetValue("restoreHash", out var rh) && rh.Length > 0)
+        {
+            var match = refs.FirstOrDefault(r => r.Hash == rh || r.Hash.StartsWith(rh));
+            if (match != null) _cboRestoreHash.SelectedItem = match;
+            else               _cboRestoreHash.Text = rh;
+        }
+        if (saved.TryGetValue("restoreFile", out var rf) && rf.Length > 0)
+            _txtRestoreFile.Text = rf;
+
+        if (saved.TryGetValue("cherryHash", out var ch) && ch.Length > 0)
+        {
+            var match = refs.FirstOrDefault(r => r.Hash == ch || r.Hash.StartsWith(ch));
+            if (match != null) _cboCherryHash.SelectedItem = match;
+            else               _cboCherryHash.Text = ch;
+        }
+
+        if (saved.TryGetValue("resetBranch", out var rb) && rb.Length > 0)
+        {
+            int idx = branches.IndexOf(rb);
+            if (idx >= 0) _cboBranch.SelectedIndex = idx;
+        }
+        if (saved.TryGetValue("resetHash", out var resetH) && resetH.Length > 0)
+        {
+            var match = refs.FirstOrDefault(r => r.Hash == resetH || r.Hash.StartsWith(resetH));
+            if (match != null) _cboResetHash.SelectedItem = match;
+            else               _cboResetHash.Text = resetH;
+        }
+        if (saved.TryGetValue("resetMode", out var mode))
+        {
+            _rdHard.Checked  = mode == "hard";
+            _rdSoft.Checked  = mode == "soft";
+            _rdMixed.Checked = mode != "hard" && mode != "soft";
+        }
     }
 
     // ── Git execution ────────────────────────────────────────────────────────
@@ -347,7 +459,7 @@ public sealed class RestoreForm : Form
 
     private void BtnRestoreFile_Click(object? sender, EventArgs e)
     {
-        string hash = _txtRestoreHash.Text.Trim();
+        string hash = HashOf(_cboRestoreHash);
         string file = _txtRestoreFile.Text.Trim();
         if (hash.Length == 0 || file.Length == 0)
         {
@@ -361,7 +473,7 @@ public sealed class RestoreForm : Form
 
     private void BtnCherryPick_Click(object? sender, EventArgs e)
     {
-        string hash = _txtCherryHash.Text.Trim();
+        string hash = HashOf(_cboCherryHash);
         if (hash.Length == 0)
         {
             MessageBox.Show("Informe o commit hash ou intervalo.",
@@ -380,7 +492,7 @@ public sealed class RestoreForm : Form
                 "Reset", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
-        string hash = _txtResetHash.Text.Trim();
+        string hash = HashOf(_cboResetHash);
         if (hash.Length == 0)
         {
             MessageBox.Show("Informe o commit hash de destino.",
@@ -435,8 +547,28 @@ public sealed class RestoreForm : Form
             "    --mixed  Desfaz commits, mantém mudanças como unstaged (padrão).\n" +
             "    --soft   Desfaz commits, mantém mudanças como staged.\n" +
             "    --hard   Desfaz commits e DESCARTA todas as mudanças locais.\n\n" +
-            "Dica: use 'git log --oneline' para localizar o hash desejado.",
+            "Como localizar um commit hash:\n\n" +
+            "  git log --oneline             lista todos os commits do HEAD\n" +
+            "  git log --oneline -20         últimos 20 commits\n" +
+            "  git log --oneline <branch>    commits de uma branch específica\n" +
+            "  git log --oneline A..B        commits em B que não estão em A\n" +
+            "  git log --oneline --all       commits de todas as branches\n\n" +
+            "Os dropdowns de hash exibem o HEAD de cada branch local.\n" +
+            "Você pode selecionar uma branch ou digitar qualquer hash manualmente.",
             "About Restore", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private static string HashOf(ComboBox cbo) =>
+        cbo.SelectedItem is CommitRef r ? r.Hash : cbo.Text.Trim();
+
+    private sealed class CommitRef
+    {
+        public string Hash { get; }
+        private readonly string _display;
+        public CommitRef(string name, string hash) { Hash = hash; _display = $"{name}  →  {hash}"; }
+        public override string ToString() => _display;
     }
 
     // ── Tooltip debug ────────────────────────────────────────────────────────

@@ -358,6 +358,7 @@ public sealed class BranchHierarchyForm : Form
         // Restore debug state and button enable state.
         Load += (_, _) =>
         {
+            _lnkAbout.BringToFront();
             ApplyControlTooltips(_chkShowDebug.Checked);
             _chkHabilitarGitFlowInit.Visible = _chkShowDebug.Checked;
             UpdateGitFlowInitButton();
