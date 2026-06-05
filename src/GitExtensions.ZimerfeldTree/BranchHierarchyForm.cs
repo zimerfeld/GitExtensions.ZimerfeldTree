@@ -645,7 +645,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildStatusStrip()
     {
-        _status    = new StatusStrip { SizingGrip = false };
+        _status    = new StatusStrip { SizingGrip = false, Renderer = new NoGripRenderer() };
         _statusLbl = new ToolStripStatusLabel
         {
             Text      = "Local: 0  |  Remoto: 0  |  Tags: 0",
@@ -653,6 +653,12 @@ public sealed class BranchHierarchyForm : Form
             TextAlign = ContentAlignment.MiddleLeft
         };
         _status.Items.Add(_statusLbl);
+    }
+
+    // Suppresses the StatusStrip sizing-grip image that SizingGrip=false alone does not remove.
+    private sealed class NoGripRenderer : ToolStripProfessionalRenderer
+    {
+        protected override void DrawStatusStripSizingGrip(ToolStripRenderEventArgs e) { }
     }
 
     private void BuildBottomPanel()

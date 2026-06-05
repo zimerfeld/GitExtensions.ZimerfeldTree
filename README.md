@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.149**
+**Versão atual: 1.0.151**
 
 ---
 
@@ -53,13 +53,27 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - Após cada Push, Pull ou Commit (seja pelos botões ou pela janela principal do GitExtensions), a árvore é **atualizada automaticamente** e os contadores dos botões (`↑N`, `↓N`, `(N)`) são recalculados
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 
+### Tecla F3 — foco rápido na ZimerfeldTree
+
+- Pressionar **F3** em qualquer lugar do GitExtensions traz a janela ZimerfeldTree para o topo
+- Funciona em menus, árvore de revisões, painel de diff — qualquer controle que não seja campo de texto
+- Em campos de texto (TextBox, ComboBox, RichTextBox) o F3 passa normalmente para o GitExtensions
+- O atalho só funciona depois que a janela ZimerfeldTree foi aberta pelo menos uma vez na sessão
+
+### Foco automático após Commit
+
+- Após fechar a janela de Commit do GitExtensions, a janela ZimerfeldTree retoma o foco automaticamente
+- A árvore é atualizada (reflecting o novo commit) e a janela é trazida ao topo sem ação manual
+
 ### Checkbox "Mostrar IDs" (debug de controles)
 
-O checkbox **Mostrar IDs**, localizado na borda inferior esquerda da janela ZimerfeldTree, ativa tooltips de identificação em todos os controles do plugin:
+O checkbox **Show Debug**, localizado na borda inferior esquerda da janela ZimerfeldTree, ativa tooltips de identificação em todos os controles do plugin:
 
-- **Linha 1 do tooltip:** `ID: <nome interno do controle>` — identificador único (campo C# / Name do WinForms)
-- **Linha 2 do tooltip:** `Nome: <texto visível>` — Text do controle
-- Funciona em ambas as janelas: ZimerfeldTree e a janela GitFlow (aberta em seguida)
+- **Linha 1 do tooltip:** `TYPE: <tipo do controle>` — classe WinForms (ex.: `Button`, `TextBox`)
+- **Linha 2 do tooltip:** `ID: <nome interno>` — campo Name do controle C#
+- **Tooltip da própria janela:** exibe `TYPE: BranchHierarchyForm` e `Handle: 0x<HWND>` (visível ao passar o mouse sobre área livre da janela)
+- **GitFlowForm** também exibe seu TYPE e Handle quando Show Debug está ativo
+- Funciona em ambas as janelas: ZimerfeldTree e a janela GitFlow
 - O estado do checkbox é **persistido** entre sessões em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
 - Útil para desenvolvimento e manutenção do plugin
 

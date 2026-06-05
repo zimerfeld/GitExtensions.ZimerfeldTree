@@ -85,6 +85,11 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         _form.Show();
         _form.BringToFront();
 
+        // Minimize the GitExtensions main window so ZimerfeldTree takes center stage.
+        var gitForm = args.OwnerForm as Form
+                   ?? Control.FromHandle(args.OwnerForm?.Handle ?? IntPtr.Zero) as Form;
+        gitForm?.BeginInvoke(() => gitForm.WindowState = FormWindowState.Minimized);
+
         // Return false: GitExtensions should NOT refresh its own UI (we manage our own state)
         return false;
     }
@@ -107,6 +112,47 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         {
             _f3Filter = new F3MessageFilter(() => _form);
             Application.AddMessageFilter(_f3Filter);
+        }
+
+        // Label the Plugins menu item with "F3" so users see the shortcut hint.
+        // The GitExtensions plugin API does not expose ShortcutKeys directly, so we traverse
+        // the host form's MainMenuStrip at first Idle (after the menu is fully populated).
+        HookPluginMenuShortcut();
+    }
+
+    private void HookPluginMenuShortcut()
+    {
+        EventHandler? handler = null;
+        handler = (_, _) =>
+        {
+            Application.Idle -= handler;
+            ApplyF3ToPluginMenuItem();
+        };
+        Application.Idle += handler;
+    }
+
+    private static void ApplyF3ToPluginMenuItem()
+    {
+        foreach (Form f in Application.OpenForms)
+        {
+            var menuStrip = f.MainMenuStrip;
+            if (menuStrip is null) continue;
+
+            foreach (ToolStripItem top in menuStrip.Items)
+            {
+                if (top is not ToolStripMenuItem pluginsMenu) continue;
+                if (!pluginsMenu.Text.Contains("Plugin", StringComparison.OrdinalIgnoreCase)) continue;
+
+                foreach (ToolStripItem sub in pluginsMenu.DropDownItems)
+                {
+                    if (sub is not ToolStripMenuItem item) continue;
+                    if (!item.Text.Contains("ZimerfeldTree", StringComparison.OrdinalIgnoreCase)) continue;
+
+                    item.ShortcutKeys    = Keys.F3;
+                    item.ShowShortcutKeys = true;
+                    return;
+                }
+            }
         }
     }
 
