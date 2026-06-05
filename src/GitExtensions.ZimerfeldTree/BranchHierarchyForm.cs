@@ -539,7 +539,6 @@ public sealed class BranchHierarchyForm : Form
             Text    = "GitFlow",
             Width   = 120,
             Height  = 24,
-            Font    = new Font(Font, FontStyle.Bold),
             Visible = false
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
