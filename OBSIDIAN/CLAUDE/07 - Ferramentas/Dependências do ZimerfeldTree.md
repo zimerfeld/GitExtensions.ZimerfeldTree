@@ -1,7 +1,7 @@
 ---
 tipo: ferramenta
 criado: 2026-06-02
-atualizado: 2026-06-02
+atualizado: 2026-06-05 (git-flow-next removido — plugin usa git puro)
 tags: [ferramenta, dependencias, instalacao, zimerfeldtree, gitextensions, git, gitflow]
 ---
 
@@ -81,43 +81,7 @@ pwsh C:\GitExtensions\ZimerfeldTree\build.ps1
 
 ---
 
-## 4. git-flow-next *(apenas para funcionalidades GitFlow)*
-
-| Campo    | Valor |
-|----------|-------|
-| Papel    | Fornece o subcomando `git flow` usado pela janela **GitFlow** do plugin (start, finish, publish, track, update para feature/release/hotfix/bugfix/support) |
-| Obrigatório | ⚠️ Condicional — apenas se for usar o botão **GitFlow** |
-| Repositório | https://github.com/nicola-gh/git-flow-next |
-
-> [!info] Por que git-flow-next e não git-flow clássico?
-> O plugin foi desenvolvido e testado com **git-flow-next**. O git-flow clássico (`nvie/gitflow`) e a edição AVH (`petervanderdoes/gitflow-avh`) não possuem os comandos `update` e `track` usados pelo plugin, e têm diferenças de flags no `finish`. O git-flow-next também registra estado em `.git/gitflow/state/*.json`, que o plugin trata para resolver deadlocks de merge.
-
-### Instalação via Scoop (recomendado no Windows)
-```powershell
-# Instalar Scoop se ainda não tiver:
-Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-irm get.scoop.sh | iex
-
-# Instalar git-flow-next:
-scoop install git-flow-next
-```
-
-### Instalação manual (Windows)
-1. Acessar https://github.com/nicola-gh/git-flow-next/releases
-2. Baixar o binário para Windows.
-3. Colocar o executável em uma pasta que esteja no `PATH` (ex.: `C:\Program Files\Git\usr\bin\`).
-4. Verificar: `git flow version`.
-
-### Configuração inicial do repositório
-```bash
-git flow init
-# Responder às perguntas de configuração (branch master/develop, prefixos)
-# Ou aceitar os padrões com Enter
-```
-
----
-
-## 5. .NET SDK 9 *(apenas para build/desenvolvimento)*
+## 4. .NET SDK 9 *(apenas para build/desenvolvimento)*
 
 | Campo    | Valor |
 |----------|-------|
@@ -132,7 +96,7 @@ git flow init
 
 ---
 
-## 6. NuGet CLI *(apenas para build/desenvolvimento)*
+## 5. NuGet CLI *(apenas para build/desenvolvimento)*
 
 | Campo    | Valor |
 |----------|-------|
@@ -149,14 +113,16 @@ git flow init
 
 ## Resumo rápido
 
+> [!info] GitFlow sem dependência externa
+> Todos os comandos GitFlow (Start, Publish, Track, Update, Finish) usam **git puro**. O binário `git-flow` não precisa estar instalado.
+
 | # | Programa / Plugin     | Obrigatório para uso | Para GitFlow | Para build |
 |---|-----------------------|:--------------------:|:------------:|:----------:|
 | 1 | Git for Windows       | ✅                   | ✅           | ✅         |
 | 2 | GitExtensions 4.x     | ✅                   | ✅           | ✅         |
 | 3 | Plugin ZimerfeldTree  | ✅                   | ✅           | —          |
-| 4 | git-flow-next         | —                    | ✅           | —          |
-| 5 | .NET SDK 9            | —                    | —            | ✅         |
-| 6 | NuGet CLI             | —                    | —            | ✅         |
+| 4 | .NET SDK 9            | —                    | —            | ✅         |
+| 5 | NuGet CLI             | —                    | —            | ✅         |
 
 ---
 
@@ -164,4 +130,3 @@ git flow init
 - [[GitExtensions.ZimerfeldTree]]
 - [[Interface GitFlow — botões e fluxos]]
 - [[Plugin MEF para GitExtensions]]
-- [[git flow - chaves de config (CLI)]]

@@ -35,7 +35,6 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
-    private int                          _pendingChangesCount;        // cached from background task; used by UpdatePullPushButtons
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -198,11 +197,11 @@ public sealed class BranchHierarchyForm : Form
             SetFormEnabled(false);
         }
 
-        List<BranchInfo>            local  = [];
-        List<BranchInfo>            remote = [];
-        List<BranchInfo>            tags   = [];
-        Dictionary<string, string?> lMap   = [];
-        Dictionary<string, string?> rMap   = [];
+        List<BranchInfo>            local   = [];
+        List<BranchInfo>            remote  = [];
+        List<BranchInfo>            tags    = [];
+        Dictionary<string, string?> lMap    = [];
+        Dictionary<string, string?> rMap    = [];
 
         IProgress<(int pct, string msg)>? ip = showOverlay
             ? new Progress<(int pct, string msg)>(p =>
@@ -242,7 +241,6 @@ public sealed class BranchHierarchyForm : Form
                         b.AheadCount   = ti.ahead;
                         b.BehindCount  = ti.behind;
                     }
-                _pendingChangesCount = _svc.GetPendingChangesCount();
                 ip?.Report((100, "Concluído."));
             }, token);
         }
@@ -294,6 +292,8 @@ public sealed class BranchHierarchyForm : Form
             UpdatePullPushButtons();
         }
         finally { _tree.EndUpdate(); }
+
+        UpdateCommitActionTexts();
 
         var postAction = _postRefreshAction;
         _postRefreshAction = null;
@@ -361,10 +361,13 @@ public sealed class BranchHierarchyForm : Form
             ApplyControlTooltips(_chkShowDebug.Checked);
             UpdateGitFlowInitButton();
             LayoutGitFlowButtons();
+            UpdateCommitActionTexts(0);
         };
 
-        // Trigger the async initial load once the window is fully painted.
-        Shown += (_, _) => _ = RefreshTreeAsync(showOverlay: true);
+        // Trigger an async load whenever the window becomes visible — covers both the first
+        // open (where Shown would also fire) and every subsequent Show() after a Hide(), since
+        // Form.Shown fires only once in the form's lifetime.
+        VisibleChanged += (_, _) => { if (Visible) _ = RefreshTreeAsync(showOverlay: true); };
 
         ResumeLayout(false);
         PerformLayout();
@@ -530,7 +533,7 @@ public sealed class BranchHierarchyForm : Form
         _btnPush = new Button { Name = "btnPush", Text = "Push", Width = 80, Height = 24, Visible = false };
         _btnPush.Click += (_, _) => DoPush();
 
-        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 80, Height = 24, Visible = false };
+        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit (0)", Width = 80, Height = 24, Visible = false };
         _btnCommitDedicated.Click += (_, _) => DoCommit();
 
         _btnGitFlowDedicated = new Button
@@ -1425,6 +1428,17 @@ public sealed class BranchHierarchyForm : Form
     private void UpdateBranchLabel()
         => _lblBranch.Text = $"Branch: {_svc.GetCurrentBranch()}";
 
+    private void UpdateCommitActionTexts()
+        => UpdateCommitActionTexts(_svc.GetPendingChangesCount());
+
+    private void UpdateCommitActionTexts(int pendingChangesCount)
+    {
+        int pending = Math.Max(0, pendingChangesCount);
+        string commitText = $"Commit ({pending})";
+        _btnCommitDedicated.Text = commitText;
+        _miCommit.Text = commitText;
+    }
+
     private void UpdatePullPushButtons()
     {
         var current    = _localBranches.FirstOrDefault(b => b.IsCurrent);
@@ -1437,11 +1451,10 @@ public sealed class BranchHierarchyForm : Form
         LayoutGitFlowButtons(); // reposition buttons after visibility change
         if (!hasBranch) return;
 
-        int behind = current!.BehindCount;
-        int ahead  = current.AheadCount;
-        _btnPull.Text = behind > 0 ? $"Pull (↓{behind})" : "Pull";
-        _btnPush.Text = ahead  > 0 ? $"Push (↑{ahead})"  : "Push";
-        _btnCommitDedicated.Text = _pendingChangesCount > 0 ? $"Commit ({_pendingChangesCount})" : "Commit";
+        int behind  = current!.BehindCount;
+        int ahead   = current.AheadCount;
+        _btnPull.Text = $"↓ Pull ({behind})";
+        _btnPush.Text = $"↑ Push ({ahead})";
     }
 
     private BranchInfo? SelectedBranch()
@@ -1519,7 +1532,7 @@ public sealed class BranchHierarchyForm : Form
         bool tag     = info?.Type == BranchType.Tag;
 
         int miPending = _svc.GetPendingChangesCount();
-        _miCommit.Text = miPending > 0 ? $"Commit ({miPending})" : "Commit";
+        UpdateCommitActionTexts(miPending);
 
         _miCheckout .Visible = branch;
         _miNewBranch.Visible = local || tag;

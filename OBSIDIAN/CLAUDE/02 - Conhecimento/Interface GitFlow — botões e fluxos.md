@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-01
+atualizado: 2026-06-05 (git-flow-next removido; scroll no txtResult; remoção remota em todos os Finish)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, gitflow]
 fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 ---
@@ -9,13 +9,13 @@ fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 # Interface GitFlow — botões e fluxos
 
 > [!abstract] Resumo
-> Janela **modal** (`GitFlowForm`) que dirige comandos `git flow` (git-flow-next): iniciar feature/release/hotfix, publicar, rastrear, atualizar e finalizar. A saída crua dos comandos aparece numa caixa de texto. Aberta pelo botão/menu **GitFlow** da [[Interface ZimerfeldTree — botões e fluxos]]. Requer **git-flow-next** instalado e as chaves de config corretas (ver [[git flow - chaves de config (CLI)]]). Projeto: [[GitExtensions.ZimerfeldTree]].
+> Janela **modal** (`GitFlowForm`) que dirige operações git flow usando **git puro** (sem depender do binário `git-flow`): iniciar feature/release/hotfix, publicar, rastrear, atualizar e finalizar. A saída dos comandos aparece numa caixa de texto com scroll automático. Aberta pelo botão/menu **GitFlow** da [[Interface ZimerfeldTree — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
 ## 🧭 Layout
 - **Header** — `HEAD: <ref simbólico>` + link **"About GitFlow"**.
 - **Start branch** (grupo) — `Type` (combo), `Expected name` (label de prefixo + caixa de texto) + botão **Start**, checkbox **based on:** + combo de base (default `develop`).
 - **Manage existing branches** (grupo) — `Type` (combo), `Branch` (combo de branches locais com o prefixo), botões **Publish / Track / Update / Finish**, checkboxes **Keep branch after finish** (`-k`, marcado por padrão) e **No fetch (--no-fetch)**.
-- **Result of git flow command run** — caixa multilinha somente-leitura (fonte Consolas) com a saída.
+- **Resultado dos comandos git** — caixa multilinha somente-leitura (fonte Consolas); limpa ao iniciar cada ação e faz scroll automático para o fim conforme os subcomandos são executados.
 - **Fechar**.
 
 Tipos suportados (`GitFlowTypes`): `feature`, `bugfix`, `release`, `hotfix`, `support`. O prefixo de cada tipo vem de `git config gitflow.prefix.<tipo>` (fallback `tipo/`).
@@ -30,7 +30,7 @@ Tipos suportados (`GitFlowTypes`): `feature`, `bugfix`, `release`, `hotfix`, `su
 ## 🔁 `RunFlow(args)` — o executor comum
 Toda ação passa por aqui:
 1. Cursor de espera; roda `git <args>` (`RunGitFlow` → stdout+stderr combinados + exit code).
-2. Escreve `command - git <args>` + saída na caixa de Result (com `append` opcional para fluxos de várias etapas).
+2. Appenda `command - git <args>` + saída na caixa de Result via `AppendText` (scroll automático para o fim). Cada botão chama `_txtResult.Clear()` antes do primeiro `RunFlow`, limpando o resultado anterior.
 3. Atualiza o label `HEAD:` e **recarrega o combo de branches** do Manage (uma branch deletada por finish some daqui).
 4. Se exit code ≠ 0 e não for `suppressError` → `MessageBox` de erro (`ShowFlowError`).
 5. Retorna `true` se exit code == 0.
@@ -47,60 +47,65 @@ Toda ação passa por aqui:
 
 ### Botão Start (`_btnStart`) → `DoStart`
 1. Lê tipo e nome; se nome vazio → `MessageBox` e aborta.
-2. Se **based on** marcado → acrescenta `"<base>"` ao comando.
-3. Executa `git flow <tipo> start "<nome>" ["<base>"]`.
+2. Limpa `_txtResult`.
+3. `git checkout -b <prefixo><nome> <base>` (base padrão: develop para feature/bugfix/release; main para hotfix/support; ou a branch escolhida em "based on").
 4. Limpa a caixa de nome.
-5. Em caso de sucesso: pré-seleciona a nova branch no painel **Manage**, e **faz checkout** dela + revela na ZimerfeldTree (`RevealInTree(prefixo+nome, checkout:true)`).
+5. Sucesso: pré-seleciona a nova branch no painel **Manage** e revela na ZimerfeldTree (`RevealInTree(prefixo+nome, checkout:false)` — o checkout já foi feito pelo `-b`).
 6. Falha → reativa o modal.
 
 ### Botão Publish (`_btnPublish`) → `DoPublish`
-1. Lê tipo+nome (aborta se vazio).
-2. `git flow <tipo> publish "<nome>"` (envia a branch ao remoto).
-3. Sucesso → `RevealInTree(prefixo+nome, checkout:true)`.
+1. Lê tipo+nome (aborta se vazio); aborta se sem remoto configurado.
+2. Limpa `_txtResult`.
+3. `git push --set-upstream <remote> <prefixo+nome>`.
+4. Sucesso → `RevealInTree(prefixo+nome, checkout:false)`.
 
 ### Botão Track (`_btnTrack`) → `DoTrack`
-1. Lê tipo+nome.
-2. `git flow <tipo> track "<nome>"` (cria branch local rastreando a remota de mesmo nome).
-3. Sucesso → reveal + checkout.
+1. Lê tipo+nome; aborta se sem remoto.
+2. Limpa `_txtResult`.
+3. Se No fetch desmarcado: `git fetch <remote>`.
+4. `git checkout -b <prefixo+nome> --track <remote>/<prefixo+nome>`.
+5. Sucesso → reveal.
 
 ### Botão Update (`_btnUpdate`) → `DoUpdate`
 1. Lê tipo+nome.
-2. `git flow <tipo> update "<nome>"` (traz commits da branch pai, ex.: develop, para a atual).
-3. Sucesso → reveal + checkout.
+2. Limpa `_txtResult`.
+3. Se No fetch desmarcado e remoto existir: `git fetch <remote>`.
+4. `git checkout <prefixo+nome>`.
+5. `git merge <remote>/<pai>` (ou `<pai>` local se No fetch). Pai = develop para feature/bugfix/release; main para hotfix/support.
+6. Sucesso → reveal.
 
 ### Botão Finish (`_btnFinish`) → `DoFinish` ⚠️ fluxo composto
-1. Lê tipo+nome (aborta se vazio). Detecta `isRelease` / `isHotfix`.
-2. Monta **flags**: `-k` se "Keep branch"; `--no-fetch` se marcado; para **release/hotfix** acrescenta `-m "<nome>"` (mensagem da tag anotada — sem isso o git-flow abriria editor e abortaria com "no tag message?").
-3. Se **não** for no-fetch → `git fetch` antes (evita divergências).
-4. Se **release** e não no-fetch → faz **push da branch para o remoto primeiro** (`git push <remote> <prefixo+nome>`), senão o finish não acha o ref remoto. Falha aqui aborta.
-5. Executa `git flow <tipo> finish <flags> "<nome>"`.
-6. **Se falhar com "merge is already in progress"** → `ResolveInProgressMerge`:
-   - extrai a branch travada do texto de erro;
-   - `git flow <tipo> finish --abort "<nome>"` e `git merge --abort`;
-   - **deadlock do git-flow-next:** se persistir, apaga o estado órfão `.git/gitflow/state/*.json` (`ClearGitFlowState`);
-   - volta para a branch original e **repete o finish**.
-   - Outras falhas → `ShowFlowError` (com dica sobre branch base/produção ausente).
-7. Sucesso, **não-release** (feature/bugfix/hotfix/support): o finish já mesclou e deletou a branch, deixando você na base → `RevealInTree(branch atual, checkout:false)`. Fim.
-8. Sucesso, **release** — sequência de pós-finish:
-   1. Guarda `LastFinishedReleaseTag = nome` (a ZimerfeldTree foca a tag ao fechar).
-   2. Resolve nomes reais de master/develop (`git config gitflow.branch.*`) e o remoto default.
-   3. Sem remoto configurado → `MessageBox` "finalizada localmente" e para.
-   4. `git push <remote> <master>` → `git push <remote> <develop>` (cada um aborta se falhar).
-   5. `git push <remote> refs/tags/<nome>` (envia a tag; git flow a cria só local).
-   6. **Limpa a branch release remota** só se ainda existir (`git ls-remote --heads ...`): `git push <remote> --delete <prefixo+nome>`; senão escreve uma nota "(pulado: já não existe)".
-   7. `git checkout <develop>` + `RevealInTree(develop, checkout:false)`.
+1. Lê tipo+nome (aborta se vazio).
+2. Limpa `_txtResult`.
+3. Se No fetch desmarcado e remoto existir: `git fetch <remote>`.
+4. **Merge sequence** (git puro, sem binário git-flow):
+   - feature/bugfix: `checkout develop` → `merge --no-ff`.
+   - hotfix/release: `checkout main` → `merge --no-ff` → `tag -a <nome> -m <nome>` → `checkout develop` → `merge --no-ff`.
+   - support: `checkout main` → `merge --no-ff`.
+5. Se **Keep** desmarcado: `git branch -d <prefixo+nome>`.
+6. **Remoção remota** (todos os tipos): `git ls-remote --heads <remote> <branch>` → se existir, `git push <remote> --delete <branch>`; senão appenda nota "(pulado: já não existe)".
+7. Pós-finish para **release** (adicional):
+   a. `LastFinishedReleaseTag = nome` (ZimerfeldTree foca a tag ao fechar).
+   b. Sem remoto → aviso "finalizada localmente" e para.
+   c. `git push <remote> <main>` → `git push <remote> <develop>`.
+   d. `git push <remote> refs/tags/<nome>`.
+   e. Remoção remota da branch release (passo 6 já executado antes do passo 7).
+   f. `git checkout <develop>` + reveal.
+8. Não-release (feature/bugfix/hotfix/support): `RevealInTree(branch atual, checkout:false)`.
+
+> Erros de merge param o fluxo e exibem o resultado no painel. Resolver manualmente (`git merge --abort` ou commit).
 
 ### Checkboxes do Finish
-- **Keep branch after finish** (`-k`) e **No fetch (--no-fetch)**: ao mudar, salvam em `ZimerfeldTree.gitflowsettings.json`.
+- **Keep branch after finish** e **No fetch (--no-fetch)**: ao mudar, salvam em `ZimerfeldTree.gitflowsettings.json`.
 
 ### Link "About GitFlow"
-- Abre `MessageBox` explicando Publish/Track/Update/Finish e os checkboxes; lembra que requer **git-flow-next**.
+- Abre `MessageBox` descrevendo os comandos git executados por cada botão.
 
 ### Botão Fechar (`_btnClose`)
 - `Close()` (também é o `CancelButton`).
 
 ## ⚠️ Erros comuns (`ShowFlowError`)
-Quando a saída contém "couldn't find remote ref" / "does not exist" / "start point branch", a mensagem orienta a checar `git branch --list main master develop` e `git config gitflow.branch.*`, criar a branch faltante ou marcar **No fetch**. Ver [[git flow - chaves de config (CLI)]].
+Quando a saída contém "does not exist" / "not found" / "unknown revision" / "pathspec", a mensagem orienta a checar `git branch --list main master develop` e `git config gitflow.branch.*`, criar a branch faltante ou usar **GitFlow Initialize**.
 
 ## 🔗 Relacionado
 - [[Interface ZimerfeldTree — botões e fluxos]]

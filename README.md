@@ -2,7 +2,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-**Versão atual: 1.0.154**
+**Versão atual: 1.0.170**
 
 ---
 
@@ -195,42 +195,52 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opção **based on:**:
 
-- Por padrão o dropdown fica **desabilitado** e usa `develop` como base (comportamento padrão do `git flow ... start`)
+- Por padrão o dropdown fica **desabilitado** e usa a base padrão do tipo:
+  - `develop` para feature, bugfix e release
+  - `main` para hotfix e support
 - Ao marcar o checkbox **based on:**, o dropdown é habilitado e lista as branches locais, permitindo iniciar a nova branch a partir de outra — por exemplo, uma **feature filha de outra feature pai**
-- A base escolhida é passada ao comando: `git flow feature start "<nome>" "<base>"`
+- O comando executado é: `git checkout -b <prefixo><nome> <base>`
 - **Nome padrão de release**: ao selecionar o tipo **release**, o campo de nome é preenchido automaticamente com a convenção `yyyyMMddHHmm` (ex.: `202605311230`), gerando branches como `release/202605311230`; o preenchimento só ocorre quando o campo está vazio, nunca sobrescrevendo digitação manual
 
-### Janela GitFlow — painel "Manage existing branches" (git-flow-next)
+### Janela GitFlow — painel "Manage existing branches"
 
-O painel foi adaptado ao **git-flow-next**, que não possui o comando `pull` nem as flags `-S`/`-p` do finish:
+O plugin executa **git nativo** diretamente — **não requer o binário `git-flow` instalado**. Cada botão dispara a sequência de comandos abaixo:
 
-- **Publish** — `git flow <tipo> publish "<nome>"`: envia a branch para o remoto
-- **Track** — `git flow <tipo> track "<nome>"`: cria uma branch local que rastreia a branch remota correspondente (útil para branches iniciadas por outra pessoa)
-- **Update** — `git flow <tipo> update "<nome>"`: traz as mudanças da branch **pai** (ex.: develop) para a branch
-- **Finish** — `git flow <tipo> finish [-k] [--no-fetch] [-m "<nome>"] "<nome>"`: mescla de volta e remove a branch; o checkbox **Keep branch after finish** adiciona `-k` e o checkbox **No fetch (--no-fetch)** evita a busca remota
-  - Antes de executar o finish, o plugin executa automaticamente `git fetch` para manter as branches de rastreamento locais sincronizadas com o remoto e evitar divergências; o fetch é omitido quando **No fetch** está marcado
-  - **Mensagem da tag automática (`release`/`hotfix`)**: como esses tipos criam uma **tag anotada**, o plugin passa `-m "<nome>"` (a própria versão como mensagem). Sem isso, o git-flow abriria um editor para a mensagem da tag — o que, no processo não-interativo do plugin, resultava em `fatal: no tag message?` e abortava o finish. O `-m` também é aplicado no retry da auto-resolução de "merge in progress"
-  - **Auto-resolução de "merge in progress"**: quando o finish falha com `a merge is already in progress for branch '<tipo>/<nome>'`, o plugin aborta o estado travado e retenta o finish original automaticamente. A recuperação tem três níveis: ① `git flow <tipo> finish --abort` para limpar o lock do git-flow; ② `git merge --abort` para limpar o `MERGE_HEAD` do git; ③ **recuperação de deadlock** — o git-flow-next mantém um arquivo de estado persistente (`.git/gitflow/state/*.json`) que sobrevive mesmo quando o git não tem `MERGE_HEAD`; nesse caso os dois aborts falham e o plugin remove o arquivo órfão diretamente. Após a limpeza, volta à branch original e retenta o finish
+- **Publish** — `git push --set-upstream <remote> <prefixo><nome>`: envia a branch para o remoto e define o upstream local
+- **Track** — `git fetch <remote>` + `git checkout -b <prefixo><nome> --track <remote>/<prefixo><nome>`: cria uma branch local rastreando a branch remota correspondente (útil para branches iniciadas por outra pessoa)
+- **Update** — `git fetch <remote>` + `git checkout <branch>` + `git merge <remote>/<pai>`: traz as mudanças da branch **pai** (develop ou main) para a branch. Com **No fetch** marcado, o merge é feito contra a referência local
+- **Finish** — mescla de volta, exclui a branch local (se **Keep** desmarcado) e **remove a branch do remoto** (se existir); o checkbox **No fetch** omite o fetch inicial
+  - **feature / bugfix**: `git checkout develop` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
+  - **release / hotfix**: `git checkout main` → `git merge --no-ff` → `git tag -a <nome> -m "<nome>"` → `git checkout develop` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
+  - **support**: `git checkout main` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
+  - A remoção remota só ocorre se a branch existir no remoto (verificado com `ls-remote`); caso contrário, uma nota é exibida no painel de resultado
   - A janela GitFlow mantém o foco após cada comando executado
-- **Finish de `release` — fluxo completo automático**: quando o tipo é `release` e o checkbox **No fetch** não está marcado, o painel executa automaticamente em sequência (com as saídas anexadas à janela de resultado):
-  1. `git push <remote> release/<nome>` — envia a release para o remoto **antes** do finish, evitando o erro `fatal: couldn't find remote ref release/<nome>` gerado pelo git-flow ao buscar a branch remota
-  2. `git flow release finish [-k] -m "<nome>" "<nome>"` (o `-m` fornece a mensagem da tag anotada, evitando o erro `no tag message?`)
-  3. `git push <remote> <master>` (nome lido de `gitflow.branch.main`)
-  4. `git push <remote> <develop>` (nome lido de `gitflow.branch.develop`)
-  5. `git push <remote> refs/tags/<nome>` — envia a **tag** criada pelo finish ao remoto (o git flow só cria a tag localmente)
-  6. `git push <remote> --delete release/<nome>` — remove a **branch remota** da release, **somente se ela ainda existir**: o plugin antes verifica com `git ls-remote --heads <remote> release/<nome>` e, se a branch já tiver sido removida pelo git-flow durante o finish, **pula o delete** e registra uma nota amigável na janela de resultado, em vez de exibir o erro `unable to delete '...': remote ref does not exist`
-  7. `git checkout <develop>`
-  
-  Ao concluir com sucesso, a seção **TAGS** da árvore é expandida automaticamente e o foco vai para o tag criado pelo finish.
 
-  O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se um dos passos de push de master/develop falhar, o fluxo para naquele ponto e a mensagem de erro é exibida; o push da tag e a remoção da branch remota não interrompem o fluxo.
+**Finish de `release` — fluxo completo automático** (quando **No fetch** não está marcado):
 
-- O dropdown de branch lista **apenas as branches locais** do tipo selecionado, refletindo o que existe localmente; é recarregado após cada comando git flow (ex.: ao finalizar uma branch com Finish, ela é removida do dropdown automaticamente)
-- Ao abrir a janela, se a branch em **checkout** corresponder a um tipo do git flow (ex.: `feature/manage`), o dropdown de tipo e o dropdown de branch já vêm pré-selecionados nesse tipo e nessa branch
+| Passo | Comando |
+|-------|---------|
+| 1 | `git fetch <remote>` |
+| 2 | `git checkout main` → `git merge --no-ff release/<nome>` |
+| 3 | `git tag -a <nome> -m "<nome>"` |
+| 4 | `git checkout develop` → `git merge --no-ff release/<nome>` |
+| 5 | `git branch -d release/<nome>` *(se Keep desmarcado)* |
+| 6 | `git push <remote> --delete release/<nome>` *(somente se a branch remota ainda existir — verificado com `ls-remote`)* |
+| 7 | `git push <remote> main` |
+| 8 | `git push <remote> develop` |
+| 9 | `git push <remote> refs/tags/<nome>` |
+| 10 | `git checkout develop` |
+
+Ao concluir com sucesso, a seção **TAGS** da árvore é expandida e o foco vai para a tag criada.
+
+O remote usado é `origin` (ou o primeiro configurado quando `origin` não existe). Se um passo de push falhar, o fluxo para naquele ponto.
+
+- O dropdown de branch lista **apenas as branches locais** do tipo selecionado; é recarregado após cada operação
+- Ao abrir a janela, se a branch em **checkout** corresponder a um tipo gitflow (ex.: `feature/manage`), o dropdown de tipo e de branch já vêm pré-selecionados
 
 #### Tratamento de erros
 
-Quando um comando git flow falha, o resultado é exibido na janela e um aviso é mostrado. Se o erro indicar uma **branch base/produção ausente** (ex.: `couldn't find remote ref main`, `start point branch 'main' does not exist`), a mensagem orienta a verificar as branches existentes e a configuração `gitflow.branch.*`, e sugere marcar **No fetch** quando a falha for ao buscar do remoto.
+Quando um comando git falha, o resultado é exibido na janela e um aviso é mostrado. Se o erro indicar uma **branch de destino ausente** (ex.: `does not exist`, `not found`), a mensagem orienta a verificar as branches existentes e a configuração `gitflow.branch.*`. Se ocorrer conflito de merge, o repositório fica em estado "merging" — resolver manualmente com `git merge --abort` ou resolver os conflitos e `git commit`.
 
 ### Ícones
 
@@ -309,22 +319,6 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 > **Atenção:** GitExtensions 3.x (`.NET Framework 4.8`) é incompatível — o plugin requer `net9.0-windows`.
 
 ---
-
-### Condicional — apenas para funcionalidades GitFlow
-
-| Programa | Download | Função |
-|----------|----------|--------|
-| **git-flow-next** | https://github.com/nicola-gh/git-flow-next | Fornece o subcomando `git flow` (start, finish, publish, track, update) |
-
-**Por que git-flow-next e não git-flow clássico?** O plugin usa os comandos `update` e `track`, ausentes no git-flow original e na edição AVH. Também trata o estado persistente `.git/gitflow/state/*.json` exclusivo do git-flow-next.
-
-**Instalação no Windows via Scoop:**
-```powershell
-scoop install git-flow-next
-```
-**Verificar:** `git flow version`
-
-**Configurar repositório:** `git flow init` (aceitar padrões ou configurar prefixos manualmente).
 
 ---
 

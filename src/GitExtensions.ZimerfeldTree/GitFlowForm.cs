@@ -304,7 +304,7 @@ public sealed class GitFlowForm : Form
         _grpResult = new GroupBox
         {
             Name   = "grpResult",
-            Text   = "Result of git flow command run",
+            Text   = "Resultado dos comandos git",
             Bounds = new Rectangle(8, 364, 664, 362),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
@@ -504,33 +504,37 @@ public sealed class GitFlowForm : Form
             return;
         }
 
-        string baseArg = string.Empty;
-        if (_chkBasedOn.Checked)
-        {
-            string baseBranch = Clean(_cboBasedOn.Text);
-            if (baseBranch.Length > 0) baseArg = $" \"{baseBranch}\"";
-        }
+        _txtResult.Clear();
 
-        bool ok = RunFlow($"flow {type} start \"{name}\"{baseArg}");
+        // Default base: hotfix/support branch from main; everything else from develop.
+        string baseBranch = (_chkBasedOn.Checked && Clean(_cboBasedOn.Text).Length > 0)
+            ? Clean(_cboBasedOn.Text)
+            : (string.Equals(type, "hotfix",  StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(type, "support", StringComparison.OrdinalIgnoreCase)
+                   ? _svc.GetGitFlowBranchName("main")
+                   : _svc.GetGitFlowBranchName("develop"));
+
+        string fullBranch = _svc.GetGitFlowPrefix(type) + name;
+
+        // git checkout -b {prefix}{name} {base} — creates and switches in one command.
+        bool ok = RunFlow($"checkout -b \"{fullBranch}\" \"{baseBranch}\"");
         _txtStartName.Clear();
 
-        // Pre-select the new branch in "Manage existing branches".
         if (ok)
         {
             int typeIdx = _cboManageType.Items.IndexOf(type);
             if (typeIdx >= 0)
             {
                 if (_cboManageType.SelectedIndex != typeIdx)
-                    _cboManageType.SelectedIndex = typeIdx; // triggers ReloadManageBranches
+                    _cboManageType.SelectedIndex = typeIdx;
                 int branchIdx = _cboManageBranch.Items.IndexOf(name);
                 if (branchIdx >= 0)
                     _cboManageBranch.SelectedIndex = branchIdx;
                 else
                     _cboManageBranch.Text = name;
             }
-
-            // Checkout the new branch and reveal it in the ZimerfeldTree (behind this modal).
-            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
+            // checkout -b already switched — reveal without a second checkout.
+            RevealInTree(fullBranch, checkout: false);
         }
         else if (!IsDisposed) Activate();
     }
@@ -544,9 +548,20 @@ public sealed class GitFlowForm : Form
     {
         fullBranch = (fullBranch ?? string.Empty).Trim();
         if (checkout && fullBranch.Length > 0)
-            RunFlow($"checkout \"{fullBranch}\"", append: true, suppressError: true);
+            RunFlow($"checkout \"{fullBranch}\"", suppressError: true);
         RepoMutated?.Invoke(fullBranch.Length > 0 ? fullBranch : null);
         if (!IsDisposed) Activate();
+    }
+
+    private void DeleteRemoteBranchIfExists(string remote, string fullBranch)
+    {
+        if (remote.Length == 0) return;
+        var (lsOut, lsCode) = _svc.RunGitFlow($"ls-remote --heads \"{remote}\" \"{fullBranch}\"");
+        if (lsCode == 0 && lsOut.Trim().Length > 0)
+            RunFlow($"push \"{remote}\" --delete \"{fullBranch}\"", suppressError: true);
+        else
+            _txtResult.AppendText($"\r\n\r\ncommand - git push {remote} --delete {fullBranch}" +
+                                   $"\r\n\r\n(pulado: a branch remota '{fullBranch}' já não existe)");
     }
 
     private void DoPublish()
@@ -554,8 +569,19 @@ public sealed class GitFlowForm : Form
         string type = _cboManageType.Text;
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
-        if (RunFlow($"flow {type} publish \"{name}\""))
-            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
+
+        string fullBranch = _svc.GetGitFlowPrefix(type) + name;
+        string remote     = _svc.GetDefaultRemote();
+        if (remote.Length == 0)
+        {
+            MessageBox.Show("Nenhum remoto configurado.", "GitFlow",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        _txtResult.Clear();
+        // git push --set-upstream <remote> <branch>
+        if (RunFlow($"push --set-upstream \"{remote}\" \"{fullBranch}\""))
+            RevealInTree(fullBranch, checkout: false);
     }
 
     private void DoTrack()
@@ -563,8 +589,25 @@ public sealed class GitFlowForm : Form
         string type = _cboManageType.Text;
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
-        if (RunFlow($"flow {type} track \"{name}\""))
-            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
+
+        string fullBranch = _svc.GetGitFlowPrefix(type) + name;
+        string remote     = _svc.GetDefaultRemote();
+        if (remote.Length == 0)
+        {
+            MessageBox.Show("Nenhum remoto configurado.", "GitFlow",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        _txtResult.Clear();
+        // Fetch so the remote-tracking ref exists before checkout --track.
+        bool fetchRan = !_chkNoFetch.Checked;
+        if (fetchRan)
+            RunFlow($"fetch \"{remote}\"", suppressError: true);
+
+        // git checkout -b {branch} --track {remote}/{branch}
+        if (RunFlow($"checkout -b \"{fullBranch}\" --track \"{remote}/{fullBranch}\""))
+            RevealInTree(fullBranch, checkout: false);
     }
 
     private void DoUpdate()
@@ -572,8 +615,29 @@ public sealed class GitFlowForm : Form
         string type = _cboManageType.Text;
         string name = Clean(_cboManageBranch.Text);
         if (name.Length == 0) return;
-        if (RunFlow($"flow {type} update \"{name}\""))
-            RevealInTree(_svc.GetGitFlowPrefix(type) + name, checkout: true);
+
+        string fullBranch   = _svc.GetGitFlowPrefix(type) + name;
+        string remote       = _svc.GetDefaultRemote();
+        // Parent branch: hotfix/support branch from main; everything else from develop.
+        string parentBranch = (string.Equals(type, "hotfix",  StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(type, "support", StringComparison.OrdinalIgnoreCase))
+            ? _svc.GetGitFlowBranchName("main")
+            : _svc.GetGitFlowBranchName("develop");
+
+        _txtResult.Clear();
+        bool fetchRan = !_chkNoFetch.Checked && remote.Length > 0;
+        if (fetchRan)
+            RunFlow($"fetch \"{remote}\"", suppressError: true);
+
+        // Switch to the branch, then merge the parent (remote-tracking when available).
+        if (!RunFlow($"checkout \"{fullBranch}\"")) return;
+
+        bool ok = fetchRan
+            ? RunFlow($"merge \"{remote}/{parentBranch}\"")
+            : RunFlow($"merge \"{parentBranch}\"");
+
+        if (ok)
+            RevealInTree(fullBranch, checkout: false);
     }
 
     private void DoFinish()
@@ -584,102 +648,87 @@ public sealed class GitFlowForm : Form
 
         bool isRelease = string.Equals(type, "release", StringComparison.OrdinalIgnoreCase);
         bool isHotfix  = string.Equals(type, "hotfix",  StringComparison.OrdinalIgnoreCase);
+        bool isSupport = string.Equals(type, "support", StringComparison.OrdinalIgnoreCase);
 
-        string flags = string.Empty;
-        if (_chkKeep.Checked)    flags += "-k ";
-        if (_chkNoFetch.Checked) flags += "--no-fetch ";
+        string fullBranch  = _svc.GetGitFlowPrefix(type) + name;
+        string safeName    = Clean(name);
+        string remote      = _svc.GetDefaultRemote();
+        string mainBranch  = _svc.GetGitFlowBranchName("main");
+        string devBranch   = _svc.GetGitFlowBranchName("develop");
 
-        // release/hotfix finish creates an annotated tag. Without -m, git-flow opens an
-        // editor for the tag message; in this non-interactive host that yields an empty
-        // message and git aborts with "fatal: no tag message?". Supply the version as the
-        // tag message so the finish runs unattended.
+        _txtResult.Clear();
+
+        // ── 1. Optional fetch ──────────────────────────────────────────────────
+        bool fetchRan = !_chkNoFetch.Checked && remote.Length > 0;
+        if (fetchRan)
+            RunFlow($"fetch \"{remote}\"", suppressError: true);
+
+        // ── 2. Merge sequence ──────────────────────────────────────────────────
         if (isRelease || isHotfix)
-            flags += $"-m \"{name}\" ";
-
-        // Fetch before finishing to avoid divergences between local and remote branches.
-        if (!_chkNoFetch.Checked)
-            RunFlow("fetch", append: false, suppressError: true);
-
-        // Publish branch to origin before finishing so the remote is up-to-date.
-        // For release this also prevents "couldn't find remote ref release/X" during git-flow's fetch.
-        // Skipped when --no-fetch is checked (user explicitly opts out of remote operations).
-        if (!_chkNoFetch.Checked)
         {
-            string pushRemote = _svc.GetDefaultRemote();
-            if (pushRemote.Length > 0)
-            {
-                string fullBranch = _svc.GetGitFlowPrefix(type) + name;
-                if (!RunFlow($"push {pushRemote} {fullBranch}")) return;
-            }
+            // → checkout main → merge --no-ff → tag → checkout develop → merge --no-ff
+            if (!RunFlow($"checkout \"{mainBranch}\""))                   return;
+            if (!RunFlow($"merge --no-ff \"{fullBranch}\""))              return;
+            if (!RunFlow($"tag -a \"{safeName}\" -m \"{safeName}\""))     return;
+            if (!RunFlow($"checkout \"{devBranch}\""))                    return;
+            if (!RunFlow($"merge --no-ff \"{fullBranch}\""))              return;
+        }
+        else if (isSupport)
+        {
+            // support branches target main only; no tag, no develop merge
+            if (!RunFlow($"checkout \"{mainBranch}\""))      return;
+            if (!RunFlow($"merge --no-ff \"{fullBranch}\"")) return;
+        }
+        else
+        {
+            // feature / bugfix → checkout develop → merge --no-ff
+            if (!RunFlow($"checkout \"{devBranch}\""))       return;
+            if (!RunFlow($"merge --no-ff \"{fullBranch}\"")) return;
         }
 
-        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"", append: true, suppressError: true);
+        // ── 3. Delete the local branch (unless keepBranch) ────────────────────
+        if (!_chkKeep.Checked)
+            RunFlow($"branch -d \"{fullBranch}\"", suppressError: true);
 
-        if (!ok)
-        {
-            string resultText = _txtResult.Text;
-            if (resultText.Contains("merge is already in progress", StringComparison.OrdinalIgnoreCase))
-            {
-                ok = ResolveInProgressMerge(type, name, flags, resultText);
-            }
-            else
-            {
-                ShowFlowError(resultText);
-            }
-        }
-
-        // After a successful "release" finish: push master, push develop,
-        // and (if both succeed) checkout develop.
-        if (!ok) return;
-
-        // finish deletes the affected branch and leaves you on its base (e.g. develop).
-        // Reveal whatever branch is now current (no checkout — git-flow already switched).
+        // ── 4. Non-release: remove remote branch and reveal ───────────────────
         if (!isRelease)
         {
+            DeleteRemoteBranchIfExists(remote, fullBranch);
             RevealInTree(_svc.GetCurrentBranch(), checkout: false);
             return;
         }
 
-        LastFinishedReleaseTag = name;
+        // ── 5. Release: push main, develop, tag; clean up remote branch ────────
+        LastFinishedReleaseTag = safeName;
 
-        string master  = _svc.GetGitFlowBranchName("main");
-        string develop = _svc.GetGitFlowBranchName("develop");
-        string remote  = _svc.GetDefaultRemote();
         if (remote.Length == 0)
         {
             MessageBox.Show(
                 "Release finalizada localmente, mas nenhum remoto configurado para push.",
                 "GitFlow", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            RevealInTree(devBranch, checkout: false);
             return;
         }
 
-        if (!RunFlow($"push {remote} {master}",  append: true)) return;
-        if (!RunFlow($"push {remote} {develop}", append: true)) return;
+        if (!RunFlow($"push \"{remote}\" \"{mainBranch}\"")) return;
+        if (!RunFlow($"push \"{remote}\" \"{devBranch}\""))  return;
 
-        // Push the release tag to the remote (git flow finish creates it locally only).
-        RunFlow($"push {remote} refs/tags/{name}", append: true, suppressError: true);
+        // Push the release tag (created locally by the merge step above).
+        RunFlow($"push \"{remote}\" \"refs/tags/{safeName}\"", suppressError: true);
 
-        // Delete the remote release branch only if it still exists. git-flow usually removes it
-        // during finish, so a blind delete prints a noisy "remote ref does not exist" error.
-        // Probe with ls-remote first and skip cleanly (with a friendly note) when it is already gone.
-        string remoteReleaseBranch = _svc.GetGitFlowPrefix(type) + name;
-        var (lsOut, lsCode) = _svc.RunGitFlow($"ls-remote --heads {remote} {remoteReleaseBranch}");
-        if (lsCode == 0 && lsOut.Trim().Length > 0)
-            RunFlow($"push {remote} --delete {remoteReleaseBranch}", append: true, suppressError: true);
-        else
-            _txtResult.Text += $"\r\n\r\ncommand - git push {remote} --delete {remoteReleaseBranch}" +
-                               $"\r\n\r\n(pulado: a branch remota '{remoteReleaseBranch}' já não existe)";
+        // Delete the remote release branch only if it still exists.
+        DeleteRemoteBranchIfExists(remote, fullBranch);
 
-        RunFlow($"checkout {develop}", append: true);
-        RevealInTree(develop, checkout: false);
+        RunFlow($"checkout \"{devBranch}\"");
+        RevealInTree(devBranch, checkout: false);
     }
 
     /// <summary>
-    /// Runs <c>git {args}</c>, shows the result in the textbox and returns true on exit code 0.
-    /// When <paramref name="append"/> is true, the new output block is appended to the existing
-    /// result text (so multi-step flows like release-finish + push + checkout stay visible).
+    /// Runs <c>git {args}</c>, appends the result block to the textbox (auto-scrolling to the
+    /// bottom) and returns true on exit code 0.  Call <c>_txtResult.Clear()</c> at the start of
+    /// each user action so that every button press begins with a clean slate.
     /// </summary>
-    private bool RunFlow(string args, bool append = false, bool suppressError = false)
+    private bool RunFlow(string args, bool suppressError = false)
     {
         string output;
         int code;
@@ -691,9 +740,10 @@ public sealed class GitFlowForm : Form
                 ? (code == 0 ? "(comando concluído)" : "(sem saída)")
                 : output.Replace("\n", "\r\n");
             string block = $"command - git {args}\r\n\r\n{body}";
-            _txtResult.Text = append && _txtResult.Text.Length > 0
-                ? _txtResult.Text + "\r\n\r\n" + block
-                : block;
+            if (_txtResult.TextLength > 0)
+                _txtResult.AppendText("\r\n\r\n" + block);
+            else
+                _txtResult.AppendText(block);
         }
         finally
         {
@@ -711,93 +761,58 @@ public sealed class GitFlowForm : Form
     }
 
     /// <summary>
-    /// Shows a MessageBox after a failed git flow command. When the output points to a missing
-    /// base/production branch (the common git-flow-next finish failure), it adds guidance.
+    /// Shows a MessageBox after a failed git command. When the output indicates a missing
+    /// base/target branch, it adds guidance for diagnosing the problem.
     /// </summary>
     private static void ShowFlowError(string output)
     {
-        bool missingBase =
-            output.Contains("couldn't find remote ref", StringComparison.OrdinalIgnoreCase) ||
+        bool missingBranch =
             output.Contains("does not exist", StringComparison.OrdinalIgnoreCase) ||
-            output.Contains("start point branch", StringComparison.OrdinalIgnoreCase);
+            output.Contains("not found",      StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("unknown revision", StringComparison.OrdinalIgnoreCase) ||
+            output.Contains("pathspec",       StringComparison.OrdinalIgnoreCase);
 
-        string msg = missingBase
-            ? "O git flow não encontrou a branch base/produção (ex.: 'main' ou 'develop').\n\n" +
+        string msg = missingBranch
+            ? "Git não encontrou a branch de destino (ex.: 'main' ou 'develop').\n\n" +
               "Verifique se ela existe localmente:\n" +
               "    git branch --list main master develop\n\n" +
               "E a configuração do git flow:\n" +
               "    git config gitflow.branch.main\n" +
               "    git config gitflow.branch.develop\n\n" +
-              "Crie a branch que falta ou ajuste a config. Se a falha for ao buscar do remoto, " +
-              "marque \"No fetch (--no-fetch)\" e tente novamente."
-            : "O comando git flow falhou. Veja os detalhes na janela de resultado.";
+              "Crie a branch que falta ou use GitFlow Initialize."
+            : "O comando git falhou. Veja os detalhes na janela de resultado.";
 
         MessageBox.Show(msg, "GitFlow — falha", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-    }
-
-    /// <summary>
-    /// Handles "merge is already in progress" from git-flow-next.
-    /// Aborts the stuck merge state and retries the original finish.
-    /// </summary>
-    private bool ResolveInProgressMerge(string type, string name, string flags, string errorText)
-    {
-        var m = System.Text.RegularExpressions.Regex.Match(
-            errorText,
-            @"in progress for branch '([^']+)'",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-        string stuckBranch = m.Success ? m.Groups[1].Value : string.Empty;
-        string stuckType   = string.Empty;
-        string stuckName   = string.Empty;
-        if (stuckBranch.Length > 0)
-        {
-            int sl = stuckBranch.IndexOf('/');
-            if (sl > 0) { stuckType = stuckBranch[..sl]; stuckName = stuckBranch[(sl + 1)..]; }
-        }
-
-        // Save current branch so we can return to it after abort.
-        string originalBranch = _svc.GetCurrentBranch();
-
-        // Abort the stuck merge state (both git-flow's lock and git's MERGE_HEAD).
-        if (stuckType.Length > 0 && stuckName.Length > 0)
-            RunFlow($"flow {stuckType} finish --abort \"{stuckName}\"",
-                append: true, suppressError: true);
-
-        RunFlow("merge --abort", append: true, suppressError: true);
-
-        // Deadlock recovery: git-flow-next keeps a persistent state file
-        // (.git/gitflow/state/*.json) that survives even when git has no MERGE_HEAD.
-        // In that case both aborts above fail and the only fix is deleting the stale file.
-        if (_svc.ClearGitFlowState())
-            _txtResult.Text += "\r\n\r\n(estado órfão do git-flow removido: .git/gitflow/state)";
-
-        // Return to original branch if abort changed it.
-        string currentBranch = _svc.GetCurrentBranch();
-        if (originalBranch.Length > 0 &&
-            !string.Equals(originalBranch, currentBranch, StringComparison.OrdinalIgnoreCase))
-        {
-            RunFlow($"checkout {originalBranch}", append: true, suppressError: true);
-        }
-
-        // Retry the original finish.
-        bool ok = RunFlow($"flow {type} finish {flags}\"{name}\"",
-            append: true, suppressError: true);
-        if (!ok) ShowFlowError(_txtResult.Text);
-        return ok;
     }
 
     private void ShowAbout()
     {
         MessageBox.Show(
-            "Botões:\n" +
-            "  Publish — envia a branch para o remoto (git flow <tipo> publish).\n" +
-            "  Track   — cria branch local rastreando a branch remota de mesmo nome.\n" +
-            "  Update  — traz commits da branch pai (ex.: develop) para a branch atual.\n" +
-            "  Finish  — mescla de volta e exclui a branch (git flow <tipo> finish).\n\n" +
+            "Botões:\n\n" +
+            "  Start   — git checkout -b <prefixo><nome> <base>\n" +
+            "            (base padrão: develop para feature/bugfix/release; main para hotfix/support)\n\n" +
+            "  Publish — git push --set-upstream <remote> <branch>\n\n" +
+            "  Track   — git fetch + git checkout -b <branch> --track <remote>/<branch>\n\n" +
+            "  Update  — git checkout <branch> + git merge <remote>/<pai> (ou local se No fetch)\n" +
+            "            (pai: develop para feature/bugfix/release; main para hotfix/support)\n\n" +
+            "  Finish (feature/bugfix):\n" +
+            "            git checkout develop\n" +
+            "            git merge --no-ff <branch>\n" +
+            "            git branch -d <branch>  (se Keep não estiver marcado)\n" +
+            "            git push <remote> --delete <branch>  (se remoto existir)\n\n" +
+            "  Finish (release/hotfix):\n" +
+            "            git checkout main  →  merge --no-ff  →  tag -a <nome> -m <nome>\n" +
+            "            git checkout develop  →  merge --no-ff\n" +
+            "            git branch -d <branch>  (se Keep não estiver marcado)\n" +
+            "            git push <remote> --delete <branch>  (se remoto existir)\n" +
+            "            + push main, develop, tag (release)\n\n" +
+            "  Finish (support): git checkout main  →  merge --no-ff\n" +
+            "            git branch -d <branch>  (se Keep não estiver marcado)\n" +
+            "            git push <remote> --delete <branch>  (se remoto existir)\n\n" +
             "Checkboxes do Finish:\n" +
-            "  Keep branch after finish — mantém a branch após a mesclagem (flag -k).\n" +
-            "  No fetch (--no-fetch)   — não busca no remoto antes de finalizar.\n\n" +
-            "Requer git-flow-next instalado.",
+            "  Keep branch after finish — omite o git branch -d ao finalizar.\n" +
+            "  No fetch (--no-fetch)   — não sincroniza com o remoto antes de operar.\n\n" +
+            "Não requer o binário git-flow instalado — usa apenas git puro.",
             "About GitFlow", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
