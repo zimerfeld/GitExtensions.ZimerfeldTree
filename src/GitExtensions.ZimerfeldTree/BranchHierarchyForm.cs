@@ -372,7 +372,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildTopPanel()
     {
-        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 87 };
+        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 82 };
 
         var table = new TableLayoutPanel
         {
