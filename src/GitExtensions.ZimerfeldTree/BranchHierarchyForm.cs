@@ -315,8 +315,8 @@ public sealed class BranchHierarchyForm : Form
     {
         SuspendLayout();
 
-        Text            = "ZimerfeldTree — Branch Hierarchy";
-        Size            = new Size(580, 720);
+        Text            = "ZimerfeldTree - Branch Hierarchy";
+        Size            = new Size(580, 760);
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox     = true;
@@ -372,7 +372,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildTopPanel()
     {
-        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 78 };
+        _topPanel = new Panel { Name = "topPanel", Dock = DockStyle.Top, Height = 87 };
 
         var table = new TableLayoutPanel
         {
@@ -380,7 +380,7 @@ public sealed class BranchHierarchyForm : Form
             Dock        = DockStyle.Fill,
             ColumnCount = 1,
             RowCount    = 3,
-            Padding     = new Padding(6, 4, 6, 4),
+            Padding     = new Padding(6, 15, 6, 4),
             Margin      = Padding.Empty
         };
         table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -429,7 +429,7 @@ public sealed class BranchHierarchyForm : Form
             Text     = "About Tree",
             AutoSize = true,
             Anchor   = AnchorStyles.Top | AnchorStyles.Right,
-            Location = new Point(ClientSize.Width - 100, 6)
+            Location = new Point(ClientSize.Width - 100, 2)
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAboutTree();
     }

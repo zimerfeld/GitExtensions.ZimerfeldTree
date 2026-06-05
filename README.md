@@ -469,3 +469,13 @@ ZimerfeldTree/
 ├── README.md                            # Este arquivo
 └── GitExtensions.ZimerfeldTree.nuspec   # Metadados do pacote NuGet
 ```
+
+---
+
+## Plugins integrados
+
+### [GitExtensions.ZimerfeldCommitMsg](https://www.nuget.org/packages/GitExtensions.ZimerfeldCommitMsg)
+
+**por:** zimerfeld
+
+Plugin para GitExtensions que gera automaticamente uma mensagem de commit resumindo em uma frase as mudanças nos arquivos staged, usando o formato Conventional Commits (`feat` / `fix` / `docs` / `test` / `chore`).
