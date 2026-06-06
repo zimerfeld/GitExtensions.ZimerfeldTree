@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.209)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.212)
 
-**Versão atual: 1.0.209**
+**Versão atual: 1.0.212**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.209 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.212 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -146,7 +146,7 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore (Voltar Versão)
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.209)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.212)
 
 Abre ao clicar em **Voltar Versão** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
@@ -192,7 +192,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 ### Janela GitFlow — comportamento geral
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.209)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.212)
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
@@ -252,7 +252,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore — comportamento geral
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.209)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.212)
 
 - Abre ao clicar em **Voltar Versão** na janela ZimerfeldTree
 - Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
@@ -429,6 +429,30 @@ Isso ocorre porque `feature/login` seria simultaneamente um **arquivo** (a branc
 ### Gitflow não prevê feature filha de feature
 
 O gitflow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são **irmãs** entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum.
+
+### Duas branches no mesmo commit não formam hierarquia pai-filho
+
+O algoritmo de ancestralidade usa BFS a partir dos **pais** do commit-tip de cada branch. Quando duas branches apontam para o **exato mesmo commit** (ex.: branch recém-criada sem commits próprios), nenhuma pode ser encontrada como ancestral da outra — ambas aparecem como raízes independentes.
+
+```
+# Situação sem hierarquia — ambas no commit c19d7dc
+feature/gridsolo   → c19d7dc
+feature/mododebug  → c19d7dc   ← BFS de gridsolo nunca a encontra como pai
+
+# Situação com hierarquia — gridsolo um commit à frente
+feature/gridsolo   → cea86c1   ← BFS encontra mododebug no pai imediato
+feature/mododebug  → c19d7dc
+```
+
+Isso não é uma limitação do plugin, mas do git: ele não registra de onde uma branch foi criada, apenas para qual commit ela aponta.
+
+**Solução automática:** ao usar o checkbox **based on:** na janela GitFlow → Start, o plugin executa automaticamente um commit vazio na branch recém-criada:
+
+```
+git commit --allow-empty -m "chore: start <prefixo><nome>"
+```
+
+Isso garante que a nova branch diverge imediatamente de sua base e a hierarquia fica visível na árvore sem ação manual.
 
 ---
 
