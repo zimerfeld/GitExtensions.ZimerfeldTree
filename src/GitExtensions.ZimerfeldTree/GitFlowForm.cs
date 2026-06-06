@@ -522,6 +522,11 @@ public sealed class GitFlowForm : Form
 
         if (ok)
         {
+            // When "based on" is explicit, a bare empty commit guarantees the new branch
+            // diverges from its base immediately — so the tree hierarchy is visible right away.
+            if (_chkBasedOn.Checked)
+                RunFlow($"commit --allow-empty -m \"chore: start {fullBranch}\"");
+
             int typeIdx = _cboManageType.Items.IndexOf(type);
             if (typeIdx >= 0)
             {
