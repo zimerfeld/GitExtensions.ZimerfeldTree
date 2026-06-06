@@ -516,6 +516,14 @@ public sealed class GitFlowForm : Form
 
         string fullBranch = _svc.GetGitFlowPrefix(type) + name;
 
+        // Reject before touching git if the branch already exists locally.
+        if (_svc.GetLocalBranches().Any(b => string.Equals(b.FullName, fullBranch, StringComparison.Ordinal)))
+        {
+            MessageBox.Show($"A branch '{fullBranch}' já existe.", "GitFlow",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
         // git checkout -b {prefix}{name} {base} — creates and switches in one command.
         bool ok = RunFlow($"checkout -b \"{fullBranch}\" \"{baseBranch}\"");
         _txtStartName.Clear();
