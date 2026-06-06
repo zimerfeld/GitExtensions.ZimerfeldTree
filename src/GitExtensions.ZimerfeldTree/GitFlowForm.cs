@@ -516,12 +516,25 @@ public sealed class GitFlowForm : Form
 
         string fullBranch = _svc.GetGitFlowPrefix(type) + name;
 
+        // Reject before touching git if the branch already exists locally.
+        if (_svc.GetLocalBranches().Any(b => string.Equals(b.FullName, fullBranch, StringComparison.Ordinal)))
+        {
+            MessageBox.Show($"A branch '{fullBranch}' já existe.", "GitFlow",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
         // git checkout -b {prefix}{name} {base} — creates and switches in one command.
         bool ok = RunFlow($"checkout -b \"{fullBranch}\" \"{baseBranch}\"");
         _txtStartName.Clear();
 
         if (ok)
         {
+            // When "based on" is explicit, a bare empty commit guarantees the new branch
+            // diverges from its base immediately — so the tree hierarchy is visible right away.
+            if (_chkBasedOn.Checked)
+                RunFlow($"commit --allow-empty -m \"chore: start {fullBranch}\"");
+
             int typeIdx = _cboManageType.Items.IndexOf(type);
             if (typeIdx >= 0)
             {
