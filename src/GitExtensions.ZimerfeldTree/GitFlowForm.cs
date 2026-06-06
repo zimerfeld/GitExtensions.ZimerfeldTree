@@ -429,17 +429,24 @@ public sealed class GitFlowForm : Form
 
     // ── Data ────────────────────────────────────────────────────────────────
 
-    private void InitData()
+    private void RefreshBasedOn()
     {
-        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
-
+        string current = _cboBasedOn.Text;
         _cboBasedOn.Items.Clear();
         _cboBasedOn.Items.Add("develop");
         foreach (var b in _svc.GetLocalBranches())
             if (!_cboBasedOn.Items.Contains(b.FullName))
                 _cboBasedOn.Items.Add(b.FullName);
-        _cboBasedOn.SelectedIndex = 0; // "develop" is the default base
+        int idx = _cboBasedOn.Items.IndexOf(current);
+        _cboBasedOn.SelectedIndex = idx >= 0 ? idx : 0;
         _cboBasedOn.Enabled = _chkBasedOn.Checked;
+    }
+
+    private void InitData()
+    {
+        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
+
+        RefreshBasedOn();
 
         // Detect git-flow type of the currently checked-out branch so the Manage
         // panel opens already pointing at it (matching what the user is on).
@@ -548,6 +555,7 @@ public sealed class GitFlowForm : Form
             }
             // checkout -b already switched — reveal without a second checkout.
             RevealInTree(fullBranch, checkout: false);
+            RefreshBasedOn();
         }
         else if (!IsDisposed) Activate();
     }
