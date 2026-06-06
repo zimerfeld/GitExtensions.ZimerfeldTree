@@ -96,11 +96,30 @@ Passos (com % no overlay):
 - Rótulo mostra `Commit (n)` com a contagem de mudanças pendentes (`git status --porcelain`).
 
 ### Botão GitFlow (`_btnGitFlowDedicated`) → `DoGitFlow`
+
+![[ScreenshotGitFlow.png]]
+
 1. Cria `GitFlowForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas (se a tela couber; senão centraliza sobre a janela).
 2. Assina `RepoMutated`: a cada mutação dentro do GitFlow, agenda revelar a branch afetada e chama `RefreshTree()` **por trás do modal** (sem roubar foco).
 3. `ShowDialog` (bloqueia).
 4. Ao fechar: recentraliza a ZimerfeldTree; se houve **release finish**, agenda focar a **nova tag**; `RefreshTree()` + `NotifyRepoChanged()`.
 - Mesmo fluxo do item de menu "GitFlow…". Detalhes da janela em [[Interface GitFlow — botões e fluxos]].
+
+### Botão Voltar Versão (`_btnVoltar`) → `DoRestore`
+
+![[ScreenshotRestore.png]]
+
+1. Cria `RestoreForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas — mesmo posicionamento da janela GitFlow.
+2. Assina `RepoMutated`: após cada operação bem-sucedida, chama `RefreshTree()` **por trás do modal** (sem roubar foco).
+3. `ShowDialog` (bloqueia).
+4. Ao fechar: `RefreshTree()` + `NotifyRepoChanged()`.
+
+Três operações disponíveis na janela Restore:
+- **Restaurar Arquivo** — `git checkout <hash> -- "<arquivo>"`: recupera um arquivo específico do estado de um commit e o coloca como staged
+- **Cherry-Pick** — `git cherry-pick <hash>` ou range `<antigo>..<recente>`: aplica um ou mais commits sobre a branch atual
+- **Reset Branch** — `git checkout <branch>` (se não for a atual) + `git reset --mixed|--soft|--hard <hash>` + retorno à branch original
+
+Valores dos campos são persistidos em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`. Ver [[Interface Restore — botões e fluxos]].
 
 ### Botão Fechar (`_btnClose`)
 1. `Close()`. Ao fechar, o estado de expansão da árvore é salvo em disco.
