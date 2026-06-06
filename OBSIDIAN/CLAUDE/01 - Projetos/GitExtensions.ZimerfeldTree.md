@@ -74,6 +74,8 @@ C:\NUGET\ZimerfeldTree\
 - **Git Flow sem dependência de CLI** — todos os botões da janela GitFlow (Start, Publish, Track, Update, Finish) executam sequências de **git puro**; o binário `git-flow` não precisa estar instalado (ver [[#🔄 Comandos GitFlow → git puro]])
 - **Restore / Cherry-Pick / Reset** (`RestoreForm`) — janela modal acessível via menu de contexto; permite restaurar um arquivo do estado de um commit (`git checkout <hash> -- <arquivo>`), aplicar cherry-pick e resetar uma branch (--mixed / --soft / --hard); persiste os últimos valores usados em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`
 
+![[ScreenshotRestore.png]]
+
 ## 🔄 Comandos GitFlow → git puro
 
 O plugin executa **apenas git nativo** — não depende do binário `git-flow` instalado.

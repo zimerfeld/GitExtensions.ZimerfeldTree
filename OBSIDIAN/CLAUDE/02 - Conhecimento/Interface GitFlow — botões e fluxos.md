@@ -11,6 +11,8 @@ fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 > [!abstract] Resumo
 > Janela **modal** (`GitFlowForm`) que dirige operações git flow usando **git puro** (sem depender do binário `git-flow`): iniciar feature/release/hotfix, publicar, rastrear, atualizar e finalizar. A saída dos comandos aparece numa caixa de texto com scroll automático. Aberta pelo botão/menu **GitFlow** da [[Interface ZimerfeldTree — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
+![[ScreenshotGitFlow.png]]
+
 ## 🧭 Layout
 - **Header** — `HEAD: <ref simbólico>` + link **"About GitFlow"**.
 - **Start branch** (grupo) — `Type` (combo), `Expected name` (label de prefixo + caixa de texto) + botão **Start**, checkbox **based on:** + combo de base (default `develop`).
