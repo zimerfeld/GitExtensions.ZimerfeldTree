@@ -56,6 +56,17 @@ if (Test-Path $funcDoc) {
     Write-Host "FUNCIONALIDADES.md atualizado para $newVersion ($today)"
 }
 
+# -- 4b. Atualizar README.md --------------------------------------------------
+$readmeDoc = "$PSScriptRoot\README.md"
+if (Test-Path $readmeDoc) {
+    $content = Get-Content $readmeDoc -Raw -Encoding UTF8
+    $content = $content -replace '\*\*Versão atual: [^\*]+\*\*', "**Versão atual: $newVersion**"
+    $content = $content -replace 'https://www\.nuget\.org/packages/GitExtensions\.ZimerfeldTree/[\d\.]+', "https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/$newVersion"
+    $content = $content -replace '(ScreenshotBranchHierarchy\.png|ScreenshotGitFlow\.png|ScreenshotRestore\.png)\?v=[\d\.]+', "`$1?v=$newVersion"
+    [System.IO.File]::WriteAllText($readmeDoc, $content, [System.Text.Encoding]::UTF8)
+    Write-Host "README.md atualizado para $newVersion"
+}
+
 # -- 5. Build ------------------------------------------------------------------
 Write-Host "Compilando..."
 dotnet build $csproj -c Release --nologo -v quiet

@@ -11,6 +11,8 @@ fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 > [!abstract] Resumo
 > Janela **não-modal** (`BranchHierarchyForm`) que mostra LOCAL / REMOTES / TAGS em árvore hierárquica e fica aberta ao lado do GitExtensions. Este documento descreve **cada controle** e **o passo a passo exato** de cada ação. Para a janela `git flow` ver [[Interface GitFlow — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
+![[ScreenshotBranchHierarchy.png]]
+
 ## 🚪 Como a janela abre
 - Menu **Plugins → ZimerfeldTree** chama `ZimerfeldTreePlugin.Execute`.
 - Form é **singleton** por sessão do GitExtensions: se já existe, só atualiza o working dir e traz à frente; senão cria novo.

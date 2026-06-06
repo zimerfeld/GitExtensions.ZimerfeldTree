@@ -1,10 +1,12 @@
-# GitExtensions.ZimerfeldTree
+﻿# GitExtensions.ZimerfeldTree
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](Screenshot.png)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.208)
 
-**Versão atual: 1.0.170**
+**Versão atual: 1.0.208**
+
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.208 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -144,6 +146,8 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore (Voltar Versão)
 
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.208)
+
 Abre ao clicar em **Voltar Versão** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
 #### Restaurar Arquivo
@@ -187,6 +191,8 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 - Link **About Restore** no canto superior direito descreve cada operação
 
 ### Janela GitFlow — comportamento geral
+
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.208)
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
