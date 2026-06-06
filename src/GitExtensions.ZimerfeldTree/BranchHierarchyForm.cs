@@ -337,6 +337,7 @@ public sealed class BranchHierarchyForm : Form
         BuildBottomPanel();
         BuildLoadingOverlay();
         SetTabOrder();
+        UpdateCommitActionTexts();
 
         // Layout order (Dock fills from bottom and top inward, Fill takes the remainder).
         // Added last = topmost for DockStyle.Top; visual order top→bottom:
@@ -357,11 +358,9 @@ public sealed class BranchHierarchyForm : Form
         // Restore debug state and button enable state.
         Load += (_, _) =>
         {
-            _lnkAbout.BringToFront();
             ApplyControlTooltips(_chkShowDebug.Checked);
             UpdateGitFlowInitButton();
             LayoutGitFlowButtons();
-            UpdateCommitActionTexts(0);
         };
 
         // Trigger an async load whenever the window becomes visible — covers both the first
@@ -482,6 +481,7 @@ public sealed class BranchHierarchyForm : Form
             Name  = "btnGitFlow",
             Dock  = DockStyle.Right,
             Width = 160,
+            Height = 24,
             Text  = "Organizar como GitFlow"
         };
         _btnGitFlow.Click += BtnGitFlow_Click;
@@ -490,7 +490,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name    = "warnPanel",
             Dock    = DockStyle.Top,
-            Height  = 26,
+            Height  = 28,
             Visible = false,
             Padding = new Padding(4, 2, 4, 2)
         };
@@ -504,7 +504,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnGitFlowInit",
             Width  = 160,
-            Height = 22,
+            Height = 24,
             Text   = "GitFlow Initialize"
         };
         _btnGitFlowInit.Click += (_, _) => DoGitFlowInit();
@@ -513,7 +513,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name    = "gitFlowInitPanel",
             Dock    = DockStyle.Top,
-            Height  = 26,
+            Height  = 28,
             Padding = new Padding(4, 2, 4, 2)
         };
         _gitFlowInitPanel.Controls.Add(_btnGitFlowInit);
@@ -527,32 +527,30 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildGitFlowButtonPanel()
     {
-        _btnPull = new Button { Name = "btnPull", Text = "Pull", Width = 80, Height = 24, Visible = false };
+        _btnPull = new Button { Name = "btnPull", Text = "Pull", Width = 80, Height = 24 };
         _btnPull.Click += (_, _) => DoPull();
 
-        _btnPush = new Button { Name = "btnPush", Text = "Push", Width = 80, Height = 24, Visible = false };
+        _btnPush = new Button { Name = "btnPush", Text = "Push", Width = 80, Height = 24 };
         _btnPush.Click += (_, _) => DoPush();
 
-        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit (0)", Width = 80, Height = 24, Visible = false };
+        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 80, Height = 24 };
         _btnCommitDedicated.Click += (_, _) => DoCommit();
 
         _btnGitFlowDedicated = new Button
         {
-            Name    = "btnGitFlowDedicated",
-            Text    = "GitFlow",
-            Width   = 120,
-            Height  = 24,
-            Visible = false
+            Name   = "btnGitFlowDedicated",
+            Text   = "GitFlow",
+            Width  = 120,
+            Height = 24
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
 
         _btnVoltar = new Button
         {
-            Name    = "btnVoltar",
-            Text    = "Voltar Versão",
-            Width   = 120,
-            Height  = 24,
-            Visible = false
+            Name   = "btnVoltar",
+            Text   = "Voltar Versão",
+            Width  = 120,
+            Height = 24
         };
         _btnVoltar.Click += (_, _) => DoRestore();
 
@@ -1413,7 +1411,7 @@ public sealed class BranchHierarchyForm : Form
         _txtFilter          .Enabled = enabled;
         _btnRefresh         .Enabled = enabled;
         _btnGitFlow         .Enabled = enabled;
-        _btnGitFlowInit     .Enabled = enabled;
+        _btnGitFlowInit     .Enabled = enabled && !IsGitFlowConfigured();
         _btnGitFlowDedicated.Enabled = enabled;
         _btnVoltar          .Enabled = enabled;
         _tree               .Enabled = enabled;
@@ -1434,25 +1432,17 @@ public sealed class BranchHierarchyForm : Form
     private void UpdateCommitActionTexts(int pendingChangesCount)
     {
         int pending = Math.Max(0, pendingChangesCount);
-        string commitText = $"Commit ({pending})";
-        _btnCommitDedicated.Text = commitText;
-        _miCommit.Text = commitText;
+        _miCommit.Text = $"Commit ({pending})";
+        _btnCommitDedicated.Text = _miCommit.Text;
     }
 
     private void UpdatePullPushButtons()
     {
-        var current    = _localBranches.FirstOrDefault(b => b.IsCurrent);
-        bool hasBranch = current != null;
-        _btnPull            .Visible = hasBranch;
-        _btnPush            .Visible = hasBranch;
-        _btnCommitDedicated .Visible = hasBranch;
-        _btnGitFlowDedicated.Visible = hasBranch;
-        _btnVoltar          .Visible = hasBranch;
-        LayoutGitFlowButtons(); // reposition buttons after visibility change
-        if (!hasBranch) return;
+        var current = _localBranches.FirstOrDefault(b => b.IsCurrent);
+        if (current == null) return;
 
-        int behind  = current!.BehindCount;
-        int ahead   = current.AheadCount;
+        int behind = current.BehindCount;
+        int ahead  = current.AheadCount;
         _btnPull.Text = $"↓ Pull ({behind})";
         _btnPush.Text = $"↑ Push ({ahead})";
     }
@@ -1745,15 +1735,9 @@ public sealed class BranchHierarchyForm : Form
     {
         int y = (_gitFlowButtonPanel.Height - 24) / 2;
         int x = 8;
-        if (_btnPull.Visible)
-        {
-            _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
-            _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
-        }
-        if (_btnCommitDedicated.Visible)
-        {
-            _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
-        }
+        _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
+        _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
+        _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
         _btnGitFlowDedicated.Location = new Point(x, y); x += _btnGitFlowDedicated.Width + 4;
         _btnVoltar.Location = new Point(x, y);
     }
@@ -1762,8 +1746,7 @@ public sealed class BranchHierarchyForm : Form
     {
         foreach (Control c in parent.Controls)
         {
-            if (c.Name.Length > 0)
-                tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}");
+            tip.SetToolTip(c, $"TYPE: {c.GetType().Name}\nID: {c.Name}");
             SetTooltipsRecursive(c, tip);
         }
     }
