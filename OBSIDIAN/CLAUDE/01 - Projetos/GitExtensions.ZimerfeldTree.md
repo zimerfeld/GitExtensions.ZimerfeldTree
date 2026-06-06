@@ -72,6 +72,9 @@ C:\NUGET\ZimerfeldTree\
 - **Checkout de branch Origin — branch local já existente** — ao tentar `git checkout -b <local> --track <remota>` e a branch local já existir, exibe diálogo com 3 opções: _Reset local_ / _Create custom name_ / _Checkout detached_; replica comportamento nativo do GitExtensions
 - **Filtro do pseudo-nó `(HEAD detached at …)`** — `git branch --format=%(refname:short)` emite essa entrada em detached HEAD; é filtrada antes de popular a seção LOCAL, evitando erro `pathspec did not match` ao tentar checkout
 - **Git Flow sem dependência de CLI** — todos os botões da janela GitFlow (Start, Publish, Track, Update, Finish) executam sequências de **git puro**; o binário `git-flow` não precisa estar instalado (ver [[#🔄 Comandos GitFlow → git puro]])
+
+![[ScreenshotGitFlow.png]]
+
 - **Restore / Cherry-Pick / Reset** (`RestoreForm`) — janela modal acessível via menu de contexto; permite restaurar um arquivo do estado de um commit (`git checkout <hash> -- <arquivo>`), aplicar cherry-pick e resetar uma branch (--mixed / --soft / --hard); persiste os últimos valores usados em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`
 
 ![[ScreenshotRestore.png]]
