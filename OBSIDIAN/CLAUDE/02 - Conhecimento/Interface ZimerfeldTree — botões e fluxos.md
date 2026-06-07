@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-01
+atualizado: 2026-06-06
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, zimerfeldtree]
 fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 ---
@@ -81,11 +81,10 @@ Passos (com % no overlay):
 - Rótulo mostra `Pull (↓M)` quando a branch atual está M commits atrás.
 
 ### Botão Push (`_btnPush`) → `DoPush`
-1. Desabilita o botão.
-2. Em background: `git push`.
-3. Na UI: reabilita, `RefreshTree()`, `NotifyRepoChanged()`.
-4. Falha → `MessageBox` "Push falhou".
-- Rótulo mostra `Push (↑N)` quando a branch atual está N commits à frente.
+1. **Preferencial:** abre o **diálogo nativo de Push do GitExtensions in-process** (`StartPushDialog`, `pushOnShow: true` — dispara o push automaticamente ao abrir).
+   - Ao fechar: `RefreshTree()` + `NotifyRepoChanged()` — **sempre**, independentemente do valor de retorno (`pushCompleted` não é confiável com `pushOnShow`).
+2. **Fallback** (sem `_openPushDialog`): lança `GitExtensions.exe push` como novo processo (fire-and-forget — sem refresh possível). Erro ao iniciar → `MessageBox`.
+- Rótulo mostra `↑ Push (N)` quando a branch atual está N commits à frente do remoto.
 
 ### Botão Commit (`_btnCommitDedicated`) → `DoCommit`
 1. **Preferencial:** abre a **janela de commit nativa do GitExtensions in-process** (`_openCommitDialog` → `IGitUICommands.StartCommitDialog`). Isso mantém os plugins de Commit Template visíveis (ex.: "Zimerfeld: Auto-resumo").
@@ -102,7 +101,7 @@ Passos (com % no overlay):
 1. Cria `GitFlowForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas (se a tela couber; senão centraliza sobre a janela).
 2. Assina `RepoMutated`: a cada mutação dentro do GitFlow, agenda revelar a branch afetada e chama `RefreshTree()` **por trás do modal** (sem roubar foco).
 3. `ShowDialog` (bloqueia).
-4. Ao fechar: recentraliza a ZimerfeldTree; se houve **release finish**, agenda focar a **nova tag**; `RefreshTree()` + `NotifyRepoChanged()`.
+4. Ao fechar: recentraliza a ZimerfeldTree; se houve **release finish**, agenda focar a **nova tag** e chama `RefreshTree()` + `NotifyRepoChanged()`; se nenhuma ação foi executada no dialog, `RefreshTree()` + `NotifyRepoChanged()`; caso contrário (ações executadas mas sem tag), o refresh do `RepoMutated` já foi suficiente — o refresh pós-close é **omitido** para evitar double-refresh.
 - Mesmo fluxo do item de menu "GitFlow…". Detalhes da janela em [[Interface GitFlow — botões e fluxos]].
 
 ### Botão Voltar Versão (`_btnVoltar`) → `DoRestore`
@@ -112,7 +111,7 @@ Passos (com % no overlay):
 1. Cria `RestoreForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas — mesmo posicionamento da janela GitFlow.
 2. Assina `RepoMutated`: após cada operação bem-sucedida, chama `RefreshTree()` **por trás do modal** (sem roubar foco).
 3. `ShowDialog` (bloqueia).
-4. Ao fechar: `RefreshTree()` + `NotifyRepoChanged()`.
+4. Ao fechar: `NotifyRepoChanged()` sempre; `RefreshTree()` apenas se **nenhuma** operação foi executada no dialog — se `RepoMutated` disparou ao menos uma vez, o refresh já ocorreu e o pós-close é **omitido** para evitar double-refresh.
 
 Três operações disponíveis na janela Restore:
 - **Restaurar Arquivo** — `git checkout <hash> -- "<arquivo>"`: recupera um arquivo específico do estado de um commit e o coloca como staged
@@ -147,6 +146,7 @@ Definida em `CtxMenu_Opening`: `branch` = local|remote; `local`/`remote`/`tag` e
 | **Renomear…** | local | `DoRename`: pede novo nome → `git branch -m "<antigo>" "<novo>"`. |
 | **Excluir…** | local/remote/tag | `DoDelete`: confirma; tag → `git tag -d`; remote → `git push <remote> --delete <branch>`; local → `git branch -d`. Se "not fully merged" → oferece **forçar** (`git branch -D`). |
 | **GitFlow…** | branch | Igual ao botão GitFlow → `DoGitFlow`. |
+| **Voltar Versão…** | branch atual ≠ `develop` | Igual ao botão Voltar Versão → `DoRestore` (abre ZimerfeldRestore). Não depende do nó clicado — sempre age na branch em checkout. |
 | **Expandir tudo** | sempre | `node.ExpandAll()`. |
 | **Recolher tudo** | sempre | `CollapseRecursive(node)`. |
 | **Atualizar** | sempre | `RefreshTree()`. |

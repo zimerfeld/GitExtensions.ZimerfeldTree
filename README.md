@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.225)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.226)
 
-**Versão atual: 1.0.225**
+**Versão atual: 1.0.226**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.225 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.226 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -121,6 +121,7 @@ Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.pn
 | ✏️ âmbar | Renomear…            | Local                                                                               |
 | ✖ vermelho | Excluir…          | Local, remota, tag                                                                  |
 | graph   | GitFlow…             | Branch (local/remota/tag)                                                           |
+| ↩ cinza | Voltar Versão…       | Quando branch atual ≠ `develop` — abre a janela ZimerfeldRestore                   |
 | +   | Expandir tudo        | Sempre                                                                              |
 | -   | Recolher tudo        | Sempre                                                                              |
 | ↻ azul  | Atualizar            | Sempre                                                                              |
@@ -146,7 +147,7 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore (Voltar Versão)
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.225)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.226)
 
 Abre ao clicar em **Voltar Versão** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
@@ -192,7 +193,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 ### Janela GitFlow — comportamento geral
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.225)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.226)
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
@@ -252,7 +253,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore — comportamento geral
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.225)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.226)
 
 - Abre ao clicar em **Voltar Versão** na janela ZimerfeldTree
 - Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
