@@ -68,7 +68,7 @@ public sealed class RestoreForm : Form
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.Manual;
         Font            = new Font("Segoe UI", 9f);
-        Icon            = TreeOfLifeIcon.ForForm();
+        Icon            = PluginIcon.ForForm();
 
         BuildHeader();
         BuildRestoreFileGroup();

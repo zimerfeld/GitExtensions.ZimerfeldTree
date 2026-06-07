@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.212</Version>
+    <Version>1.0.225</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -45,6 +45,8 @@
          Resource name becomes: GitExtensions.ZimerfeldTree.Resources.<file>
          Each is included only when the file exists; otherwise NodeIcons falls back to the
          drawn GDI+ glyph for that node. -->
+    <!-- Plugin / window title-bar icon (Árvore da Vida), 16×16 PNG -->
+    <EmbeddedResource Include="Resources\ico.png"     Condition="Exists('Resources\ico.png')" />
     <EmbeddedResource Include="Resources\develop.png" Condition="Exists('Resources\develop.png')" />
     <EmbeddedResource Include="Resources\master.png"  Condition="Exists('Resources\master.png')" />
     <EmbeddedResource Include="Resources\origin.png"  Condition="Exists('Resources\origin.png')" />

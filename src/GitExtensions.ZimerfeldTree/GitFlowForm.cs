@@ -73,7 +73,7 @@ public sealed class GitFlowForm : Form
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.Manual;   // caller controls position (side-by-side)
         Font            = new Font("Segoe UI", 9f);
-        Icon            = TreeOfLifeIcon.ForForm();
+        Icon            = PluginIcon.ForForm();
 
         BuildHeader();
         BuildStartGroup();
@@ -429,17 +429,24 @@ public sealed class GitFlowForm : Form
 
     // ── Data ────────────────────────────────────────────────────────────────
 
-    private void InitData()
+    private void RefreshBasedOn()
     {
-        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
-
+        string current = _cboBasedOn.Text;
         _cboBasedOn.Items.Clear();
         _cboBasedOn.Items.Add("develop");
         foreach (var b in _svc.GetLocalBranches())
             if (!_cboBasedOn.Items.Contains(b.FullName))
                 _cboBasedOn.Items.Add(b.FullName);
-        _cboBasedOn.SelectedIndex = 0; // "develop" is the default base
+        int idx = _cboBasedOn.Items.IndexOf(current);
+        _cboBasedOn.SelectedIndex = idx >= 0 ? idx : 0;
         _cboBasedOn.Enabled = _chkBasedOn.Checked;
+    }
+
+    private void InitData()
+    {
+        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
+
+        RefreshBasedOn();
 
         // Detect git-flow type of the currently checked-out branch so the Manage
         // panel opens already pointing at it (matching what the user is on).
@@ -530,9 +537,17 @@ public sealed class GitFlowForm : Form
 
         if (ok)
         {
-            // When "based on" is explicit, a bare empty commit guarantees the new branch
-            // diverges from its base immediately — so the tree hierarchy is visible right away.
-            if (_chkBasedOn.Checked)
+            // Based on a custom branch (not main/develop): record a pure-visual child link so
+            // the tree nests it under that base — no empty commit, git history stays clean.
+            // Based on main/develop: keep the empty-commit trick so ancestry shows divergence.
+            string mainName = _svc.GetGitFlowBranchName("main");
+            string devName  = _svc.GetGitFlowBranchName("develop");
+            bool baseIsRoot = string.Equals(baseBranch, mainName, StringComparison.Ordinal)
+                           || string.Equals(baseBranch, devName,  StringComparison.Ordinal);
+
+            if (_chkBasedOn.Checked && !baseIsRoot)
+                _svc.SaveBasedOnOverride(fullBranch, baseBranch);
+            else if (_chkBasedOn.Checked)
                 RunFlow($"commit --allow-empty -m \"chore: start {fullBranch}\"");
 
             int typeIdx = _cboManageType.Items.IndexOf(type);
@@ -548,6 +563,7 @@ public sealed class GitFlowForm : Form
             }
             // checkout -b already switched — reveal without a second checkout.
             RevealInTree(fullBranch, checkout: false);
+            RefreshBasedOn();
         }
         else if (!IsDisposed) Activate();
     }
@@ -677,6 +693,9 @@ public sealed class GitFlowForm : Form
             RunFlow($"fetch \"{remote}\"", suppressError: true);
 
         // ── 2. Merge sequence ──────────────────────────────────────────────────
+        // Set for feature/bugfix finishes to the branch the work was merged into (based-on
+        // parent or develop); drives the based-on cleanup after the branch is deleted.
+        string? featureMergeTarget = null;
         if (isRelease || isHotfix)
         {
             // → checkout main → merge --no-ff → tag → checkout develop → merge --no-ff
@@ -694,14 +713,29 @@ public sealed class GitFlowForm : Form
         }
         else
         {
-            // feature / bugfix → checkout develop → merge --no-ff
-            if (!RunFlow($"checkout \"{devBranch}\""))       return;
-            if (!RunFlow($"merge --no-ff \"{fullBranch}\"")) return;
+            // feature / bugfix → merge into its based-on parent when it has one (so the work lands
+            // in the parent node shown in the tree), otherwise into develop as usual.
+            string? parent = _svc.GetBasedOnParent(fullBranch);
+            bool parentUsable = !string.IsNullOrEmpty(parent)
+                && !string.Equals(parent, mainBranch, StringComparison.Ordinal)
+                && !string.Equals(parent, devBranch,  StringComparison.Ordinal)
+                && _svc.GetLocalBranches().Any(b => string.Equals(b.FullName, parent, StringComparison.Ordinal));
+
+            featureMergeTarget = parentUsable ? parent! : devBranch;
+
+            if (!RunFlow($"checkout \"{featureMergeTarget}\"")) return;
+            if (!RunFlow($"merge --no-ff \"{fullBranch}\""))    return;
         }
 
         // ── 3. Delete the local branch (unless keepBranch) ────────────────────
         if (!_chkKeep.Checked)
+        {
             RunFlow($"branch -d \"{fullBranch}\"", suppressError: true);
+            // Branch is gone: drop its based-on link and re-point its children to the
+            // branch it was merged into, keeping the visual tree connected.
+            if (featureMergeTarget != null)
+                _svc.RebaseBasedOnOnFinish(fullBranch, featureMergeTarget);
+        }
 
         // ── 4. Non-release: remove remote branch and reveal ───────────────────
         if (!isRelease)
