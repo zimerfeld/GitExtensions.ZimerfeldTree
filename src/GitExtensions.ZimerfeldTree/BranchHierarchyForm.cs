@@ -992,21 +992,8 @@ public sealed class BranchHierarchyForm : Form
         if (list.Count == 0)
         { _remotesRoot.Nodes.Add(EmptyNode("(nenhuma branch remota encontrada)")); return; }
 
-        foreach (var group in list.GroupBy(b => b.RemoteName ?? "origin").OrderBy(g => g.Key))
-        {
-            var remoteNode = new TreeNode(group.Key)
-            {
-                Tag                = SectionTag.RemoteGroup,
-                ImageIndex         = NodeIcons.Remote,
-                SelectedImageIndex = NodeIcons.Remote
-            };
-            var groupList  = group.ToList();
-
-            foreach (var n in BuildAncestryTree(groupList, remoteMap, b => b.DisplayName))
-                remoteNode.Nodes.Add(n);
-
-            _remotesRoot.Nodes.Add(remoteNode);
-        }
+        foreach (var n in BuildAncestryTree(list, remoteMap, b => b.FullName))
+            _remotesRoot.Nodes.Add(n);
     }
 
     private void BuildTagsSection(string filter)
