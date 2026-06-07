@@ -32,7 +32,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         // false = plugin has no configurable settings in the GitExtensions settings dialog
         Name        = "ZimerfeldTree";
         Description = "Visualiza branches hierarquicamente em estrutura de árvore (ZimerfeldTree)";
-        Icon        = TreeOfLifeIcon.ForMenu();
+        Icon        = PluginIcon.ForMenu();
     }
 
     // ── IGitPlugin ────────────────────────────────────────────────────────────

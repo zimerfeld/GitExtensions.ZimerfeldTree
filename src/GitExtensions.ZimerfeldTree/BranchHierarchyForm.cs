@@ -283,8 +283,10 @@ public sealed class BranchHierarchyForm : Form
         try
         {
             UpdateGitFlowWarning();
-            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)         : _localParentMap;
-            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)   : _remoteParentMap;
+            // Even in forced-GitFlow mode, based-on links override the rigid map so the
+            // visual hierarchy is honored in every mode.
+            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
             RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
             ExpandRoots();
             UpdateStatus();
@@ -323,7 +325,7 @@ public sealed class BranchHierarchyForm : Form
         MinimizeBox     = true;
         KeyPreview      = true;
         Font            = new Font("Segoe UI", 9f);
-        Icon            = TreeOfLifeIcon.ForForm();
+        Icon            = PluginIcon.ForForm();
 
         BuildTopPanel();
         BuildAboutLink();
@@ -1064,16 +1066,23 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>
     /// Groups a set of sibling branches by '/' path segments into folder nodes, then nests each
     /// branch's ancestry children (from <paramref name="childrenOf"/>) recursively under its leaf.
+    /// <paramref name="stripPrefix"/> is removed from each branch's path before splitting, so an
+    /// ancestry child in the same folder as its parent (e.g. <c>feature/teste1</c> under
+    /// <c>feature/f3</c>) nests as a bare leaf instead of re-creating a redundant folder.
     /// </summary>
     private List<TreeNode> PathGroup(
         List<BranchInfo> siblings,
         Dictionary<string, List<BranchInfo>> childrenOf,
-        Func<BranchInfo, string> getPath)
+        Func<BranchInfo, string> getPath,
+        string stripPrefix = "")
     {
         var root = new SortedDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         foreach (var b in siblings.OrderBy(getPath, StringComparer.OrdinalIgnoreCase))
         {
-            var parts  = getPath(b).Split('/');
+            string path = getPath(b);
+            if (stripPrefix.Length > 0 && path.StartsWith(stripPrefix, StringComparison.Ordinal))
+                path = path[stripPrefix.Length..];
+            var parts  = path.Split('/');
             var cursor = root;
             for (int i = 0; i < parts.Length - 1; i++)
             {
@@ -1102,7 +1111,9 @@ public sealed class BranchHierarchyForm : Form
             {
                 var node = CreateLeafNode(b, kvp.Key);
                 if (childrenOf.TryGetValue(b.FullName, out var kids))
-                    foreach (var n in PathGroup(kids, childrenOf, getPath))
+                    // Nest children under this branch, stripping its folder prefix so a same-folder
+                    // child (feature/teste1 under feature/f3) shows as a bare leaf, not feature/teste1.
+                    foreach (var n in PathGroup(kids, childrenOf, getPath, DirPrefix(getPath(b))))
                         node.Nodes.Add(n);
                 nodes.Add(node);
             }
@@ -1121,6 +1132,14 @@ public sealed class BranchHierarchyForm : Form
             }
         }
         return nodes;
+    }
+
+    // Returns the folder portion of a branch path (up to and including the last '/'),
+    // or "" when the branch sits at the root (no '/').
+    private static string DirPrefix(string path)
+    {
+        int i = path.LastIndexOf('/');
+        return i >= 0 ? path[..(i + 1)] : string.Empty;
     }
 
     // ── Node factories ────────────────────────────────────────────────────────
@@ -1212,8 +1231,8 @@ public sealed class BranchHierarchyForm : Form
         _tree.BeginUpdate();
         try
         {
-            var localMap  = _gitFlowForced ? BuildGitFlowParentMap(_localBranches)          : _localParentMap;
-            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches) : _remoteParentMap;
+            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
             RebuildAllSections(filter, localMap, remoteMap);
             ExpandRoots();
         }
@@ -2174,7 +2193,7 @@ internal sealed class CheckoutBranchExistsDialog : Form
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.CenterParent;
         Font            = new Font("Segoe UI", 9f);
-        Icon            = TreeOfLifeIcon.ForForm();
+        Icon            = PluginIcon.ForForm();
 
         string defaultCustom = remoteName.Replace('/', '_');
 
@@ -2250,7 +2269,7 @@ internal sealed class InputDialog : Form
         MinimizeBox     = false;
         StartPosition   = FormStartPosition.CenterParent;
         Font            = new Font("Segoe UI", 9f);
-        Icon            = TreeOfLifeIcon.ForForm();
+        Icon            = PluginIcon.ForForm();
 
         _label = new Label  { Text = prompt, Bounds = new Rectangle(12, 12, 388, 20) };
         _input = new TextBox { Text = defaultValue, Bounds = new Rectangle(12, 36, 388, 22) };

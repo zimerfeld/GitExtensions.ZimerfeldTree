@@ -2,6 +2,7 @@
 // MIT License — Copyright (c) 2026 Zimerfeld
 
 using System.Diagnostics;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace GitExtensions.ZimerfeldTree;
@@ -261,6 +262,9 @@ public sealed class BranchHierarchyService
     /// <summary>
     /// Creates a new local branch from <paramref name="fromRef"/> and immediately checks it out
     /// using a single <c>git checkout -b</c> command.
+    /// When <paramref name="fromRef"/> is a local branch, the parent-child relationship is
+    /// automatically saved to <c>.git/zimerfeld-basedon.json</c> so the tree nests the new
+    /// branch under its origin branch.
     /// </summary>
     public (bool ok, string error) CreateAndCheckoutBranch(string newName, string fromRef)
     {
@@ -268,6 +272,13 @@ public sealed class BranchHierarchyService
         {
             var (_, err, code) = RunGitFull(
                 $"checkout -b \"{EscapeArg(newName)}\" \"{EscapeArg(fromRef)}\"");
+            if (code == 0)
+            {
+                var localNames = new HashSet<string>(
+                    GetLocalBranches().Select(b => b.FullName), StringComparer.Ordinal);
+                if (localNames.Contains(fromRef))
+                    SaveBasedOnOverride(newName, fromRef);
+            }
             return code == 0 ? (true, string.Empty) : (false, err.Trim());
         }
         catch (Exception ex) { return (false, ex.Message); }
@@ -565,6 +576,7 @@ public sealed class BranchHierarchyService
         foreach (var b in branches)
             result[b.FullName] = FindParentInGraph(b.FullName, tips, tipToName, graph);
 
+        ApplyBasedOnOverrides(result);
         BreakCycles(result);
         return result;
     }
@@ -702,6 +714,132 @@ public sealed class BranchHierarchyService
                 parentMap.TryGetValue(cur, out cur);
             }
         }
+    }
+
+    // ── Based-on overrides (manual visual nesting, repo-local) ────────────────
+    //
+    // The plugin's distinguishing feature is a hierarchical view: a branch created
+    // "based on" another branch should appear nested under it, even when git ancestry
+    // can't express that (e.g. they share a tip and no commit diverges). These links
+    // are pure visualization — stored inside .git so they are per-repo and uncommitted.
+
+    // Resolves the repo-local file that stores child→parent visual links.
+    private string? BasedOnOverridePath()
+    {
+        try
+        {
+            string gitDir = RunGit("rev-parse --git-dir", out int code).Trim();
+            if (code != 0 || gitDir.Length == 0) return null;
+            if (!Path.IsPathRooted(gitDir))
+                gitDir = Path.GetFullPath(Path.Combine(WorkingDir, gitDir));
+            return Path.Combine(gitDir, "zimerfeld-basedon.json");
+        }
+        catch { return null; }
+    }
+
+    /// <summary>
+    /// Reads the manual "based-on" links (childBranch → parentBranch) used to nest a
+    /// branch under another purely for visualization, independent of git ancestry.
+    /// </summary>
+    public Dictionary<string, string> LoadBasedOnOverrides()
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            string? path = BasedOnOverridePath();
+            if (path == null || !File.Exists(path)) return map;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            foreach (var prop in doc.RootElement.EnumerateObject())
+            {
+                string? parent = prop.Value.GetString();
+                if (!string.IsNullOrEmpty(parent)) map[prop.Name] = parent;
+            }
+        }
+        catch { }
+        return map;
+    }
+
+    /// <summary>
+    /// Records that <paramref name="child"/> should appear nested under <paramref name="parent"/>
+    /// in the tree. Links whose child branch no longer exists are pruned on write so the
+    /// file stays bounded.
+    /// </summary>
+    public void SaveBasedOnOverride(string child, string parent)
+    {
+        try
+        {
+            string? path = BasedOnOverridePath();
+            if (path == null || string.IsNullOrEmpty(child) || string.IsNullOrEmpty(parent)) return;
+
+            var map = LoadBasedOnOverrides();
+            map[child] = parent;
+
+            var live = new HashSet<string>(GetLocalBranches().Select(b => b.FullName), StringComparer.Ordinal);
+            live.Add(child); // freshly created; the tip query above may not see it yet
+            foreach (var key in map.Keys.ToList())
+                if (!live.Contains(key)) map.Remove(key);
+
+            File.WriteAllText(path, JsonSerializer.Serialize(map));
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Returns the manual based-on parent recorded for <paramref name="branch"/>, or null when
+    /// the branch has no based-on link.
+    /// </summary>
+    public string? GetBasedOnParent(string branch)
+        => LoadBasedOnOverrides().TryGetValue(branch, out var parent) ? parent : null;
+
+    /// <summary>
+    /// Cleanup after <paramref name="finished"/> is finished/deleted: drops its own based-on link
+    /// and re-points any branches that were based on it to <paramref name="newParent"/> (the branch
+    /// it was merged into), so the visual tree stays connected.
+    /// </summary>
+    public void RebaseBasedOnOnFinish(string finished, string newParent)
+    {
+        try
+        {
+            string? path = BasedOnOverridePath();
+            if (path == null) return;
+
+            var map = LoadBasedOnOverrides();
+            bool changed = map.Remove(finished);
+            foreach (var key in map.Keys.ToList())
+                if (string.Equals(map[key], finished, StringComparison.Ordinal))
+                {
+                    if (string.IsNullOrEmpty(newParent)) map.Remove(key);
+                    else                                 map[key] = newParent;
+                    changed = true;
+                }
+
+            if (changed) File.WriteAllText(path, JsonSerializer.Serialize(map));
+        }
+        catch { }
+    }
+
+    // Overlays manual based-on links on top of the computed ancestry map. A link wins
+    // over git ancestry — the whole point is to show a relationship history can't express.
+    // BreakCycles (called next) guards against a user wiring A→B and B→A.
+    private void ApplyBasedOnOverrides(Dictionary<string, string?> map)
+    {
+        var overrides = LoadBasedOnOverrides();
+        if (overrides.Count == 0) return;
+        foreach (var kv in overrides)
+            if (map.ContainsKey(kv.Key)) // only branches actually present in the tree
+                map[kv.Key] = kv.Value;
+    }
+
+    /// <summary>
+    /// Overlays the manual based-on links onto an already-built parent map (e.g. the rigid
+    /// GitFlow map) and breaks any resulting cycles, so based-on relationships are honored even
+    /// when the tree isn't using pure git ancestry. Mutates and returns <paramref name="map"/>.
+    /// </summary>
+    public Dictionary<string, string?> OverlayBasedOn(Dictionary<string, string?> map)
+    {
+        ApplyBasedOnOverrides(map);
+        BreakCycles(map);
+        return map;
     }
 
     // ── Settings reader ──────────────────────────────────────────────────────
