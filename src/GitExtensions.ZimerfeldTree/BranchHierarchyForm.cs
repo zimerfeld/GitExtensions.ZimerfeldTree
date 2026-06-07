@@ -128,7 +128,8 @@ public sealed class BranchHierarchyForm : Form
     private ToolStripMenuItem  _miRebase    = null!;
     private ToolStripMenuItem  _miRename    = null!;
     private ToolStripMenuItem  _miDelete    = null!;
-    private ToolStripMenuItem  _miGitFlow   = null!;
+    private ToolStripMenuItem  _miGitFlow      = null!;
+    private ToolStripMenuItem  _miVoltarVersao = null!;
     private ToolStripMenuItem  _miExpand    = null!;
     private ToolStripMenuItem  _miCollapse  = null!;
     private ToolStripMenuItem  _miRefresh   = null!;
@@ -622,7 +623,8 @@ public sealed class BranchHierarchyForm : Form
         _miRebase    = new ToolStripMenuItem("Rebase na branch atual");
         _miRename    = new ToolStripMenuItem("Renomear…");
         _miDelete    = new ToolStripMenuItem("Excluir…");
-        _miGitFlow   = new ToolStripMenuItem("GitFlow…");
+        _miGitFlow      = new ToolStripMenuItem("GitFlow…");
+        _miVoltarVersao = new ToolStripMenuItem("Voltar Versão…");
         _miExpand    = new ToolStripMenuItem("Expandir tudo");
         _miCollapse  = new ToolStripMenuItem("Recolher tudo");
         _miRefresh   = new ToolStripMenuItem("Atualizar");
@@ -634,7 +636,8 @@ public sealed class BranchHierarchyForm : Form
         _miRebase   .Image = LoadMenuIcon("ctx-rebase.png");
         _miRename   .Image = LoadMenuIcon("ctx-rename.png");
         _miDelete   .Image = LoadMenuIcon("ctx-delete.png");
-        _miGitFlow  .Image = LoadMenuIcon("ctx-gitflow.png");
+        _miGitFlow     .Image = LoadMenuIcon("ctx-gitflow.png");
+        _miVoltarVersao.Image = LoadMenuIcon("ctx-restore.png");
         _miExpand   .Image = LoadMenuIcon("ctx-expand.png");
         _miCollapse .Image = LoadMenuIcon("ctx-collapse.png");
         _miRefresh  .Image = LoadMenuIcon("ctx-refresh.png");
@@ -646,7 +649,8 @@ public sealed class BranchHierarchyForm : Form
         _miRebase   .Click += (_, _) => DoRebase();
         _miRename   .Click += (_, _) => DoRename();
         _miDelete   .Click += (_, _) => DoDelete();
-        _miGitFlow  .Click += (_, _) => DoGitFlow();
+        _miGitFlow     .Click += (_, _) => DoGitFlow();
+        _miVoltarVersao.Click += (_, _) => DoRestore();
         _miExpand  .Click += (_, _) => _tree.SelectedNode?.ExpandAll();
         _miCollapse.Click += (_, _) => { if (_tree.SelectedNode is { } n) CollapseRecursive(n); };
         _miRefresh  .Click += (_, _) => RefreshTree();
@@ -663,7 +667,7 @@ public sealed class BranchHierarchyForm : Form
             new ToolStripSeparator(),
             _miRename, _miDelete,
             new ToolStripSeparator(),
-            _miGitFlow,
+            _miGitFlow, _miVoltarVersao,
             new ToolStripSeparator(),
             _miExpand, _miCollapse, _miRefresh
         ]);
@@ -1530,13 +1534,17 @@ public sealed class BranchHierarchyForm : Form
         int miPending = _svc.GetPendingChangesCount();
         UpdateCommitActionTexts(miPending);
 
-        _miCheckout .Visible = branch;
-        _miNewBranch.Visible = local || tag;
-        _miMerge    .Visible = local;
-        _miRebase   .Visible = local;
-        _miRename   .Visible = local;
-        _miDelete   .Visible = local || remote || tag;
-        _miGitFlow  .Visible = branch;
+        _miCheckout    .Visible = branch;
+        _miNewBranch   .Visible = local || tag;
+        _miMerge       .Visible = local;
+        _miRebase      .Visible = local;
+        _miRename      .Visible = local;
+        _miDelete      .Visible = local || remote || tag;
+        _miGitFlow     .Visible = branch;
+
+        string currentBranch = _svc.GetCurrentBranch();
+        _miVoltarVersao.Visible = !string.IsNullOrEmpty(currentBranch)
+                               && !string.Equals(currentBranch, "develop", StringComparison.OrdinalIgnoreCase);
 
         FixContextMenuSeparators();
     }
