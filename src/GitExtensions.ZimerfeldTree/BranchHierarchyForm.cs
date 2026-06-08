@@ -1930,8 +1930,8 @@ public sealed class BranchHierarchyForm : Form
         // dialog needs no further refresh — except to focus a freshly finished release tag.
         if (_postRefreshAction != null)
             RefreshTree();
-        // GitFlow dialog has already closed (modal) — refocusing ZimerfeldTree here is correct.
-        NotifyRepoChanged();
+        // No NotifyRepoChanged on close: the live RepoMutated refreshes already kept the tree
+        // current, and notifying GitExtensions would only pull its (minimized) window forward.
     }
 
     private void DoRestore()
@@ -1972,8 +1972,7 @@ public sealed class BranchHierarchyForm : Form
             wa.Top  + (wa.Height - Height) / 2);
 
         // Every action button already refreshed the tree live via RepoMutated, so closing the
-        // dialog needs no further refresh.
-        NotifyRepoChanged();
+        // dialog needs no further refresh, and GitExtensions is not notified here either.
     }
 
     private void FocusTagNode(string tagName)
