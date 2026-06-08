@@ -467,7 +467,7 @@ public sealed class RestoreForm : Form
             return;
         }
         bool ok = RunGit($"checkout {Clean(hash)} -- \"{Clean(file)}\"");
-        if (ok) RepoMutated?.Invoke(null);
+        if (ok) RevealInTree(null);
     }
 
     private void BtnCherryPick_Click(object? sender, EventArgs e)
@@ -480,7 +480,19 @@ public sealed class RestoreForm : Form
             return;
         }
         bool ok = RunGit($"cherry-pick {hash.Replace("\"", "")}");
-        if (ok) RepoMutated?.Invoke(null);
+        if (ok) RevealInTree(null);
+    }
+
+    /// <summary>
+    /// Asks the owner ZimerfeldTree window to refresh its tree and reveal/select the affected
+    /// branch, then keeps focus on this (modal) window. Pass a null/empty branch to only refresh.
+    /// Mirrors <see cref="GitFlowForm"/>'s helper so both windows route refreshes the same way.
+    /// </summary>
+    private void RevealInTree(string? fullBranch)
+    {
+        fullBranch = (fullBranch ?? string.Empty).Trim();
+        RepoMutated?.Invoke(fullBranch.Length > 0 ? fullBranch : null);
+        if (!IsDisposed) Activate();
     }
 
     private void BtnReset_Click(object? sender, EventArgs e)
@@ -521,7 +533,7 @@ public sealed class RestoreForm : Form
         }
 
         bool ok = RunGit($"reset {mode} {safeHash}", append: needSwitch);
-        if (ok) RepoMutated?.Invoke(branch);
+        if (ok) RevealInTree(branch);
 
         if (needSwitch)
             RunGit($"checkout {current}", append: true);

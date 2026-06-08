@@ -35,6 +35,7 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
+    private bool                         _initialLoadDone;            // overlay refresh on VisibleChanged fires only once (first show)
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -366,10 +367,19 @@ public sealed class BranchHierarchyForm : Form
             LayoutGitFlowButtons();
         };
 
-        // Trigger an async load whenever the window becomes visible — covers both the first
-        // open (where Shown would also fire) and every subsequent Show() after a Hide(), since
-        // Form.Shown fires only once in the form's lifetime.
-        VisibleChanged += (_, _) => { if (Visible) _ = RefreshTreeAsync(showOverlay: true); };
+        // Trigger the async load with overlay only on the FIRST time the window becomes visible.
+        // Reactivating ZimerfeldTree after a child Zimerfeld window (GitFlow/Restore) closes must
+        // NOT re-run the overlay refresh: those windows already refreshed the tree live via
+        // RepoMutated while open. Subsequent refreshes go through the explicit paths (Refresh
+        // button/menu, plugin repo events, RepoMutated).
+        VisibleChanged += (_, _) =>
+        {
+            if (Visible && !_initialLoadDone)
+            {
+                _initialLoadDone = true;
+                _ = RefreshTreeAsync(showOverlay: true);
+            }
+        };
 
         ResumeLayout(false);
         PerformLayout();
