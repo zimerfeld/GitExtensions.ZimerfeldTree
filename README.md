@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.238)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.239)
 
-**Versão atual: 1.0.238**
+**Versão atual: 1.0.239**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.238 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.239 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -147,7 +147,7 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.238)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.239)
 
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
@@ -193,7 +193,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 ### Janela GitFlow — comportamento geral
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.238)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.239)
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
@@ -253,7 +253,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore — comportamento geral
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.238)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.239)
 
 - Abre ao clicar em **Restore** na janela ZimerfeldTree
 - Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
@@ -360,12 +360,24 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 
 Execute o PowerShell **como Administrador**:
 
+Caso o arquivo tenha sido baixado para a pasta C:\Downloads
+
 ```powershell
 cd C:\GitExtensions\ZimerfeldTree\tools
 .\install.ps1
 ```
 
 ### Opção B — Manual
+
+Para esse pacote, a instalação manual faça assim:
+
+Caso o arquivo tenha sido baixado para a pasta C:\Downloads
+
+Extraia o arquivo C:\Downloads\gitextensions.zimerfeldtree.1.0.0.nupkg.
+Você pode renomear para .zip e abrir, ou extrair direto com um descompactador.
+
+Dentro do pacote, pegue esta DLL:
+tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll
 
 Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
 
@@ -374,6 +386,14 @@ C:\Program Files\GitExtensions\Plugins\
 ```
 
 Reinicie o GitExtensions.
+
+Feche e abra o GitExtensions novamente.
+Se precisar de permissão de administrador para copiar em Program Files, abra o Explorer ou PowerShell como admin.
+
+Observações importantes:
+
+Esse pacote foi empacotado para net9.0-windows. Se sua versão do GitExtensions não estiver compatível com essa runtime, o plugin pode não carregar.
+Depois de reiniciar, o plugin deve aparecer em Plugins e nas configurações em Settings -> Plugins -> ZimerfeldTree.
 
 ---
 
