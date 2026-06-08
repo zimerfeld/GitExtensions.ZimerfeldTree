@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-05 (git-flow-next removido; scroll no txtResult; remoção remota em todos os Finish)
+atualizado: 2026-06-07 (fechamento sem NotifyRepoChanged; refresh pós-close só para tag de release)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, gitflow]
 fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 ---
@@ -104,7 +104,8 @@ Toda ação passa por aqui:
 - Abre `MessageBox` descrevendo os comandos git executados por cada botão.
 
 ### Botão Fechar (`_btnClose`)
-- `Close()` (também é o `CancelButton`).
+- `Close()` (também é o `CancelButton`). Não há `FormClosing` (os checkboxes já são salvos incrementalmente a cada `CheckedChanged`).
+- No owner, após o modal fechar: recentraliza a ZimerfeldTree e **só** chama `RefreshTree()` se houve **release finish** (focar a tag). Caso contrário não refresca (o `RepoMutated` já atualizou ao vivo) e **não** chama `NotifyRepoChanged()`.
 
 ## ⚠️ Erros comuns (`ShowFlowError`)
 Quando a saída contém "does not exist" / "not found" / "unknown revision" / "pathspec", a mensagem orienta a checar `git branch --list main master develop` e `git config gitflow.branch.*`, criar a branch faltante ou usar **GitFlow Initialize**.

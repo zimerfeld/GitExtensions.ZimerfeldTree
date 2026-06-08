@@ -1,11 +1,11 @@
 ---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-05 (git-flow CLI removido)
+atualizado: 2026-06-07 (refresh/overlay refinados; botão Restore)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.170
+versao: 1.0.235
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -177,7 +177,7 @@ tools\update-dll.ps1   # atualiza só a DLL
 > O GitExtensions grava config no formato interno dele, mas o plugin usa o **git flow CLI** que espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.170** (README + csproj + nuspec em sincronia)
+- Versão atual: **1.0.235** (README + csproj + nuspec em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
@@ -189,6 +189,7 @@ tools\update-dll.ps1   # atualiza só a DLL
 - [[2026-06-01 - Criação do cofre de neurônios]] — mapeamento inicial do projeto
 - [[2026-06-01 - Ícone customizado do develop]] — develop passa a usar PNG embutido (aguardando arquivo)
 - [[2026-06-02 - Checkout TAG, Origin e HEAD detached]] — destaque visual de TAG em checkout, diálogo "branch já existe" para Origin, filtro do pseudo-nó `(HEAD detached at …)` no LOCAL
+- [[2026-06-07 - Refresh, overlay, eco e botão Restore]] — refresh redundante removido ao fechar GitFlow/Restore, overlay só na 1ª exibição, eco do `NotifyRepoChanged` suprimido, contador `Commit (n)` reaproveitado do background, `btnVoltar`→`btnRestore`, e `NotifyRepoChanged` removido do fechamento de GitFlow/Restore
 
 ## 🔗 Relacionado
 - [[Plugin MEF para GitExtensions]]
