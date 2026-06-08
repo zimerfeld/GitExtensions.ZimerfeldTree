@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.236)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.237)
 
-**Versão atual: 1.0.236**
+**Versão atual: 1.0.237**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.236 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.237 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -24,8 +24,8 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - A janela é **independente** do GitExtensions: minimizar o GitExtensions não afeta a janela ZimerfeldTree
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches
-- **Overlay em toda atualização**: o painel de progresso aparece sempre que a árvore é recarregada — abertura inicial, checkout, nova branch, merge, rename, delete, GitFlow, refresh manual e troca de repositório
-- **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe. A lista é dimensionada para exibir todos os 8 passos de uma vez, sem barra de rolagem vertical. Após o último passo ("Concluído."), o overlay permanece visível por **1 segundo** antes de fechar, para o usuário conseguir ver a conclusão
+- **Overlay nas recargas explícitas**: o painel de progresso aparece na **primeira** abertura da janela e nas recargas/mutações — botão Atualizar, checkout, nova branch, merge, rename, delete, GitFlow, Restore, Pull/Push/Commit, mudanças externas genuínas do GitExtensions e troca de repositório. **Não** aparece ao reativar a janela depois de fechar GitFlow/Restore (a árvore já foi atualizada ao vivo), nem no "eco" da própria notificação ao GitExtensions (suprimido), evitando flash desnecessário
+- **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", "Verificando alterações pendentes…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe. A lista é dimensionada para exibir todos os 8 passos de uma vez, sem barra de rolagem vertical. A contagem de alterações pendentes (`Commit (N)`) é lida **nesse mesmo carregamento em background** e reaproveitada, sem um `git status` extra na thread de UI. Após o último passo ("Concluído."), o overlay permanece visível por **1 segundo** antes de fechar, para o usuário conseguir ver a conclusão
 - **Botão Cancelar no overlay**: permite abortar o carregamento a qualquer momento (o cancelamento ocorre entre as etapas git, preservando os dados anteriores na árvore)
 - **Formulário bloqueado durante carregamento**: todos os campos e botões ficam desabilitados enquanto o overlay está ativo e são reativados ao término (ou ao cancelar)
 - **Botão "Fechar"** centralizado horizontalmente na parte inferior da janela (atalho: tecla **Esc**)
@@ -147,7 +147,7 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.236)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.237)
 
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
@@ -193,9 +193,9 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 ### Janela GitFlow — comportamento geral
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.236)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.237)
 
-- Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**
+- Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
 - Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela ZimerfeldTree é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
 - **Checkout + revelar a branch afetada**: após cada botão, o plugin faz `git checkout` da branch afetada e, na árvore, **expande os nós da seção LOCAL até alcançá-la** e a seleciona. Para **Start/Publish/Track/Update** a branch afetada é a própria (`<prefixo><nome>`); para **Finish** (a branch é removida) o plugin revela a branch resultante atual (ex.: `develop`), sem refazer checkout
@@ -253,7 +253,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore — comportamento geral
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.236)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.237)
 
 - Abre ao clicar em **Restore** na janela ZimerfeldTree
 - Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
@@ -263,7 +263,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 - Após cada operação bem-sucedida, a árvore de ZimerfeldTree é **atualizada em background** sem perder o foco da janela Restore
 - Os últimos valores usados em cada campo são **persistidos** em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` e restaurados na próxima abertura
 - Link **About Restore** no canto superior direito descreve o propósito de cada operação
-- Fechar a janela (botão **Fechar** ou tecla **Esc**) salva os valores automaticamente
+- Fechar a janela (botão **Fechar** ou tecla **Esc**) salva os valores automaticamente; o fechamento **não** dispara refresh extra (a árvore já foi atualizada ao vivo) nem traz o GitExtensions para frente
 
 ### Ícones
 

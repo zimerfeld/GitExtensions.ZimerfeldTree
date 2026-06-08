@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-06
+atualizado: 2026-06-07 (btn Restore, overlay 1ª exibição, eco suprimido, contador Commit reaproveitado, sem NotifyRepoChanged ao fechar GitFlow/Restore)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, zimerfeldtree]
 fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 ---
@@ -17,21 +17,22 @@ fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 - Menu **Plugins → ZimerfeldTree** chama `ZimerfeldTreePlugin.Execute`.
 - Form é **singleton** por sessão do GitExtensions: se já existe, só atualiza o working dir e traz à frente; senão cria novo.
 - `Execute` retorna `false` → o GitExtensions **não** atualiza a própria UI (a janela gerencia o próprio estado).
-- O plugin assina eventos do host (`Register`): `PostBrowseInitialize` → troca de repositório; `PostCheckoutBranch` / `PostCheckoutRevision` → refaz a árvore. Assim a árvore se mantém em sincronia automaticamente.
-- Ao abrir (`Shown`), dispara o **carregamento assíncrono** inicial com overlay.
+- O plugin assina eventos do host (`Register`): `PostBrowseInitialize` → troca de repositório; `PostCheckoutBranch` / `PostCheckoutRevision` → refaz a árvore; `PostCommit` → refaz + foca; `PostRepositoryChanged` → `OnExternalChange`. Assim a árvore se mantém em sincronia automaticamente.
+- `OnExternalChange` chama `NotifyExternalRepoChanged()`: refresca em mudanças externas **genuínas**, mas **ignora o eco** do nosso próprio `NotifyRepoChanged` (flag `_suppressEcho`) — evita refresh redundante / flash de overlay.
+- O **overlay só aparece na primeira exibição** (`VisibleChanged` guarda `_initialLoadDone`): reativar a janela depois de fechar GitFlow/Restore **não** dispara overlay (a árvore já está atualizada).
 
 ## 🧭 Layout (de cima para baixo)
 1. **Top panel** — label "Working Directory:", combo de repositórios (`_cboRepo`), label "Branch: \<atual\>".
 2. **Filter panel** — caixa "Filtrar branches..." (`_txtFilter`) + botão **↺** (`_btnRefresh`).
 3. **Warn panel** (oculto por padrão) — aviso de GitFlow + botão **Organizar como GitFlow / Restaurar hierarquia real** (`_btnGitFlow`).
-4. **GitFlow button panel** — **Pull**, **Push**, **Commit**, **GitFlow** (só aparecem se houver branch atual).
+4. **GitFlow button panel** — **Pull**, **Push**, **Commit**, **GitFlow**, **Restore** (só aparecem se houver branch atual).
 5. **Árvore** (`TreeView`) — 3 seções fixas: **LOCAL (n)**, **REMOTES (n)**, **TAGS (n)**.
 6. **Bottom panel** — botão **Fechar** (centralizado).
 7. **Status strip** — `Local: n | Remoto: n | Tags: n`.
 8. **Overlay de carregamento** — flutua sobre tudo durante o load.
 
 ## 🔄 Carregamento da árvore (`RefreshTreeAsync`)
-Acionado por: abertura da janela, botão ↺, menu "Atualizar", troca de repo, eventos de checkout do host, e após cada mutação.
+Acionado por: **primeira** exibição da janela (`VisibleChanged`, só na carga inicial), botão ↺, menu "Atualizar", troca de repo, eventos de checkout/commit/repo-changed do host (eco próprio suprimido), e após cada mutação local.
 Passos (com % no overlay):
 1. `10%` branches locais — `git branch --format=%(refname:short)`
 2. `30%` branches remotas — `git branch -r --format=%(refname:short)`
@@ -39,7 +40,8 @@ Passos (com % no overlay):
 4. `65%` hierarquia local — `BuildParentMap` (1× `git log --all --format="%H %P"` + BFS)
 5. `80%` hierarquia remota — `BuildRemoteParentMap`
 6. `92%` sincronização — `git for-each-ref ...%(upstream:track)` → preenche ahead/behind
-7. `100%` Concluído.
+7. `96%` alterações pendentes — `git status --porcelain`, lido **no background** (off-UI-thread); o valor é **reaproveitado** por `UpdateCommitActionTexts(pending)` para o contador `Commit (n)`, sem um segundo `git status` na UI thread
+8. `100%` Concluído.
 - Chamadas concorrentes são **coalescidas** (`_isRefreshing`); um refresh em andamento é **cancelado** antes de iniciar outro.
 - Erros viram `MessageBox`. Cancelar restaura a UI sem mexer na árvore existente.
 - Branch atual aparece em **negrito + cor de destaque**, com indicadores de tracking: `(↓M↑N)` (↓ atrás / ↑ à frente) só quando há divergência.
@@ -92,7 +94,7 @@ Passos (com % no overlay):
    - Retorno `false` (fechou sem commitar) → nada.
    - Retorno `null` (indisponível) → cai no fallback.
 2. **Fallback:** `OpenCommitWindow()` dispara um **novo processo** `GitExtensions.exe commit` (plugins não carregam nesse modo). Erro → `MessageBox`.
-- Rótulo mostra `Commit (n)` com a contagem de mudanças pendentes (`git status --porcelain`).
+- Rótulo mostra `Commit (n)` com a contagem de mudanças pendentes (`git status --porcelain`) via `UpdateCommitActionTexts`. A contagem é recalculada: na construção, **após `LoadRepositories`** (já com o repo selecionado), ao abrir o menu de contexto, e em cada refresh — neste último **reaproveitando** o valor lido no background do `RefreshTreeAsync` (sem `git status` extra na UI thread).
 
 ### Botão GitFlow (`_btnGitFlowDedicated`) → `DoGitFlow`
 
@@ -101,17 +103,19 @@ Passos (com % no overlay):
 1. Cria `GitFlowForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas (se a tela couber; senão centraliza sobre a janela).
 2. Assina `RepoMutated`: a cada mutação dentro do GitFlow, agenda revelar a branch afetada e chama `RefreshTree()` **por trás do modal** (sem roubar foco).
 3. `ShowDialog` (bloqueia).
-4. Ao fechar: recentraliza a ZimerfeldTree; se houve **release finish**, agenda focar a **nova tag** e chama `RefreshTree()` + `NotifyRepoChanged()`; se nenhuma ação foi executada no dialog, `RefreshTree()` + `NotifyRepoChanged()`; caso contrário (ações executadas mas sem tag), o refresh do `RepoMutated` já foi suficiente — o refresh pós-close é **omitido** para evitar double-refresh.
+4. Ao fechar: recentraliza a ZimerfeldTree; **só** chama `RefreshTree()` se houve **release finish** (para focar a nova tag) — caso contrário **não** refresca, pois o `RepoMutated` já atualizou ao vivo. **Não** chama `NotifyRepoChanged()` (não traz o GitExtensions minimizado para frente).
 - Mesmo fluxo do item de menu "GitFlow…". Detalhes da janela em [[Interface GitFlow — botões e fluxos]].
 
-### Botão Voltar Versão (`_btnVoltar`) → `DoRestore`
+### Botão Restore (`_btnRestore`) → `DoRestore`
 
 ![[ScreenshotRestore.png]]
+
+> Renomeado de **Voltar Versão** (`_btnVoltar`) para **Restore** (`_btnRestore`).
 
 1. Cria `RestoreForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas — mesmo posicionamento da janela GitFlow.
 2. Assina `RepoMutated`: após cada operação bem-sucedida, chama `RefreshTree()` **por trás do modal** (sem roubar foco).
 3. `ShowDialog` (bloqueia).
-4. Ao fechar: `NotifyRepoChanged()` sempre; `RefreshTree()` apenas se **nenhuma** operação foi executada no dialog — se `RepoMutated` disparou ao menos uma vez, o refresh já ocorreu e o pós-close é **omitido** para evitar double-refresh.
+4. Ao fechar: **não** refresca (o `RepoMutated` já atualizou ao vivo) e **não** chama `NotifyRepoChanged()`. A `RestoreForm` salva os campos via `FormClosing → SaveSettings`.
 
 Três operações disponíveis na janela Restore:
 - **Restaurar Arquivo** — `git checkout <hash> -- "<arquivo>"`: recupera um arquivo específico do estado de um commit e o coloca como staged
@@ -146,7 +150,7 @@ Definida em `CtxMenu_Opening`: `branch` = local|remote; `local`/`remote`/`tag` e
 | **Renomear…** | local | `DoRename`: pede novo nome → `git branch -m "<antigo>" "<novo>"`. |
 | **Excluir…** | local/remote/tag | `DoDelete`: confirma; tag → `git tag -d`; remote → `git push <remote> --delete <branch>`; local → `git branch -d`. Se "not fully merged" → oferece **forçar** (`git branch -D`). |
 | **GitFlow…** | branch | Igual ao botão GitFlow → `DoGitFlow`. |
-| **Voltar Versão…** | branch atual ≠ `develop` | Igual ao botão Voltar Versão → `DoRestore` (abre ZimerfeldRestore). Não depende do nó clicado — sempre age na branch em checkout. |
+| **Restore…** | branch atual ≠ `develop` | Igual ao botão Restore → `DoRestore` (abre ZimerfeldRestore). Não depende do nó clicado — sempre age na branch em checkout. |
 | **Expandir tudo** | sempre | `node.ExpandAll()`. |
 | **Recolher tudo** | sempre | `CollapseRecursive(node)`. |
 | **Atualizar** | sempre | `RefreshTree()`. |
