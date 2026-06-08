@@ -215,10 +215,14 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         });
     }
 
+    // PostRepositoryChanged fires both on genuine external changes (GitExtensions main window) and
+    // as an "echo" of our own RepoChangedNotifier.Notify() (raised by the form's NotifyRepoChanged
+    // after a child window like GitFlow/Restore closes). NotifyExternalRepoChanged refreshes on the
+    // former but ignores the latter (tree already current) — avoiding a redundant overlay flash.
     private void OnExternalChange(object? sender, GitUIEventArgs e)
     {
         if (_form is null || _form.IsDisposed) return;
-        _form.InvokeIfRequired(() => _form.RefreshTree());
+        _form.InvokeIfRequired(() => _form.NotifyExternalRepoChanged());
     }
 }
 

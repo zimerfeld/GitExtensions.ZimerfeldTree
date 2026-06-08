@@ -36,6 +36,7 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
     private bool                         _initialLoadDone;            // overlay refresh on VisibleChanged fires only once (first show)
+    private bool                         _suppressEcho;               // ignore the PostRepositoryChanged echo of our own NotifyRepoChanged
 
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
@@ -51,7 +52,7 @@ public sealed class BranchHierarchyForm : Form
     private Panel            _gitFlowInitPanel    = null!;
     private Button           _btnGitFlowInit      = null!;
     private Button           _btnGitFlowDedicated = null!;
-    private Button           _btnVoltar           = null!;
+    private Button           _btnRestore           = null!;
     private Panel            _gitFlowButtonPanel  = null!;
     private Button           _btnPull             = null!;
     private Button           _btnPush             = null!;
@@ -147,6 +148,7 @@ public sealed class BranchHierarchyForm : Form
         _treeStateByRepo    = LoadTreeState();
         InitializeComponent();
         LoadRepositories();
+        UpdateCommitActionTexts();   // recalc the Commit (N) counter once the repo selection is finalized
         FormClosed += (_, _) => { _saveDebounce?.Dispose(); SaveTreeState(); };
         // Initial tree load is triggered by the Shown event so the window skeleton
         // is visible to the user before we start reading the repository.
@@ -169,6 +171,18 @@ public sealed class BranchHierarchyForm : Form
     /// Shows the "Carregando…" overlay while reading. Concurrent calls are collapsed into one.
     /// </summary>
     public void RefreshTree() => _ = RefreshTreeAsync(showOverlay: true);
+
+    /// <summary>
+    /// Called by the plugin on GitExtensions' PostRepositoryChanged. Refreshes the tree on genuine
+    /// external changes, but ignores the event when it is the ECHO of our own RepoChangedNotifier
+    /// .Notify() (raised by <see cref="NotifyRepoChanged"/>): in that case the tree was already
+    /// refreshed live and a second refresh would only flash the overlay needlessly.
+    /// </summary>
+    public void NotifyExternalRepoChanged()
+    {
+        if (_suppressEcho) return;
+        RefreshTree();
+    }
 
     /// <summary>
     /// Loads all branch/tag data on a background thread, optionally showing a centered
@@ -204,6 +218,7 @@ public sealed class BranchHierarchyForm : Form
         List<BranchInfo>            tags    = [];
         Dictionary<string, string?> lMap    = [];
         Dictionary<string, string?> rMap    = [];
+        int                         pending = 0;   // read off the UI thread; reused below for the Commit counter
 
         IProgress<(int pct, string msg)>? ip = showOverlay
             ? new Progress<(int pct, string msg)>(p =>
@@ -243,6 +258,9 @@ public sealed class BranchHierarchyForm : Form
                         b.AheadCount   = ti.ahead;
                         b.BehindCount  = ti.behind;
                     }
+                token.ThrowIfCancellationRequested();
+                ip?.Report((96, "Verificando alterações pendentes..."));
+                pending = _svc.GetPendingChangesCount();
                 ip?.Report((100, "Concluído."));
             }, token);
         }
@@ -297,7 +315,8 @@ public sealed class BranchHierarchyForm : Form
         }
         finally { _tree.EndUpdate(); }
 
-        UpdateCommitActionTexts();
+        // Reuse the pending-changes count read in the background pass above — no extra git status here.
+        UpdateCommitActionTexts(pending);
 
         var postAction = _postRefreshAction;
         _postRefreshAction = null;
@@ -558,17 +577,17 @@ public sealed class BranchHierarchyForm : Form
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
 
-        _btnVoltar = new Button
+        _btnRestore = new Button
         {
-            Name   = "btnVoltar",
-            Text   = "Voltar Versão",
+            Name   = "btnRestore",
+            Text   = "Restore",
             Width  = 120,
             Height = 24
         };
-        _btnVoltar.Click += (_, _) => DoRestore();
+        _btnRestore.Click += (_, _) => DoRestore();
 
         _gitFlowButtonPanel = new Panel { Name = "gitFlowButtonPanel", Dock = DockStyle.Top, Height = 32 };
-        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated, _btnVoltar]);
+        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated, _btnRestore]);
         // Positions are set explicitly by LayoutGitFlowButtons() — no Layout event so resize doesn't move buttons.
     }
 
@@ -634,7 +653,7 @@ public sealed class BranchHierarchyForm : Form
         _miRename    = new ToolStripMenuItem("Renomear…");
         _miDelete    = new ToolStripMenuItem("Excluir…");
         _miGitFlow      = new ToolStripMenuItem("GitFlow…");
-        _miVoltarVersao = new ToolStripMenuItem("Voltar Versão…");
+        _miVoltarVersao = new ToolStripMenuItem("Restore…");
         _miExpand    = new ToolStripMenuItem("Expandir tudo");
         _miCollapse  = new ToolStripMenuItem("Recolher tudo");
         _miRefresh   = new ToolStripMenuItem("Atualizar");
@@ -1433,7 +1452,7 @@ public sealed class BranchHierarchyForm : Form
         _btnGitFlow         .Enabled = enabled;
         _btnGitFlowInit     .Enabled = enabled && !IsGitFlowConfigured();
         _btnGitFlowDedicated.Enabled = enabled;
-        _btnVoltar          .Enabled = enabled;
+        _btnRestore          .Enabled = enabled;
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
         _chkShowDebug       .Enabled = enabled;
@@ -1763,7 +1782,7 @@ public sealed class BranchHierarchyForm : Form
         _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
         _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
         _btnGitFlowDedicated.Location = new Point(x, y); x += _btnGitFlowDedicated.Width + 4;
-        _btnVoltar.Location = new Point(x, y);
+        _btnRestore.Location = new Point(x, y);
     }
 
     private static void SetTooltipsRecursive(Control parent, ToolTip tip)
@@ -1911,8 +1930,8 @@ public sealed class BranchHierarchyForm : Form
         // dialog needs no further refresh — except to focus a freshly finished release tag.
         if (_postRefreshAction != null)
             RefreshTree();
-        // GitFlow dialog has already closed (modal) — refocusing ZimerfeldTree here is correct.
-        NotifyRepoChanged();
+        // No NotifyRepoChanged on close: the live RepoMutated refreshes already kept the tree
+        // current, and notifying GitExtensions would only pull its (minimized) window forward.
     }
 
     private void DoRestore()
@@ -1953,8 +1972,7 @@ public sealed class BranchHierarchyForm : Form
             wa.Top  + (wa.Height - Height) / 2);
 
         // Every action button already refreshed the tree live via RepoMutated, so closing the
-        // dialog needs no further refresh.
-        NotifyRepoChanged();
+        // dialog needs no further refresh, and GitExtensions is not notified here either.
     }
 
     private void FocusTagNode(string tagName)
@@ -2112,7 +2130,13 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
     private void NotifyRepoChanged()
     {
-        _notifyRepoChanged?.Invoke();
+        // GitExtensions raises PostRepositoryChanged in response to Notify() (synchronously, on the
+        // UI thread), which bounces back to us as NotifyExternalRepoChanged. Guard against that echo:
+        // the tree is already current, so the echo must not trigger a second (overlay) refresh. The
+        // flag is cleared on the next message-loop turn, after the synchronous echo has been handled.
+        _suppressEcho = true;
+        try { _notifyRepoChanged?.Invoke(); }
+        finally { BeginInvoke(() => _suppressEcho = false); }
         RestoreFocus();
     }
 
@@ -2147,7 +2171,7 @@ public sealed class BranchHierarchyForm : Form
             "  GitFlow\n" +
             "    Abre a janela GitFlow para a branch atual:\n" +
             "    Publish, Track, Update e Finish.\n\n" +
-            "  Voltar Versão\n" +
+            "  Restore\n" +
             "    Abre a janela de restauração: restaurar arquivo de commit,\n" +
             "    cherry-pick e reset de branch.\n\n" +
             "Menu de contexto (clique com botão direito em uma branch):\n\n" +
