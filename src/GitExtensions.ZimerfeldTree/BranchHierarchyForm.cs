@@ -1860,10 +1860,8 @@ public sealed class BranchHierarchyForm : Form
         // Refresh the tree live when GitFlow mutates the repo (any button) while still modal, and
         // reveal/select the affected branch. RefreshTree() runs behind the modal dialog and does
         // not steal its focus; the reveal runs as a post-refresh action once the tree is rebuilt.
-        bool mutatedInDialog = false;
         dlg.RepoMutated += branch =>
         {
-            mutatedInDialog = true;
             if (!string.IsNullOrEmpty(branch))
                 _postRefreshAction = () => FocusBranchNode(branch);
             RefreshTree();
@@ -1899,9 +1897,9 @@ public sealed class BranchHierarchyForm : Form
         if (dlg.LastFinishedReleaseTag is string tag)
             _postRefreshAction = () => FocusTagNode(tag);
 
-        // Skip the post-close refresh when the dialog already triggered one via RepoMutated,
-        // unless a release tag needs to be focused (set above after ShowDialog returns).
-        if (!mutatedInDialog || _postRefreshAction != null)
+        // Every action button already refreshed the tree live via RepoMutated, so closing the
+        // dialog needs no further refresh — except to focus a freshly finished release tag.
+        if (_postRefreshAction != null)
             RefreshTree();
         // GitFlow dialog has already closed (modal) — refocusing ZimerfeldTree here is correct.
         NotifyRepoChanged();
@@ -1911,10 +1909,8 @@ public sealed class BranchHierarchyForm : Form
     {
         using var dlg = new RestoreForm(_svc, _chkShowDebug.Checked);
 
-        bool restoredInDialog = false;
         dlg.RepoMutated += branch =>
         {
-            restoredInDialog = true;
             if (!string.IsNullOrEmpty(branch))
                 _postRefreshAction = () => FocusBranchNode(branch);
             RefreshTree();
@@ -1946,7 +1942,8 @@ public sealed class BranchHierarchyForm : Form
             wa.Left + (wa.Width  - Width)  / 2,
             wa.Top  + (wa.Height - Height) / 2);
 
-        if (!restoredInDialog) RefreshTree();
+        // Every action button already refreshed the tree live via RepoMutated, so closing the
+        // dialog needs no further refresh.
         NotifyRepoChanged();
     }
 
