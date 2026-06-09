@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.251)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.255)
 
-**Versão atual: 1.0.251**
+**Versão atual: 1.0.255**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.251 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.255 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -57,6 +57,26 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - Após cada Push, Pull ou Commit (seja pelos botões ou pela janela principal do GitExtensions), a árvore é **atualizada automaticamente** e os contadores dos botões (`↑N`, `↓N`, `(N)`) são recalculados
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 - **Restore** — abre a janela **ZimerfeldRestore** com três operações de restauração de histórico (ver seção abaixo)
+- **Excluir** / **Excluir (N)** — exclui branches/tags selecionados; o texto reflete a quantidade de checkboxes marcados (ver seção abaixo)
+
+### Seleção múltipla e exclusão de branches
+
+- Cada **branch (local e remota) e tag** exibe um **checkbox** à esquerda do nome. Seções (LOCAL/REMOTES/TAGS) e pastas de caminho (feature, release…) **não** têm checkbox e não são marcáveis.
+- Marque **um ou mais** checkboxes para selecionar nós para exclusão em lote.
+- O botão **Excluir** (acima da árvore, à direita de *Commit*) muda dinamicamente conforme a quantidade marcada: `Excluir` (nenhum) → `Excluir (N)`.
+  - **2+ marcados**: exclui todos em lote, com **uma única confirmação** listando os itens.
+  - **1 marcado**: exclui esse item.
+  - **nenhum marcado**: exclui o **nó selecionado** na árvore.
+  - Para branch local não totalmente mesclada, oferece **exclusão forçada**.
+- O **menu de contexto** acompanha: com **2+** checkboxes marcados, mostra apenas **Excluir (N)** e **Atualizar** (o item GitFlow foi removido do menu de contexto).
+- Após excluir, a árvore é reconstruída e os checkboxes são limpos.
+
+#### Proteção de branches principais e "Modo Developer"
+
+- As branches **main / master / develop** (locais e remotas) são **protegidas**: por padrão **não podem ser marcadas** para exclusão (nem excluídas pelo nó selecionado).
+- O checkbox **Modo Developer**, na borda inferior da janela (ao lado de *Show Debug*), **libera** a marcação/exclusão dessas branches quando ativado.
+- Ao **desativar** o Modo Developer, qualquer main/master/develop que estivesse marcada é **desmarcada automaticamente**.
+- O estado do **Modo Developer** é **persistido** em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json` (junto com *Show Debug*) e restaurado na abertura da janela.
 
 ### Tecla F3 — foco rápido na ZimerfeldTree
 
@@ -84,11 +104,11 @@ O checkbox **Show Debug**, localizado na borda inferior esquerda da janela Zimer
 
 ### Persistência de estado da árvore
 
-- O estado de expansão/recolhimento de cada nó é **salvo automaticamente** por Working Directory
-- Ao abrir o plugin ou ao atualizar a árvore, a estrutura é restaurada exatamente como estava na última sessão
-- Estado gravado em `%APPDATA%\GitExtensions\ZimerfeldTree.treestate.json`
-- Salvamento com debounce de 500 ms para não gerar I/O excessivo durante expansões rápidas
-- Primeira abertura de um repositório usa o comportamento padrão: LOCAL totalmente expandido, REMOTES e TAGS com apenas a raiz expandida
+- O estado de **expansão/recolhimento** de cada nó é **salvo automaticamente** por Working Directory — incluindo os nós principais (LOCAL, REMOTES, TAGS), branches (master, develop…) e pastas (feature, release…)
+- Cada nó é identificado por um **caminho estável** (a cadeia de ancestrais, ex.: `LOCAL|master|develop|feature`), que sobrevive a reconstruções da árvore
+- O salvamento ocorre ao expandir/recolher (com **debounce de 500 ms**) e ao **fechar a janela**, gravando em `%APPDATA%\GitExtensions\ZimerfeldTree.treestate.json`
+- Na **primeira abertura** da janela, o estado salvo é restaurado assim que a árvore é exibida (após o pré-carregamento síncrono dos dados), refletindo exatamente como estava na última sessão
+- Primeira abertura de um repositório **novo** (sem estado salvo) usa o padrão: LOCAL totalmente expandido, REMOTES e TAGS com apenas a raiz expandida
 - Durante filtro ativo, todos os nós são expandidos automaticamente para mostrar os resultados
 
 ### Organização automática como GitFlow
@@ -147,7 +167,7 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.251)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.255)
 
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
@@ -193,7 +213,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 ### Janela GitFlow — comportamento geral
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.251)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.255)
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
@@ -253,7 +273,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore — comportamento geral
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.251)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.255)
 
 - Abre ao clicar em **Restore** na janela ZimerfeldTree
 - Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
