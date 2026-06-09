@@ -403,7 +403,7 @@ public sealed class BranchHierarchyForm : Form
     {
         SuspendLayout();
 
-        Text            = "ZimerfeldTree - Branch Hierarchy";
+        Text            = "ZimerfeldTree - BranchHierarchy";
         Size            = new Size(620, 760);   // widened to fit the extra btnExcluir without cropping Restore
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.Sizable;
@@ -440,6 +440,11 @@ public sealed class BranchHierarchyForm : Form
         Controls.Add(_bottomPanel);    // Bottom (above status)
         Controls.Add(_lnkAbout);       // Floats top-right over _topPanel
         Controls.Add(_loadingOverlay); // Floats above everything (BringToFront when shown)
+
+        // _lnkAbout is added after _topPanel, so it sits *behind* it in the z-order and the opaque
+        // top panel hides it. Bring it to the front so it actually floats over the panel.
+        // (_loadingOverlay re-asserts its own front position via BringToFront when shown.)
+        _lnkAbout.BringToFront();
 
         CancelButton = _btnClose;
 
@@ -2493,7 +2498,17 @@ public sealed class BranchHierarchyForm : Form
             "  Rebase             — git rebase da atual na selecionada.\n" +
             "  Renomear…          — Renomeia a branch.\n" +
             "  Excluir…           — Exclui a branch.\n" +
-            "  GitFlow…           — Abre janela GitFlow para esta branch.",
+            "  GitFlow…           — Abre janela GitFlow para esta branch.\n\n" +
+            "Caixas de seleção (rodapé da janela):\n\n" +
+            "  Show Debug\n" +
+            "    Liga/desliga tooltips de depuração: ao passar o mouse sobre\n" +
+            "    qualquer controle da janela, exibe o TYPE (tipo) e o ID (Name)\n" +
+            "    do controle. Útil para inspecionar a interface.\n\n" +
+            "  Modo Developer\n" +
+            "    Permite marcar as branches main e develop para exclusão.\n" +
+            "    Por padrão essas branches são protegidas e ficam bloqueadas\n" +
+            "    (não podem ser marcadas nem excluídas). Ao desativar o modo,\n" +
+            "    qualquer main/develop marcada é desmarcada automaticamente.",
             "About Tree", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
