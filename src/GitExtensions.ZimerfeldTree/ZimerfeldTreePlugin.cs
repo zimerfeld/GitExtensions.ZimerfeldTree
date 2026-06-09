@@ -22,9 +22,6 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     // Used to open the native commit dialog so Commit Template plugins are visible.
     private IGitUICommands? _commands;
 
-    // F3 global shortcut filter — intercepts F3 anywhere in the GitExtensions process.
-    private F3MessageFilter? _f3Filter;
-
     // ── Constructor ───────────────────────────────────────────────────────────
 
     public ZimerfeldTreePlugin() : base(false)
@@ -105,63 +102,6 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         commands.PostCheckoutRevision   += OnBranchChanged;
         commands.PostCommit             += OnPostCommit;   // dedicated: also restores focus
         commands.PostRepositoryChanged  += OnExternalChange;
-
-        // Register F3 as a process-wide shortcut that brings ZimerfeldTree to the front.
-        // Guard against double-registration if Register is called more than once per session.
-        if (_f3Filter is null)
-        {
-            _f3Filter = new F3MessageFilter(() => _form);
-            Application.AddMessageFilter(_f3Filter);
-        }
-
-        // Label the Plugins menu item with "F3" so users see the shortcut hint.
-        // The GitExtensions plugin API does not expose ShortcutKeys directly, so we traverse
-        // the host form's MainMenuStrip at first Idle (after the menu is fully populated).
-        HookPluginMenuShortcut();
-    }
-
-    private void HookPluginMenuShortcut()
-    {
-        EventHandler? handler = null;
-        handler = (_, _) =>
-        {
-            Application.Idle -= handler;
-            ApplyF3ToPluginMenuItem();
-        };
-        Application.Idle += handler;
-    }
-
-    // Situation 3 — visual hint: traverse the GitExtensions MainMenuStrip to find the
-    // ZimerfeldTree plugin item and stamp ShortcutKeys=F3 so the menu shows "ZimerfeldTree … F3".
-    // The GitExtensions plugin API does not expose ShortcutKeys directly, so we reach into
-    // the host form's menu at first Idle, after all plugin items have been added.
-    // ShortcutKeys also covers Situation 1: when _form is null the filter passes F3 through
-    // and WinForms fires the menu item's Click (→ Execute()) via normal accelerator processing.
-    private static void ApplyF3ToPluginMenuItem()
-    {
-        foreach (Form f in Application.OpenForms)
-        {
-            var menuStrip = f.MainMenuStrip;
-            if (menuStrip is null) continue;
-
-            foreach (ToolStripItem top in menuStrip.Items)
-            {
-                if (top is not ToolStripMenuItem pluginsMenu) continue;
-                if (pluginsMenu.Text is null) continue;
-                if (!pluginsMenu.Text.Contains("Plugin", StringComparison.OrdinalIgnoreCase)) continue;
-
-                foreach (ToolStripItem sub in pluginsMenu.DropDownItems)
-                {
-                    if (sub is not ToolStripMenuItem item) continue;
-                    if (item.Text is null) continue;
-                    if (!item.Text.Contains("ZimerfeldTree", StringComparison.OrdinalIgnoreCase)) continue;
-
-                    item.ShortcutKeys     = Keys.F3;
-                    item.ShowShortcutKeys = true;
-                    return;
-                }
-            }
-        }
     }
 
     /// <summary>Unsubscribe from all events.</summary>
@@ -172,12 +112,6 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         commands.PostCheckoutRevision   -= OnBranchChanged;
         commands.PostCommit             -= OnPostCommit;
         commands.PostRepositoryChanged  -= OnExternalChange;
-
-        if (_f3Filter != null)
-        {
-            Application.RemoveMessageFilter(_f3Filter);
-            _f3Filter = null;
-        }
 
         _commands = null;
         base.Unregister(commands);
@@ -223,46 +157,6 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     {
         if (_form is null || _form.IsDisposed) return;
         _form.InvokeIfRequired(() => _form.NotifyExternalRepoChanged());
-    }
-}
-
-// ── F3 process-wide keyboard shortcut ────────────────────────────────────────
-
-/// <summary>
-/// Intercepts F3 anywhere inside the GitExtensions process and brings ZimerfeldTree to the front.
-/// Text-input controls (TextBox, RichTextBox, ComboBox) are excluded so find/filter F3 keys
-/// are not swallowed while the user is typing.
-/// </summary>
-internal sealed class F3MessageFilter(Func<BranchHierarchyForm?> getForm) : IMessageFilter
-{
-    private const int WM_KEYDOWN = 0x0100;
-    private const int VK_F3     = 0x72;
-
-    public bool PreFilterMessage(ref Message m)
-    {
-        if (m.Msg != WM_KEYDOWN || (int)m.WParam != VK_F3) return false;
-
-        var form = getForm();
-
-        // Situation 1 — form not yet open: return false so WinForms delivers the key to the
-        // GitExtensions form, where ShortcutKeys=F3 on the plugin menu item fires Execute().
-        if (form is null || form.IsDisposed) return false;
-
-        // Let F3 pass through when the user is typing in a text input.
-        var focused = Control.FromHandle(m.HWnd);
-        if (focused is TextBox or RichTextBox or ComboBox) return false;
-
-        // Situation 2 — form already open: consume F3 and bring the window to the front.
-        // Restore first: BringToFront/Activate do not unminimize a minimized window.
-        form.InvokeIfRequired(() =>
-        {
-            if (!form.Visible) form.Show();
-            if (form.WindowState == FormWindowState.Minimized)
-                form.WindowState = FormWindowState.Normal;
-            form.BringToFront();
-            form.Activate();
-        });
-        return true; // consumed — GitExtensions does not process this F3
     }
 }
 

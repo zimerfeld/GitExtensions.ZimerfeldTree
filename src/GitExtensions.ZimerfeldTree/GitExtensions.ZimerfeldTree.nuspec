@@ -16,7 +16,7 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-    <version>1.0.260</version>
+    <version>1.0.268</version>
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -58,10 +58,17 @@ Features:
     <releaseNotes>
 1.0.18 — Initial public release.
     </releaseNotes>
-    <!-- ── NuGet package type — this is a "tool" package (DLL + scripts) -->
-    <packageTypes>
-      <packageType name="DotnetTool" />
-    </packageTypes>
+    <!-- ── GitExtensions plugin marker ───────────────────────────────────
+         The GitExtensions Plugin Manager filters the nuget.org feed to packages
+         that DEPEND on GitExtensions.Extensibility — without this the package is
+         published but never appears in the in-app Plugin Manager.
+         The version is the MINIMUM GitExtensions (Extensibility) required. No 6.x
+         Extensibility is published on nuget, so 1.0.0.129 (the highest published
+         version <= the installed GitExtensions 6.0.5) keeps it compatible with 6.x.
+         Raise this only if the Plugin Manager shows the package as "Not compatible". -->
+    <dependencies>
+      <dependency id="GitExtensions.Extensibility" version="1.0.0.129" />
+    </dependencies>
   </metadata>
   <!-- ── Package contents ───────────────────────────────────────────────── -->
   <!--
@@ -75,7 +82,15 @@ Features:
     They also work standalone: cd tools && .\install.ps1
   -->
   <files>
-    <!-- Compiled plugin DLL (copied to tools\ by build.ps1 before packing) -->
+    <!-- Plugin DLL in lib\ ROOT (no framework subfolder) — REQUIRED, and intentional.
+         The GitExtensions Plugin Manager only extracts a lib group whose target framework
+         is in its moniker list: { net5.0..net10.0, any, netstandard2.0 } (see
+         gitextensions.pluginmanager Plugin.cs FrameworkMonikers). A DLL in lib\ root is the
+         "any" group → matched. A lib\net9.0-windows\ subfolder is NOT in that list → the DLL
+         would NOT be extracted and the plugin would fail to install. So the NU5101 pack
+         warning ("place under a framework-specific folder") MUST be ignored here. -->
+    <file src="..\..\tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll" target="lib\" />
+    <!-- Same DLL under tools\ for the legacy Package Manager Console install (install.ps1) -->
     <file src="..\..\tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll" target="tools\net9.0-windows\" />
     <!-- Package Manager Console automation scripts -->
     <file src="..\..\tools\install.ps1" target="tools\" />

@@ -36,7 +36,6 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
-    private bool                         _initialLoadDone;            // overlay refresh on VisibleChanged fires only once (first show)
     private bool                         _suppressEcho;               // ignore the PostRepositoryChanged echo of our own NotifyRepoChanged
 
     // ── Controls ─────────────────────────────────────────────────────────────
@@ -385,7 +384,6 @@ public sealed class BranchHierarchyForm : Form
     /// </summary>
     private void InitialLoadSync()
     {
-        _initialLoadDone = true;
         UpdateGitFlowInitButton();   // btnGitFlowInit — is GitFlow initialized as defined?
         try
         {
