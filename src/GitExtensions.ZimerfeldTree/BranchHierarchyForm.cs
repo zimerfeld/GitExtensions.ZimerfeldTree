@@ -2370,6 +2370,9 @@ public sealed class BranchHierarchyForm : Form
         }
         else
         {
+            // A tag deletion can fail on the remote step after the local tag was already removed —
+            // refresh so the tree reflects the local removal, then report the remote warning.
+            if (info.Type == BranchType.Tag) RefreshTree();
             ShowError("Erro ao excluir", result.err);
         }
         RestoreFocus();
