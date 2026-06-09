@@ -443,11 +443,19 @@ public sealed class BranchHierarchyForm : Form
         };
 
         // The tree is already populated synchronously in the constructor (InitialLoadSync), before
-        // this window is shown — so there is no first-time overlay. The only first-show work left
-        // needs the native tree handle (created when the window is shown): hide the section/folder
-        // checkboxes and reset the scrollbar to the top. Shown fires once, on the first display.
+        // this window is shown — so there is no first-time overlay. The remaining first-show work
+        // needs the native tree handle (created when the window is shown), and Shown fires once,
+        // before the first paint (so no flicker):
+        //   • ExpandRoots() re-applies the persisted expand/collapse state — node.Expand()/
+        //     CollapseAll() do NOT stick on the native control before the handle exists, so the
+        //     saved states must be restored here for them to be remembered across sessions.
+        //   • ApplyCheckBoxVisibility() hides section/folder checkboxes (native message).
+        //   • ScrollTreeToTop() resets the vertical scrollbar.
         Shown += (_, _) =>
         {
+            _tree.BeginUpdate();
+            try { ExpandRoots(); }
+            finally { _tree.EndUpdate(); }
             ApplyCheckBoxVisibility();
             ScrollTreeToTop();
         };
