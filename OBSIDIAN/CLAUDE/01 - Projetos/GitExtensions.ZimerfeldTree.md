@@ -1,11 +1,11 @@
 ---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-08 (sincronizado com README 1.0.243; estrutura, dependências, instalação e limitações)
+atualizado: 2026-06-09 (1.0.254: checkbox multi-seleção, botão Excluir, Modo Developer, persistência expande/recolhe)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.243
+versao: 1.0.254
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -82,11 +82,13 @@ C:\GitExtensions\ZimerfeldTree\
 - **Overlay só na 1ª exibição e nas recargas explícitas** — não aparece ao reativar após fechar GitFlow/Restore (árvore já atualizada ao vivo) nem no eco do próprio `NotifyRepoChanged`
 - Seletor de **Working Directory** (combo lido de `%APPDATA%\GitExtensions\GitExtensions\GitExtensions.settings`) e **branch atual em negrito** + cor de destaque
 - **Filtro em tempo real** em todas as seções (substring case-insensitive), preservando nós-pai com filhos correspondentes
-- **Botões Pull / Push / Commit / GitFlow / Restore** acima da árvore (quando há branch em checkout); contadores `↓N` / `↑N` / `(N)`
+- **Botões Pull / Push / Commit / Excluir / GitFlow / Restore** acima da árvore (quando há branch em checkout); contadores `↓N` / `↑N` / `(N)`
+- **Seleção múltipla por checkbox** — cada branch (local/remota) e tag tem checkbox (seções e pastas não); marcar 2+ habilita exclusão em lote. O botão **Excluir** muda para `Excluir (N)` e o menu de contexto reduz para **Excluir + Atualizar**
+- **Proteção main/master/develop** — protegidas de marcação/exclusão por padrão; o checkbox **"Modo Developer"** (ao lado de Show Debug) libera; estado persistido em `ZimerfeldTree.uisettings.json`
 - **Tecla F3** traz a ZimerfeldTree para o topo de qualquer lugar do GitExtensions (exceto em campos de texto)
 - **Foco automático após Commit** — a janela retoma o foco e atualiza a árvore ao fechar a janela de Commit
 - **Checkbox "Show Debug"** — tooltips `TYPE:`/`ID:` em todos os controles (e Handle da janela); estado persistido em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
-- **Persistência de estado da árvore** por Working Directory em `%APPDATA%\GitExtensions\ZimerfeldTree.treestate.json` (debounce 500 ms)
+- **Persistência de estado da árvore** (expande/recolhe) por Working Directory em `ZimerfeldTree.treestate.json` — caminho estável por nó (ex.: `LOCAL|master|develop|feature`), debounce 500 ms + save no fechamento, restaurado no `Shown` da 1ª abertura
 - **Organização automática como GitFlow** — detecta hierarquia fora do padrão e auto-organiza; botão "Restaurar hierarquia real" / "Organizar como GitFlow"
 - **Atualização automática** em checkout, troca de repositório, init/reabertura; botão **Atualizar** manual
 - **Menu de contexto** com ícones embutidos (Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir, GitFlow…, Restore…, Expandir/Recolher, Atualizar)
@@ -228,7 +230,7 @@ O `build.ps1`: (1) lê e incrementa `<version>` no nuspec; (2) sincroniza `<Vers
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.243** (README + csproj + nuspec em sincronia)
+- Versão atual: **1.0.254** (README + csproj + nuspec em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
