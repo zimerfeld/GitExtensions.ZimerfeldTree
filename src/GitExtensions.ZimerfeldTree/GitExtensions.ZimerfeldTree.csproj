@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.260</Version>
+    <Version>1.0.268</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -67,23 +67,43 @@
     <EmbeddedResource Include="Resources\ctx-rename.png"     Condition="Exists('Resources\ctx-rename.png')" />
     <EmbeddedResource Include="Resources\ctx-delete.png"     Condition="Exists('Resources\ctx-delete.png')" />
     <EmbeddedResource Include="Resources\ctx-gitflow.png"    Condition="Exists('Resources\ctx-gitflow.png')" />
+    <EmbeddedResource Include="Resources\ctx-restore.png"    Condition="Exists('Resources\ctx-restore.png')" />
     <EmbeddedResource Include="Resources\ctx-expand.png"     Condition="Exists('Resources\ctx-expand.png')" />
     <EmbeddedResource Include="Resources\ctx-collapse.png"   Condition="Exists('Resources\ctx-collapse.png')" />
     <EmbeddedResource Include="Resources\ctx-refresh.png"    Condition="Exists('Resources\ctx-refresh.png')" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reference GitExtensions DLLs directly — they must NOT be copied to output -->
+    <!--
+      GitExtensions.Extensibility (NuGet) provides the MSBuild targets that:
+        • resolve $(GitExtensionsPath) (default: ..\..\gitextensions.shared, relative to the
+          project) — that folder already holds the GitExtensions 6.0.5 binaries, so the
+          prebuild "download GitExtensions" step is skipped (it only runs if
+          $(GitExtensionsPath)\GitExtensions.exe is missing);
+        • auto-deploy the built plugin to $(GitExtensionsPath)\UserPlugins\<project> on build.
+      The package ships no reference assembly, so the host DLLs are referenced below via
+      $(GitExtensionsPath) instead of a hardcoded C:\Program Files\GitExtensions path.
+      Note: this does NOT add a package dependency to the .nupkg under `nuget pack <nuspec>`
+      (the <dependency> marker stays in the .nuspec); it would auto-generate under `dotnet pack`.
+    -->
+    <PackageReference Include="GitExtensions.Extensibility" Version="0.4.0.111" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Only used on a fresh clone that lacks gitextensions.shared: which GitExtensions
+         release the prebuild step would download from GitHub. -->
+    <GitExtensionsReferenceVersion>v6.0.5</GitExtensionsReferenceVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Host DLLs from the GitExtensions binaries ($(GitExtensionsPath)) — compile-time
+         only (Private=false), never copied to output or shipped in the package. -->
     <Reference Include="GitExtensions.Extensibility">
-      <HintPath>C:\Program Files\GitExtensions\GitExtensions.Extensibility.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="GitUIPluginInterfaces">
-      <HintPath>C:\Program Files\GitExtensions\GitUIPluginInterfaces.dll</HintPath>
+      <HintPath>$(GitExtensionsPath)\GitExtensions.Extensibility.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="System.ComponentModel.Composition">
-      <HintPath>C:\Program Files\GitExtensions\System.ComponentModel.Composition.dll</HintPath>
+      <HintPath>$(GitExtensionsPath)\System.ComponentModel.Composition.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

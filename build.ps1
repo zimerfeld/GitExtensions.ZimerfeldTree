@@ -62,7 +62,6 @@ if (Test-Path $readmeDoc) {
     $content = Get-Content $readmeDoc -Raw -Encoding UTF8
     $content = $content -replace '\*\*Versão atual: [^\*]+\*\*', "**Versão atual: $newVersion**"
     $content = $content -replace 'https://www\.nuget\.org/packages/GitExtensions\.ZimerfeldTree/[\d\.]+', "https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/$newVersion"
-    $content = $content -replace '(ScreenshotBranchHierarchy\.png|ScreenshotGitFlow\.png|ScreenshotRestore\.png)\?v=[\d\.]+', "`$1?v=$newVersion"
     [System.IO.File]::WriteAllText($readmeDoc, $content, [System.Text.Encoding]::UTF8)
     Write-Host "README.md atualizado para $newVersion"
 }
@@ -112,8 +111,15 @@ if (-not $nugetExe) {
     }
 }
 
-& $nugetExe pack $nuspec -OutputDirectory $outDir
+# NU5101 (DLL diretamente em lib\) e' INTENCIONAL: o GitExtensions Plugin Manager so'
+# extrai o grupo lib cujo framework esta na sua lista de monikers { net5.0..net10.0, any,
+# netstandard2.0 }. lib\ raiz = grupo "any" (extraido); uma subpasta net9.0-windows NAO
+# esta na lista e quebraria a instalacao. Por isso filtramos esse aviso especifico.
+& $nugetExe pack $nuspec -OutputDirectory $outDir 2>&1 |
+    Where-Object { $_ -notmatch 'NU5101' } |
+    ForEach-Object { Write-Host $_ }
 if ($LASTEXITCODE -ne 0) { Write-Error "nuget pack falhou."; exit 1 }
+Write-Host "(NU5101 omitido: DLL em lib\ raiz e' intencional — exigido pelo Plugin Manager)"
 
 # Remove pacotes de versoes anteriores
 Get-ChildItem "$outDir\GitExtensions.ZimerfeldTree.*.nupkg" |
