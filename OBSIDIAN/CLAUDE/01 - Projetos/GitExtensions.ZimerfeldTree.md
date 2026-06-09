@@ -1,11 +1,11 @@
 ---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-09 (1.0.268: removida a associação à tecla F3 — filtro de mensagens, ShortcutKeys no menu e classe F3MessageFilter eliminados)
+atualizado: 2026-06-09 (1.0.276: tags excluídas na árvore também são removidas do remoto; link About corrigido + seções Show Debug/Modo Developer; títulos das janelas padronizados com prefixo "ZimerfeldTree - " + nome da janela: "ZimerfeldTree - BranchHierarchy" / "ZimerfeldTree - GitFlow" / "ZimerfeldTree - Restore")
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.268
+versao: 1.0.276
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -74,7 +74,7 @@ C:\GitExtensions\ZimerfeldTree\
 > Cada `<EmbeddedResource>` é **condicional à existência do arquivo** (`Condition="Exists(...)"`). Em runtime, `NodeIcons.LoadEmbedded` lê o recurso por `GitExtensions.ZimerfeldTree.Resources.<arquivo>` e redimensiona para 16×16. Se ausente/ilegível, cai no **glifo GDI+ de reserva** — o build nunca quebra por falta da imagem.
 
 ## ✨ Funcionalidades principais
-- Janela **não-modal**, singleton por sessão, abre **centralizada** e redimensionável (`Sizable`), independente do GitExtensions
+- Janela **não-modal**, singleton por sessão, abre **centralizada** e redimensionável (`Sizable`), independente do GitExtensions. Título da barra: **`ZimerfeldTree - BranchHierarchy`** (auxiliares: `ZimerfeldTree - GitFlow`, `ZimerfeldTree - Restore`) — o prefixo **ZimerfeldTree** é sempre mantido, seguido do nome específico da janela. `BranchHierarchyForm` é só o nome interno da classe C#
 - Árvore em 3 seções fixas: **LOCAL**, **REMOTES**, **TAGS**, com contadores `(N)` e status bar `Local: N | Remoto: N | Tags: N`
 - LOCAL/REMOTES combinam **ancestralidade real** (parentesco por commits / GitFlow) **+ agrupamento por caminho** (`/`). Ex.: `feature/teste` → pasta `feature` → folha `teste`
 - **Carregamento assíncrono** com overlay de progresso (0→100%), lista acumulativa dos 8 passos, botão Cancelar, formulário bloqueado durante o load; overlay fecha após 1 s no "Concluído."
@@ -84,7 +84,7 @@ C:\GitExtensions\ZimerfeldTree\
 - **Filtro em tempo real** em todas as seções (substring case-insensitive), preservando nós-pai com filhos correspondentes
 - **Botões Pull / Push / Commit / Excluir / GitFlow / Restore** acima da árvore (quando há branch em checkout); contadores `↓N` / `↑N` / `(N)`
 - **Seleção múltipla por checkbox** — cada branch (local/remota) e tag tem checkbox (seções e pastas não); marcar 2+ habilita exclusão em lote. O botão **Excluir** muda para `Excluir (N)` e o menu de contexto reduz para **Excluir + Atualizar**
-- **Proteção main/master/develop** — protegidas de marcação/exclusão por padrão; o checkbox **"Modo Developer"** (ao lado de Show Debug) libera; estado persistido em `ZimerfeldTree.uisettings.json`
+- **Checkbox "Modo Developer"** (ao lado de Show Debug) — **desligado (padrão):** `main`/`master`/`develop` ficam **protegidas**, com checkbox bloqueado (não podem ser marcadas nem excluídas); **ligado:** libera a marcação/exclusão dessas branches específicas. Desativar o modo **desmarca automaticamente** qualquer main/master/develop marcada. Estado persistido em `ZimerfeldTree.uisettings.json`
 - **Foco automático após Commit** — a janela retoma o foco e atualiza a árvore ao fechar a janela de Commit
 - **Checkbox "Show Debug"** — tooltips `TYPE:`/`ID:` em todos os controles (e Handle da janela); estado persistido em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
 - **Persistência de estado da árvore** (expande/recolhe) por Working Directory em `ZimerfeldTree.treestate.json` — caminho estável por nó (ex.: `LOCAL|master|develop|feature`), debounce 500 ms + save no fechamento, restaurado no `Shown` da 1ª abertura
@@ -229,7 +229,7 @@ O `build.ps1`: (1) lê e incrementa `<version>` no nuspec; (2) sincroniza `<Vers
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.268** (README + csproj + nuspec em sincronia)
+- Versão atual: **1.0.276** (README + csproj + nuspec em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 

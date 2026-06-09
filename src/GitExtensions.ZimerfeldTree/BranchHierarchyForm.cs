@@ -403,7 +403,7 @@ public sealed class BranchHierarchyForm : Form
     {
         SuspendLayout();
 
-        Text            = "ZimerfeldTree - Branch Hierarchy";
+        Text            = "ZimerfeldTree - BranchHierarchy";
         Size            = new Size(620, 760);   // widened to fit the extra btnExcluir without cropping Restore
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.Sizable;

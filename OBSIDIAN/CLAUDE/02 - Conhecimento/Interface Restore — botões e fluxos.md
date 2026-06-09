@@ -50,8 +50,8 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 6. Exibe resultado. Sucesso → `RevealInTree(branch)` (refresca e revela a branch resetada).
 
 ## ⚙️ Comportamento da janela
-- Posicionada **lado a lado** com ZimerfeldTree (ambas centralizadas na tela — mesmo comportamento da janela GitFlow).
-- Após cada operação bem-sucedida, a árvore de ZimerfeldTree é **atualizada em background** (via `RevealInTree`/`RepoMutated`) sem perder o foco da janela Restore.
+- Posicionada **lado a lado** com BranchHierarchy (ambas centralizadas na tela — mesmo comportamento da janela GitFlow).
+- Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** (via `RevealInTree`/`RepoMutated`) sem perder o foco da janela Restore.
 - **Ao fechar** (botão Fechar, Esc ou X): o owner **não** dispara refresh extra nem `NotifyRepoChanged` — a árvore já está atualizada das operações feitas ao vivo. O `FormClosing` da janela apenas **persiste os campos** em `ZimerfeldRestore.settings.json` (`SaveSettings`), restaurados na próxima abertura.
 - Link **About Restore** exibe `MessageBox` descrevendo o propósito de cada operação.
 
