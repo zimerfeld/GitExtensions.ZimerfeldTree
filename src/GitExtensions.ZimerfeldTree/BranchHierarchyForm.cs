@@ -67,6 +67,7 @@ public sealed class BranchHierarchyForm : Form
     private Panel    _bottomPanel  = null!;
     private Button   _btnClose    = null!;
     private CheckBox _chkShowDebug = null!;
+    private CheckBox _chkDeveloperMode = null!;
     private LinkLabel _lnkAbout   = null!;
 
     // ── Loading overlay ───────────────────────────────────────────────────────
@@ -106,14 +107,26 @@ public sealed class BranchHierarchyForm : Form
         catch { return false; }
     }
 
-    private static void SaveShowControlIds(bool value)
+    private static bool LoadDeveloperMode()
+    {
+        try
+        {
+            if (!File.Exists(UiSettingsPath)) return false;
+            return File.ReadAllText(UiSettingsPath).Contains("\"developerMode\":true");
+        }
+        catch { return false; }
+    }
+
+    /// <summary>Persists both UI toggles (Show Debug + Modo Developer) to the settings file.</summary>
+    private void SaveUiSettings()
     {
         try
         {
             string dir = Path.GetDirectoryName(UiSettingsPath)!;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             File.WriteAllText(UiSettingsPath,
-                $"{{\"showControlIds\":{(value ? "true" : "false")}}}");
+                $"{{\"showControlIds\":{(_chkShowDebug.Checked ? "true" : "false")}," +
+                $"\"developerMode\":{(_chkDeveloperMode.Checked ? "true" : "false")}}}");
         }
         catch { }
     }
@@ -349,7 +362,11 @@ public sealed class BranchHierarchyForm : Form
             var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
             var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
             RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
-            ExpandRoots();
+            // Restore the saved expand/collapse state ONLY when the native handle exists. During the
+            // first load (InitialLoadSync, in the constructor) there is no handle yet, so node.Expand()
+            // /CollapseAll() would not stick; the Shown handler restores it once instead. This avoids a
+            // double, partial restore (constructor without handle + Shown) that lost the saved state.
+            if (_tree.IsHandleCreated) ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
             UpdatePullPushButtons();
@@ -809,17 +826,33 @@ public sealed class BranchHierarchyForm : Form
             AutoSize = true,
             Checked  = LoadShowControlIds()
         };
+        _chkDeveloperMode = new CheckBox
+        {
+            Name     = "chkDeveloperMode",
+            Text     = "Modo Developer",
+            AutoSize = true,
+            Checked  = LoadDeveloperMode()
+        };
+
+        // Handlers wired after BOTH checkboxes exist (SaveUiSettings reads both).
         _chkShowDebug.CheckedChanged += (_, _) =>
         {
-            SaveShowControlIds(_chkShowDebug.Checked);
+            SaveUiSettings();
             ApplyControlTooltips(_chkShowDebug.Checked);
+        };
+        _chkDeveloperMode.CheckedChanged += (_, _) =>
+        {
+            SaveUiSettings();
+            // Turning Developer mode OFF drops any checked main/develop so they cannot be deleted.
+            if (!_chkDeveloperMode.Checked) UncheckProtectedBranches();
         };
 
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 36 };
         _bottomPanel.Controls.Add(_btnClose);
         _bottomPanel.Controls.Add(_chkShowDebug);
+        _bottomPanel.Controls.Add(_chkDeveloperMode);
 
-        // Centre Fechar; pin chkShowDebug to the left.
+        // Centre Fechar; pin chkShowDebug to the left, Modo Developer just to its right.
         _bottomPanel.Layout += (_, _) =>
         {
             int cy = (_bottomPanel.Height - _btnClose.Height) / 2;
@@ -827,6 +860,8 @@ public sealed class BranchHierarchyForm : Form
                 (_bottomPanel.Width - _btnClose.Width) / 2, cy);
             _chkShowDebug.Location = new Point(
                 8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+            _chkDeveloperMode.Location = new Point(
+                _chkShowDebug.Right + 12, (_bottomPanel.Height - _chkDeveloperMode.Height) / 2);
         };
     }
 
@@ -1518,8 +1553,9 @@ public sealed class BranchHierarchyForm : Form
         _btnRestore         .TabIndex = 5;
 
         // Bottom panel
-        _btnClose    .TabIndex = 0;
-        _chkShowDebug.TabIndex = 1;
+        _btnClose        .TabIndex = 0;
+        _chkShowDebug    .TabIndex = 1;
+        _chkDeveloperMode.TabIndex = 2;
     }
 
     /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
@@ -1537,6 +1573,7 @@ public sealed class BranchHierarchyForm : Form
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
         _chkShowDebug       .Enabled = enabled;
+        _chkDeveloperMode   .Enabled = enabled;
     }
 
     private void UpdateStatus()
@@ -1696,10 +1733,39 @@ public sealed class BranchHierarchyForm : Form
         if (e.Node?.Tag is BranchInfo) DoCheckout();
     }
 
-    /// <summary>Blocks checking on non-leaf nodes — section roots and path folders are not checkable.</summary>
+    /// <summary>
+    /// Gates the tree checkboxes. Section roots and path folders are never checkable. The protected
+    /// branches (main/master/develop, local and remote) cannot be CHECKED for deletion unless
+    /// "Modo Developer" is on — unchecking is always allowed.
+    /// </summary>
     private void Tree_BeforeCheck(object? sender, TreeViewCancelEventArgs e)
     {
-        if (e.Node?.Tag is not BranchInfo) e.Cancel = true;
+        if (e.Node?.Tag is not BranchInfo info) { e.Cancel = true; return; }
+        // e.Node.Checked is the state BEFORE the toggle: false → about to be checked.
+        if (!e.Node.Checked && !_chkDeveloperMode.Checked && IsProtectedBranch(info))
+            e.Cancel = true;
+    }
+
+    /// <summary>main / master / develop (local or remote) — protected from deletion by default.</summary>
+    private static bool IsProtectedBranch(BranchInfo info)
+    {
+        string name = (info.Type == BranchType.Remote ? info.DisplayName : info.FullName).ToLowerInvariant();
+        return name is "main" or "master" or "develop";
+    }
+
+    /// <summary>Unchecks any checked protected branch (used when Developer mode is turned off).</summary>
+    private void UncheckProtectedBranches()
+    {
+        void Walk(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                if (n.Checked && n.Tag is BranchInfo info && IsProtectedBranch(info))
+                    n.Checked = false;   // fires AfterCheck → UpdateDeleteButtonText
+                Walk(n.Nodes);
+            }
+        }
+        Walk(_tree.Nodes);
     }
 
     private void Tree_AfterCheck(object? sender, TreeViewEventArgs e) => UpdateDeleteButtonText();
@@ -2261,6 +2327,20 @@ public sealed class BranchHierarchyForm : Form
         var targets = checkedNodes.Count > 0
             ? checkedNodes.Select(n => (BranchInfo)n.Tag!).ToList()
             : SelectedBranch() is { } sel ? new List<BranchInfo> { sel } : new List<BranchInfo>();
+
+        // Protect main/master/develop unless Developer mode is on. Checkboxes already block marking
+        // them, so this guards the single-delete path (a protected branch selected, none checked).
+        if (!_chkDeveloperMode.Checked && targets.Any(IsProtectedBranch))
+        {
+            targets = targets.Where(t => !IsProtectedBranch(t)).ToList();
+            if (targets.Count == 0)
+            {
+                MessageBox.Show(
+                    "As branches main/master/develop são protegidas. Ative o \"Modo Developer\" para excluí-las.",
+                    "Branch protegida", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+        }
 
         if (targets.Count >= 2) { DoDeleteMultiple(targets); return; }
         if (targets.Count == 0) return;
