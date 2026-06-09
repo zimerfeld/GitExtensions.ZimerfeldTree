@@ -349,7 +349,11 @@ public sealed class BranchHierarchyForm : Form
             var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
             var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
             RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
-            ExpandRoots();
+            // Restore the saved expand/collapse state ONLY when the native handle exists. During the
+            // first load (InitialLoadSync, in the constructor) there is no handle yet, so node.Expand()
+            // /CollapseAll() would not stick; the Shown handler restores it once instead. This avoids a
+            // double, partial restore (constructor without handle + Shown) that lost the saved state.
+            if (_tree.IsHandleCreated) ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
             UpdatePullPushButtons();
