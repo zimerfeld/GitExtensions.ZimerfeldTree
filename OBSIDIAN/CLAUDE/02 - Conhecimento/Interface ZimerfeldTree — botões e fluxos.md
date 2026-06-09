@@ -112,7 +112,7 @@ Passos (com % no overlay):
 
 > Renomeado de **Voltar Versão** (`_btnVoltar`) para **Restore** (`_btnRestore`).
 
-1. Cria `RestoreForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas — mesmo posicionamento da janela GitFlow.
+1. Cria `RestoreForm` (modal) e posiciona **lado a lado** com a BranchHierarchy, ambas centralizadas — mesmo posicionamento da janela GitFlow.
 2. Assina `RepoMutated`: após cada operação bem-sucedida, chama `RefreshTree()` **por trás do modal** (sem roubar foco).
 3. `ShowDialog` (bloqueia).
 4. Ao fechar: **não** refresca (o `RepoMutated` já atualizou ao vivo) e **não** chama `NotifyRepoChanged()`. A `RestoreForm` salva os campos via `FormClosing → SaveSettings`.
@@ -162,9 +162,9 @@ Definida em `CtxMenu_Opening`: `branch` = local|remote; `local`/`remote`/`tag` e
 | **Mesclar na branch atual** | local | `DoMerge`: confirma → `git merge "<nome>"`. Sucesso → refresh; erro → `MessageBox`. |
 | **Rebase na branch atual** | local | `DoRebase`: confirma → `git rebase "<nome>"`. Sucesso → refresh; erro → `MessageBox`. |
 | **Renomear…** | local | `DoRename`: pede novo nome → `git branch -m "<antigo>" "<novo>"`. |
-| **Excluir…** | local/remote/tag | `DoDelete`: confirma; tag → `git tag -d`; remote → `git push <remote> --delete <branch>`; local → `git branch -d`. Se "not fully merged" → oferece **forçar** (`git branch -D`). |
+| **Excluir…** | local/remote/tag | `DoDelete`: confirma; tag → `git tag -d` **+** `git push <remote> --delete <tag>` (remove local **e** do remoto; "remote ref does not exist" é tratado como sucesso); remote → `git push <remote> --delete <branch>`; local → `git branch -d`. Se "not fully merged" → oferece **forçar** (`git branch -D`). |
 | **GitFlow…** | branch | Igual ao botão GitFlow → `DoGitFlow`. |
-| **Restore…** | branch atual ≠ `develop` | Igual ao botão Restore → `DoRestore` (abre ZimerfeldRestore). Não depende do nó clicado — sempre age na branch em checkout. |
+| **Restore…** | branch atual ≠ `develop` | Igual ao botão Restore → `DoRestore` (abre a janela Restore). Não depende do nó clicado — sempre age na branch em checkout. |
 | **Expandir tudo** | sempre | `node.ExpandAll()`. |
 | **Recolher tudo** | sempre | `CollapseRecursive(node)`. |
 | **Atualizar** | sempre | `RefreshTree()`. |

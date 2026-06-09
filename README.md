@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.271**
+**Versão atual: 1.0.276**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.271 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.276 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -14,14 +14,14 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ### Visualização hierárquica de branches
 
-- Janela não-modal que permanece aberta em paralelo ao GitExtensions
+- Janela não-modal que permanece aberta em paralelo ao GitExtensions. O título da barra é **`ZimerfeldTree - BranchHierarchy`** (as janelas auxiliares são `ZimerfeldTree - GitFlow` e `ZimerfeldTree - Restore`) — o prefixo **ZimerfeldTree** é mantido sempre, seguido do nome específico da janela. `BranchHierarchyForm` é apenas o nome interno da classe C# (exibido no tooltip de debug)
 - Árvore dividida em três seções fixas: **LOCAL**, **REMOTES** e **TAGS**
 - **LOCAL e REMOTES** combinam **ancestralidade** (parentesco real por commits / organização GitFlow) com **agrupamento por caminho** (`/`): dentro de cada nível pai, nomes com `/` viram nós-pasta. Ex.: `feature/teste` aparece como pasta `feature` → folha `teste`, e `release/2026` como `release` → `2026`. Quando `feature/*` é filha de `develop`, fica `develop` → `feature` → `teste`
 - **TAGS** também agrupa por `/` (sem ancestralidade)
 - LOCAL, REMOTES e TAGS exibe `(nenhuma branch local encontrada)` quando não há branches
 - A janela abre **centralizada na tela** (horizontal e vertical)
 - Janela **redimensionável** com botões **Minimizar**, **Maximizar** e **Fechar** padrão do Windows (`Sizable`)
-- A janela é **independente** do GitExtensions: minimizar o GitExtensions não afeta a janela ZimerfeldTree
+- A janela é **independente** do GitExtensions: minimizar o GitExtensions não afeta a janela BranchHierarchy
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches
 - **Overlay nas recargas explícitas**: o painel de progresso aparece na **primeira** abertura da janela e nas recargas/mutações — botão Atualizar, checkout, nova branch, merge, rename, delete, GitFlow, Restore, Pull/Push/Commit, mudanças externas genuínas do GitExtensions e troca de repositório. **Não** aparece ao reativar a janela depois de fechar GitFlow/Restore (a árvore já foi atualizada ao vivo), nem no "eco" da própria notificação ao GitExtensions (suprimido), evitando flash desnecessário
@@ -56,14 +56,14 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - **Commit** / **Commit (N)** — abre a janela de Commit nativa do GitExtensions; o contador `(N)` só aparece quando há alterações pendentes; sem alterações o botão e o item do menu de contexto mostram apenas `Commit`
 - Após cada Push, Pull ou Commit (seja pelos botões ou pela janela principal do GitExtensions), a árvore é **atualizada automaticamente** e os contadores dos botões (`↑N`, `↓N`, `(N)`) são recalculados
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
-- **Restore** — abre a janela **ZimerfeldRestore** com três operações de restauração de histórico (ver seção abaixo)
+- **Restore** — abre a janela **Restore** com três operações de restauração de histórico (ver seção abaixo)
 - **Excluir** / **Excluir (N)** — exclui branches/tags selecionados; o texto reflete a quantidade de checkboxes marcados (ver seção abaixo)
 
 ### Seleção múltipla e exclusão de branches
 
 - Cada **branch (local e remota) e tag** exibe um **checkbox** à esquerda do nome. Seções (LOCAL/REMOTES/TAGS) e pastas de caminho (feature, release…) **não** têm checkbox e não são marcáveis.
 - Marque **um ou mais** checkboxes para selecionar nós para exclusão em lote.
-- O botão **Excluir** (acima da árvore, à direita de *Commit*) muda dinamicamente conforme a quantidade marcada: `Excluir` (nenhum) → `Excluir (N)`.
+- O botão **Excluir** (acima da árvore, à direita de _Commit_) muda dinamicamente conforme a quantidade marcada: `Excluir` (nenhum) → `Excluir (N)`.
   - **2+ marcados**: exclui todos em lote, com **uma única confirmação** listando os itens.
   - **1 marcado**: exclui esse item.
   - **nenhum marcado**: exclui o **nó selecionado** na árvore.
@@ -75,26 +75,35 @@ Exibidos acima da árvore quando há uma branch em checkout:
 #### Proteção de branches principais e "Modo Developer"
 
 - As branches **main / master / develop** (locais e remotas) são **protegidas**: por padrão **não podem ser marcadas** para exclusão (nem excluídas pelo nó selecionado).
-- O checkbox **Modo Developer**, na borda inferior da janela (ao lado de *Show Debug*), **libera** a marcação/exclusão dessas branches quando ativado.
+- O checkbox **Modo Developer**, na borda inferior da janela (ao lado de _Show Debug_), **libera** a marcação/exclusão dessas branches quando ativado.
 - Ao **desativar** o Modo Developer, qualquer main/master/develop que estivesse marcada é **desmarcada automaticamente**.
-- O estado do **Modo Developer** é **persistido** em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json` (junto com *Show Debug*) e restaurado na abertura da janela.
+- O estado do **Modo Developer** é **persistido** em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json` (junto com _Show Debug_) e restaurado na abertura da janela.
 
 ### Foco automático após Commit
 
-- Após fechar a janela de Commit do GitExtensions, a janela ZimerfeldTree retoma o foco automaticamente
+- Após fechar a janela de Commit do GitExtensions, a janela BranchHierarchy retoma o foco automaticamente
 - A árvore é atualizada (reflecting o novo commit) e a janela é trazida ao topo sem ação manual
 
 ### Checkbox "Mostrar IDs" (debug de controles)
 
-O checkbox **Show Debug**, localizado na borda inferior esquerda da janela ZimerfeldTree, ativa tooltips de identificação em todos os controles do plugin:
+O checkbox **Show Debug**, localizado na borda inferior esquerda da janela BranchHierarchy, ativa tooltips de identificação em todos os controles do plugin:
 
 - **Linha 1 do tooltip:** `TYPE: <tipo do controle>` — classe WinForms (ex.: `Button`, `TextBox`)
 - **Linha 2 do tooltip:** `ID: <nome interno>` — campo Name do controle C#
 - **Tooltip da própria janela:** exibe `TYPE: BranchHierarchyForm` e `Handle: 0x<HWND>` (visível ao passar o mouse sobre área livre da janela)
 - **GitFlowForm** também exibe seu TYPE e Handle quando Show Debug está ativo
-- Funciona em ambas as janelas: ZimerfeldTree e a janela GitFlow
+- Funciona em ambas as janelas: BranchHierarchy e a janela GitFlow
 - O estado do checkbox é **persistido** entre sessões em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
 - Útil para desenvolvimento e manutenção do plugin
+
+### Checkbox "Modo Developer"
+
+O checkbox **Modo Developer**, ao lado de _Show Debug_ na borda inferior da janela, controla a proteção das branches principais:
+
+- **Desligado (padrão):** as branches **main** e **develop** (e `master`) são **protegidas** — seus checkboxes ficam **bloqueados**, não podendo ser marcadas nem excluídas (nem pelo nó selecionado). Isso evita a exclusão acidental das branches estruturais do repositório.
+- **Ligado:** **libera** a marcação e a exclusão dessas branches específicas, para quem realmente precisa removê-las.
+- Ao **desativar** o modo, qualquer main/master/develop que estivesse marcada é **desmarcada automaticamente**.
+- O estado é **persistido** em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json` (junto com _Show Debug_) e restaurado na abertura da janela.
 
 ### Persistência de estado da árvore
 
@@ -125,37 +134,37 @@ O checkbox **Show Debug**, localizado na borda inferior esquerda da janela Zimer
 
 Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.png`):
 
-| Ícone | Item                    | Disponível para                                                                     |
-| ----- | ----------------------- | ----------------------------------------------------------------------------------- |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16"> | Commit (N)           | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16"> | Checkout             | Local, remota, tag                                                                  |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…   | Local, tag                                                                          |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16"> | Mesclar na branch atual | Local                                                                            |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16"> | Rebase na branch atual | Local                                                                          |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16"> | Renomear…            | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16"> | Excluir…          | Local, remota, tag                                                                  |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16"> | GitFlow…             | Branch (local/remota/tag)                                                           |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16"> | Restore…       | Quando branch atual ≠ `develop` — abre a janela ZimerfeldRestore                   |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16"> | Expandir tudo        | Sempre                                                                              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16"> | Recolher tudo        | Sempre                                                                              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16"> | Atualizar            | Sempre                                                                              |
+| Ícone                                                                                                                                                             | Item                    | Disponível para                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                | Local, remota, tag                                                                  |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…      | Local, tag                                                                          |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16">      | Mesclar na branch atual | Local                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16">     | Rebase na branch atual  | Local                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16">     | Renomear…               | Local                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16">     | Excluir…                | Local, remota, tag                                                                  |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16">    | GitFlow…                | Branch (local/remota/tag)                                                           |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16">    | Restore…                | Quando branch atual ≠ `develop` — abre a janela Restore                    |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16">     | Expandir tudo           | Sempre                                                                              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Recolher tudo           | Sempre                                                                              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Atualizar               | Sempre                                                                              |
 
-O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: *Zimerfeld: Auto-resumo*) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no ZimerfeldTree divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
+O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: _Zimerfeld: Auto-resumo_) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no BranchHierarchy divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
 
 ### Botão GitFlow Initialize
 
-O botão **GitFlow Initialize** fica na janela ZimerfeldTree, abaixo do painel de aviso GitFlow (faixa com o botão "Organizar como GitFlow" / "Restaurar hierarquia real"), e está sempre visível. Ao clicar, aplica de uma vez as chaves de configuração padrão do GitFlow no repositório atual:
+O botão **GitFlow Initialize** fica na janela BranchHierarchy, abaixo do painel de aviso GitFlow (faixa com o botão "Organizar como GitFlow" / "Restaurar hierarquia real"), e está sempre visível. Ao clicar, aplica de uma vez as chaves de configuração padrão do GitFlow no repositório atual:
 
-| Chave | Valor padrão |
-|---|---|
-| `gitflow.branch.main` | `main` |
-| `gitflow.branch.develop` | `develop` |
-| `gitflow.prefix.feature` | `feature/` |
-| `gitflow.prefix.bugfix` | `bugfix/` |
-| `gitflow.prefix.release` | `release/` |
-| `gitflow.prefix.hotfix` | `hotfix/` |
-| `gitflow.prefix.support` | `support/` |
-| `gitflow.prefix.versiontag` | *(vazio)* |
+| Chave                       | Valor padrão |
+| --------------------------- | ------------ |
+| `gitflow.branch.main`       | `main`       |
+| `gitflow.branch.develop`    | `develop`    |
+| `gitflow.prefix.feature`    | `feature/`   |
+| `gitflow.prefix.bugfix`     | `bugfix/`    |
+| `gitflow.prefix.release`    | `release/`   |
+| `gitflow.prefix.hotfix`     | `hotfix/`    |
+| `gitflow.prefix.support`    | `support/`   |
+| `gitflow.prefix.versiontag` | _(vazio)_    |
 
 Equivale a executar `git config <chave> <valor>` para cada linha. Útil para inicializar um repositório novo no padrão GitFlow sem precisar rodar `git flow init` interativo. Em caso de sucesso completo, uma mensagem de confirmação é exibida; se algum comando falhar, os erros são listados.
 
@@ -186,56 +195,10 @@ ZimerfeldTree/
 
 ![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png)
 
-- Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
+- Ao fechar a janela GitFlow, a janela BranchHierarchy é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
-- Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela ZimerfeldTree é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
+- Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela BranchHierarchy é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
 - **Checkout + revelar a branch afetada**: após cada botão, o plugin faz `git checkout` da branch afetada e, na árvore, **expande os nós da seção LOCAL até alcançá-la** e a seleciona. Para **Start/Publish/Track/Update** a branch afetada é a própria (`<prefixo><nome>`); para **Finish** (a branch é removida) o plugin revela a branch resultante atual (ex.: `develop`), sem refazer checkout
-
-### Janela Restore
-
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png)
-
-Abre ao clicar em **Restore** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
-
-#### Restaurar Arquivo
-
-Recupera um arquivo específico do estado de um commit antigo e o coloca como staged, pronto para commit:
-
-```
-git checkout <hash> -- "<arquivo>"
-```
-
-Campos: **Commit hash** + **Arquivo (caminho relativo)**. Exemplo: `src/Foo/Bar.cs`.
-
-#### Cherry-Pick
-
-Aplica um ou mais commits sobre a branch atual:
-
-```
-git cherry-pick <hash>
-git cherry-pick <hash-antigo>..<hash-recente>   # range
-```
-
-Campo **Commit(s)** aceita hash simples ou intervalo com `..`.
-
-#### Reset Branch
-
-Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (padrão: `develop`), informe o commit hash de destino e escolha o modo:
-
-| Modo | Efeito |
-|---|---|
-| `--mixed` | Desfaz commits; mudanças voltam como **unstaged** (padrão) |
-| `--soft` | Desfaz commits; mudanças voltam como **staged** |
-| `--hard` | Desfaz commits e **DESCARTA** todas as mudanças — irreversível (pede confirmação) |
-
-Se a branch selecionada não for a atual, o plugin executa `git checkout <branch>`, aplica o reset e retorna à branch original automaticamente.
-
-#### Comportamento da janela
-
-- A janela Restore é posicionada ao lado de ZimerfeldTree, ambas centralizadas na tela (mesmo comportamento da janela GitFlow)
-- Após cada operação bem-sucedida, a árvore de ZimerfeldTree é atualizada em background sem perder o foco da janela Restore
-- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada
-- Link **About Restore** no canto superior direito descreve cada operação
 
 ### Janela GitFlow — branch base no Start
 
@@ -264,18 +227,18 @@ O plugin executa **git nativo** diretamente — **não requer o binário `git-fl
 
 **Finish de `release` — fluxo completo automático** (quando **No fetch** não está marcado):
 
-| Passo | Comando |
-|-------|---------|
-| 1 | `git fetch <remote>` |
-| 2 | `git checkout main` → `git merge --no-ff release/<nome>` |
-| 3 | `git tag -a <nome> -m "<nome>"` |
-| 4 | `git checkout develop` → `git merge --no-ff release/<nome>` |
-| 5 | `git branch -d release/<nome>` *(se Keep desmarcado)* |
-| 6 | `git push <remote> --delete release/<nome>` *(somente se a branch remota ainda existir — verificado com `ls-remote`)* |
-| 7 | `git push <remote> main` |
-| 8 | `git push <remote> develop` |
-| 9 | `git push <remote> refs/tags/<nome>` |
-| 10 | `git checkout develop` |
+| Passo | Comando                                                                                                               |
+| ----- | --------------------------------------------------------------------------------------------------------------------- |
+| 1     | `git fetch <remote>`                                                                                                  |
+| 2     | `git checkout main` → `git merge --no-ff release/<nome>`                                                              |
+| 3     | `git tag -a <nome> -m "<nome>"`                                                                                       |
+| 4     | `git checkout develop` → `git merge --no-ff release/<nome>`                                                           |
+| 5     | `git branch -d release/<nome>` _(se Keep desmarcado)_                                                                 |
+| 6     | `git push <remote> --delete release/<nome>` _(somente se a branch remota ainda existir — verificado com `ls-remote`)_ |
+| 7     | `git push <remote> main`                                                                                              |
+| 8     | `git push <remote> develop`                                                                                           |
+| 9     | `git push <remote> refs/tags/<nome>`                                                                                  |
+| 10    | `git checkout develop`                                                                                                |
 
 Ao concluir com sucesso, a seção **TAGS** da árvore é expandida e o foco vai para a tag criada.
 
@@ -288,16 +251,60 @@ O remote usado é `origin` (ou o primeiro configurado quando `origin` não exist
 
 Quando um comando git falha, o resultado é exibido na janela e um aviso é mostrado. Se o erro indicar uma **branch de destino ausente** (ex.: `does not exist`, `not found`), a mensagem orienta a verificar as branches existentes e a configuração `gitflow.branch.*`. Se ocorrer conflito de merge, o repositório fica em estado "merging" — resolver manualmente com `git merge --abort` ou resolver os conflitos e `git commit`.
 
-### Janela Restore — comportamento geral
+### Janela Restore
 
 ![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png)
 
-- Abre ao clicar em **Restore** na janela ZimerfeldTree
-- Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
+Abre ao clicar em **Restore** — janela modal posicionada ao lado de BranchHierarchy, com três operações para resgatar estados do histórico git:
+
+#### Restaurar Arquivo
+
+Recupera um arquivo específico do estado de um commit antigo e o coloca como staged, pronto para commit:
+
+```
+git checkout <hash> -- "<arquivo>"
+```
+
+Campos: **Commit hash** + **Arquivo (caminho relativo)**. Exemplo: `src/Foo/Bar.cs`.
+
+#### Cherry-Pick
+
+Aplica um ou mais commits sobre a branch atual:
+
+```
+git cherry-pick <hash>
+git cherry-pick <hash-antigo>..<hash-recente>   # range
+```
+
+Campo **Commit(s)** aceita hash simples ou intervalo com `..`.
+
+#### Reset Branch
+
+Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (padrão: `develop`), informe o commit hash de destino e escolha o modo:
+
+| Modo      | Efeito                                                                            |
+| --------- | --------------------------------------------------------------------------------- |
+| `--mixed` | Desfaz commits; mudanças voltam como **unstaged** (padrão)                        |
+| `--soft`  | Desfaz commits; mudanças voltam como **staged**                                   |
+| `--hard`  | Desfaz commits e **DESCARTA** todas as mudanças — irreversível (pede confirmação) |
+
+Se a branch selecionada não for a atual, o plugin executa `git checkout <branch>`, aplica o reset e retorna à branch original automaticamente.
+
+#### Comportamento da janela
+
+- A janela Restore é posicionada ao lado de BranchHierarchy, ambas centralizadas na tela (mesmo comportamento da janela GitFlow)
+- Após cada operação bem-sucedida, a árvore de BranchHierarchy é atualizada em background sem perder o foco da janela Restore
+- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada
+- Link **About Restore** no canto superior direito descreve cada operação
+
+### Janela Restore — comportamento geral
+
+- Abre ao clicar em **Restore** na janela BranchHierarchy
+- Janela **modal**, posicionada ao lado de BranchHierarchy com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
 - Contém três grupos de operações independentes: **Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**
 - Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
 - O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, scroll automático para o fim)
-- Após cada operação bem-sucedida, a árvore de ZimerfeldTree é **atualizada em background** sem perder o foco da janela Restore
+- Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
 - Os últimos valores usados em cada campo são **persistidos** em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` e restaurados na próxima abertura
 - Link **About Restore** no canto superior direito descreve o propósito de cada operação
 - Fechar a janela (botão **Fechar** ou tecla **Esc**) salva os valores automaticamente; o fechamento **não** dispara refresh extra (a árvore já foi atualizada ao vivo) nem traz o GitExtensions para frente
@@ -313,16 +320,16 @@ O ícone (Árvore da Vida) é o PNG 16 × 16 embutido [`Resources/ico.png`](src/
 
 Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução via GDI+ em [`NodeIcons.cs`](src/GitExtensions.ZimerfeldTree/NodeIcons.cs). Os tipos GitFlow têm ícones próprios:
 
-| Branch | Ícone |
-|--------|-------|
-| `master` / `main` | **imagem personalizada embutida** (escudo dourado como reserva) |
-| `develop` | **imagem personalizada embutida** (chave + martelo como reserva) |
-| nó-pasta "feature" | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
-| `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva) |
-| `bugfix/*` | joaninha vermelha |
-| `release/*` | **imagem personalizada embutida** (pacote/caixa marrom como reserva) |
-| `hotfix/*` | extintor de incêndio vermelho |
-| `support/*` | maleta de primeiros socorros |
+| Imagem                                                                                                                                                    | Branch                | Ícone                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------- |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/master.png" width="16" height="16">  | `master` / `main`     | **imagem personalizada embutida** (escudo dourado como reserva)               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop`             | **imagem personalizada embutida** (chave + martelo como reserva)              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | nó-pasta "feature"    | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16">   | `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva)      |
+| —                                                                                                                                                         | `bugfix/*`            | joaninha vermelha (glifo desenhado em GDI+)                                    |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*`           | **imagem personalizada embutida** (pacote/caixa marrom como reserva)          |
+| —                                                                                                                                                         | `hotfix/*`            | extintor de incêndio vermelho (glifo desenhado em GDI+)                       |
+| —                                                                                                                                                         | `support/*`           | maleta de primeiros socorros (glifo desenhado em GDI+)                        |
 
 Branches locais genéricas usam garfo laranja e nós de caminho usam pasta âmbar. As **seções raiz** (LOCAL, REMOTES, TAGS), o **grupo de remote** (ex.: `origin`), as **branches remotas** e as **tags** também usam imagens personalizadas embutidas (ver abaixo).
 
@@ -330,19 +337,19 @@ Branches locais genéricas usam garfo laranja e nós de caminho usam pasta âmba
 
 Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedResource>` condicionais no `.csproj`. Em tempo de execução, `NodeIcons.LoadEmbedded` lê o recurso pelo nome `GitExtensions.ZimerfeldTree.Resources.<arquivo>` e o redimensiona para 16 × 16 px com interpolação de alta qualidade.
 
-| Nó | Arquivo | Reserva (glifo desenhado) |
-|----|---------|---------------------------|
-| seção **LOCAL** | `Resources/local.png` | monitor azul-aço |
-| seção **REMOTES** | `Resources/remotes.png` | nuvem azul-escura |
-| seção **TAGS** | `Resources/tags.png` | etiqueta/fita roxa |
-| grupo de remote (`origin`) | `Resources/origin.png` | nuvem azul |
-| branch remota (filho de REMOTES) | `Resources/remote-branch.png` | garfo verde |
-| tag (filho de TAGS) | `Resources/tag.png` | etiqueta teal |
-| `master` / `main` | `Resources/master.png` | escudo dourado |
-| `develop` | `Resources/develop.png` | chave de boca + martelo cruzados |
-| nó-pasta "feature" | `Resources/feature.png` | galho de branch |
-| `feature/*` (sub-nós) | `Resources/folha.png` | folha verde |
-| `release/*` | `Resources/release.png` | pacote/caixa marrom |
+| Nó                               | Arquivo                       | Reserva (glifo desenhado)        |
+| -------------------------------- | ----------------------------- | -------------------------------- |
+| seção **LOCAL**                  | `Resources/local.png`         | monitor azul-aço                 |
+| seção **REMOTES**                | `Resources/remotes.png`       | nuvem azul-escura                |
+| seção **TAGS**                   | `Resources/tags.png`          | etiqueta/fita roxa               |
+| grupo de remote (`origin`)       | `Resources/origin.png`        | nuvem azul                       |
+| branch remota (filho de REMOTES) | `Resources/remote-branch.png` | garfo verde                      |
+| tag (filho de TAGS)              | `Resources/tag.png`           | etiqueta teal                    |
+| `master` / `main`                | `Resources/master.png`        | escudo dourado                   |
+| `develop`                        | `Resources/develop.png`       | chave de boca + martelo cruzados |
+| nó-pasta "feature"               | `Resources/feature.png`       | galho de branch                  |
+| `feature/*` (sub-nós)            | `Resources/folha.png`         | folha verde                      |
+| `release/*`                      | `Resources/release.png`       | pacote/caixa marrom              |
 
 - O plugin permanece **autocontido**: as imagens viajam dentro da DLL, sem depender de arquivos externos na máquina do usuário.
 - Cada `<EmbeddedResource>` é **condicional à existência do arquivo** (`Condition="Exists(...)"`); se o PNG não existir no build, o recurso não é embutido e o nó usa o glifo desenhado de reserva — o build nunca quebra por falta da imagem.
@@ -360,19 +367,19 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 - A janela permanece aberta enquanto o GitExtensions está em uso
 - Fechar a janela a destrói — necessário reabrir para recarregar dados
 - Singleton: uma única instância por sessão do GitExtensions
-- **Foco persistente após ações**: qualquer ação executada na janela (Pull, Push, Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir) devolve o foco à janela ZimerfeldTree ao concluir. Como a janela é independente (sem owner), notificar o GitExtensions para atualizar sua UI traria a janela principal do GitExtensions para frente; o plugin reativa a ZimerfeldTree logo em seguida. A **única exceção é o botão GitFlow**: ele abre a janela GitFlow (modal), que mantém o próprio foco enquanto estiver aberta
+- **Foco persistente após ações**: qualquer ação executada na janela (Pull, Push, Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir) devolve o foco à janela BranchHierarchy ao concluir. Como a janela é independente (sem owner), notificar o GitExtensions para atualizar sua UI traria a janela principal do GitExtensions para frente; o plugin reativa a BranchHierarchy logo em seguida. A **única exceção é o botão GitFlow**: ele abre a janela GitFlow (modal), que mantém o próprio foco enquanto estiver aberta
 
 ## Dependências
 
 ### Obrigatórias para uso
 
-| Programa | Versão mínima | Download | Função |
-|----------|---------------|----------|--------|
-| **Git for Windows** | qualquer | https://git-scm.com/download/win | Executa todos os comandos git (branch, checkout, pull, push, commit, tag…) |
-| **GitExtensions** | 4.x (.NET 9) | https://github.com/gitextensions/gitextensions/releases | Aplicação host que carrega o plugin; fornece diálogos nativos de Commit, Push e Pull |
-| **Plugin ZimerfeldTree** | — | `C:\Program Files\GitExtensions\Plugins\` (build local ou release) | O plugin em si |
+| Programa                 | Versão mínima | Download                                                           | Função                                                                               |
+| ------------------------ | ------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| **Git for Windows**      | qualquer      | https://git-scm.com/download/win                                   | Executa todos os comandos git (branch, checkout, pull, push, commit, tag…)           |
+| **GitExtensions**        | 4.x (.NET 9)  | https://github.com/gitextensions/gitextensions/releases            | Aplicação host que carrega o plugin; fornece diálogos nativos de Commit, Push e Pull |
+| **Plugin ZimerfeldTree** | —             | `C:\Program Files\GitExtensions\Plugins\` (build local ou release) | O plugin em si                                                                       |
 
-**Instalação do Git for Windows:** baixar o instalador `.exe` e, na tela *"Adjusting your PATH"*, selecionar **"Git from command line and also from 3rd-party software"**.
+**Instalação do Git for Windows:** baixar o instalador `.exe` e, na tela _"Adjusting your PATH"_, selecionar **"Git from command line and also from 3rd-party software"**.
 
 **Instalação do GitExtensions:** baixar o instalador `.msi` da release 4.x; ele instala o .NET 9 Desktop Runtime automaticamente.
 
@@ -384,10 +391,10 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 
 ### Condicional — apenas para build / desenvolvimento
 
-| Programa | Download | Função |
-|----------|----------|--------|
-| **.NET SDK 9** | https://dotnet.microsoft.com/download/dotnet/9.0 | Compilar `net9.0-windows` |
-| **NuGet CLI** | https://www.nuget.org/downloads | Gerar `.nupkg` (usado por `build.ps1`) |
+| Programa       | Download                                         | Função                                 |
+| -------------- | ------------------------------------------------ | -------------------------------------- |
+| **.NET SDK 9** | https://dotnet.microsoft.com/download/dotnet/9.0 | Compilar `net9.0-windows`              |
+| **NuGet CLI**  | https://www.nuget.org/downloads                  | Gerar `.nupkg` (usado por `build.ps1`) |
 
 ---
 
