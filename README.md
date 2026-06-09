@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.237)
+![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png?v=1.0.244)
 
-**Versão atual: 1.0.237**
+**Versão atual: 1.0.244**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.237 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.244 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -147,7 +147,7 @@ Equivale a executar `git config <chave> <valor>` para cada linha. Útil para ini
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.237)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.244)
 
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de ZimerfeldTree, com três operações para resgatar estados do histórico git:
 
@@ -193,7 +193,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 ### Janela GitFlow — comportamento geral
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.237)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png?v=1.0.244)
 
 - Ao fechar a janela GitFlow, a janela ZimerfeldTree é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
@@ -253,7 +253,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore — comportamento geral
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.237)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png?v=1.0.244)
 
 - Abre ao clicar em **Restore** na janela ZimerfeldTree
 - Janela **modal**, posicionada ao lado de ZimerfeldTree com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
@@ -501,14 +501,19 @@ O GitExtensions não é afetado pela remoção do plugin.
 ZimerfeldTree/
 ├── src/
 │   └── GitExtensions.ZimerfeldTree/
-│       ├── ZimerfeldTreePlugin.cs       # Ponto de entrada MEF (IGitPlugin)
-│       ├── BranchHierarchyForm.cs       # Janela WinForms principal
-│       ├── BranchHierarchyService.cs    # Lógica git: coleta, hierarquia, Git Flow
-│       ├── BranchNode.cs                # Modelos: BranchNode, RemoteGroupNode, BranchTag
-│       └── GitExtensions.ZimerfeldTree.csproj
-├── build.ps1                            # Script de build e deploy
-├── README.md                            # Este arquivo
-└── GitExtensions.ZimerfeldTree.nuspec   # Metadados do pacote NuGet
+│       ├── ZimerfeldTreePlugin.cs             # Ponto de entrada MEF (IGitPlugin)
+│       ├── BranchHierarchyForm.cs             # Janela principal: árvore hierárquica de branches
+│       ├── GitFlowForm.cs                     # Janela Git Flow: start/publish/pull/finish de feature/release/hotfix
+│       ├── RestoreForm.cs                     # Janela Restore: restore de arquivo, cherry-pick, reset
+│       ├── BranchHierarchyService.cs          # Lógica git: coleta, hierarquia, Git Flow
+│       ├── BranchNode.cs                      # Modelos: classe BranchInfo + enum BranchType
+│       ├── NodeIcons.cs                       # Ícones 16×16 da árvore (GDI+ + PNGs embutidos)
+│       ├── PluginIcon.cs                      # Ícone do plugin/janela (Resources/ico.png)
+│       ├── Resources/                         # PNGs embutidos (ícones de nós, menu e plugin)
+│       ├── GitExtensions.ZimerfeldTree.csproj
+│       └── GitExtensions.ZimerfeldTree.nuspec # Metadados do pacote NuGet
+├── build.ps1                                  # Script de build, versionamento e deploy
+└── README.md                                  # Este arquivo
 ```
 
 ---
