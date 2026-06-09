@@ -317,12 +317,31 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>
+    /// Deletes a tag locally (<c>git tag -d</c>) and, when a remote is configured, also from the
+    /// remote (<c>git push &lt;remote&gt; --delete &lt;tag&gt;</c>). A remote that doesn't have the tag
+    /// is treated as success — the goal (tag gone from the remote) is already met. Local deletion is
+    /// authoritative: if it fails, no remote push is attempted.
+    /// </summary>
     public (bool ok, string error) DeleteTag(string tagName)
     {
         try
         {
             var (_, err, code) = RunGitFull($"tag -d \"{EscapeArg(tagName)}\"");
-            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+            if (code != 0) return (false, err.Trim());
+
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+
+            var (_, rerr, rcode) = RunGitFull($"push {remote} --delete \"{EscapeArg(tagName)}\"");
+            if (rcode == 0) return (true, string.Empty);
+
+            // The tag simply isn't on the remote — local deletion still succeeded, nothing to push.
+            if (rerr.Contains("remote ref does not exist", StringComparison.OrdinalIgnoreCase))
+                return (true, string.Empty);
+
+            // Local deletion worked but the remote push failed for another reason (e.g. no network).
+            return (false, $"Tag removida localmente, mas falhou ao remover do remoto '{remote}':\n{rerr.Trim()}");
         }
         catch (Exception ex) { return (false, ex.Message); }
     }

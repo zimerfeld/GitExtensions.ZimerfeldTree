@@ -4,9 +4,9 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ![ZimerfeldTree - Branch Hierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.268**
+**Versão atual: 1.0.271**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.268 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.271 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -68,6 +68,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
   - **1 marcado**: exclui esse item.
   - **nenhum marcado**: exclui o **nó selecionado** na árvore.
   - Para branch local não totalmente mesclada, oferece **exclusão forçada**.
+  - Ao excluir uma **tag**, ela é removida **localmente** (`git tag -d`) **e do remoto** (`git push <remote> --delete <tag>`); se a tag não existir no remoto, a remoção local ainda é considerada bem-sucedida.
 - O **menu de contexto** acompanha: com **2+** checkboxes marcados, mostra apenas **Excluir (N)** e **Atualizar** (o item GitFlow foi removido do menu de contexto).
 - Após excluir, a árvore é reconstruída e os checkboxes são limpos.
 
