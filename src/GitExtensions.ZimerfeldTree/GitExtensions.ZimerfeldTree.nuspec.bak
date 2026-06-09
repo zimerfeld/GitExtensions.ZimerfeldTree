@@ -16,11 +16,11 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-<<<<<<< Updated upstream
-    <version>1.0.225</version>
+<<<<<<< HEAD
+    <version>1.0.244</version>
 =======
-    <version>1.0.147</version>
->>>>>>> Stashed changes
+    <version>1.0.240</version>
+>>>>>>> d084903674607b3b5992922a26197ba758a0851d
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -59,10 +59,12 @@ Features:
     <releaseNotes>
 1.0.18 — Initial public release.
     </releaseNotes>
-    <!-- ── NuGet package type — this is a "tool" package (DLL + scripts) -->
-    <packageTypes>
-      <packageType name="DotnetTool" />
-    </packageTypes>
+    <!-- Compatibility metadata used by the GitExtensions Plugin Manager -->
+    <dependencies>
+      <group targetFramework="net9.0">
+        <dependency id="GitExtensions.Extensibility" version="[7.0.0, 7.1.0)" />
+      </group>
+    </dependencies>
   </metadata>
   <!-- ── Package contents ───────────────────────────────────────────────── -->
   <!--
