@@ -2,6 +2,7 @@
 // MIT License — Copyright (c) 2026 Zimerfeld
 
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace GitExtensions.ZimerfeldTree;
@@ -57,6 +58,7 @@ public sealed class BranchHierarchyForm : Form
     private Button           _btnPull             = null!;
     private Button           _btnPush             = null!;
     private Button           _btnCommitDedicated  = null!;
+    private Button           _btnExcluir          = null!;
     private TreeView         _tree        = null!;
     private StatusStrip      _status      = null!;
     private ToolStripStatusLabel _statusLbl = null!;
@@ -65,6 +67,7 @@ public sealed class BranchHierarchyForm : Form
     private Panel    _bottomPanel  = null!;
     private Button   _btnClose    = null!;
     private CheckBox _chkShowDebug = null!;
+    private CheckBox _chkDeveloperMode = null!;
     private LinkLabel _lnkAbout   = null!;
 
     // ── Loading overlay ───────────────────────────────────────────────────────
@@ -104,14 +107,26 @@ public sealed class BranchHierarchyForm : Form
         catch { return false; }
     }
 
-    private static void SaveShowControlIds(bool value)
+    private static bool LoadDeveloperMode()
+    {
+        try
+        {
+            if (!File.Exists(UiSettingsPath)) return false;
+            return File.ReadAllText(UiSettingsPath).Contains("\"developerMode\":true");
+        }
+        catch { return false; }
+    }
+
+    /// <summary>Persists both UI toggles (Show Debug + Modo Developer) to the settings file.</summary>
+    private void SaveUiSettings()
     {
         try
         {
             string dir = Path.GetDirectoryName(UiSettingsPath)!;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             File.WriteAllText(UiSettingsPath,
-                $"{{\"showControlIds\":{(value ? "true" : "false")}}}");
+                $"{{\"showControlIds\":{(_chkShowDebug.Checked ? "true" : "false")}," +
+                $"\"developerMode\":{(_chkDeveloperMode.Checked ? "true" : "false")}}}");
         }
         catch { }
     }
@@ -147,11 +162,13 @@ public sealed class BranchHierarchyForm : Form
         _openPushDialog     = openPushDialog;
         _treeStateByRepo    = LoadTreeState();
         InitializeComponent();
-        LoadRepositories();
-        UpdateCommitActionTexts();   // recalc the Commit (N) counter once the repo selection is finalized
+        LoadRepositories();   // combo population only — reads the settings XML, no git subprocess
+        // FIRST LOAD: verify the repository against the GitFlow hierarchy rule and pre-fetch all
+        // data BEFORE the window is shown — synchronously, with NO overlay. The tree is fully
+        // built here, so the plugin's _form.Show() reveals an already-populated window. Subsequent
+        // refreshes (button/menu/mutations) still use the async overlay path (RefreshTreeAsync).
+        InitialLoadSync();
         FormClosed += (_, _) => { _saveDebounce?.Dispose(); SaveTreeState(); };
-        // Initial tree load is triggered by the Shown event so the window skeleton
-        // is visible to the user before we start reading the repository.
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -213,13 +230,6 @@ public sealed class BranchHierarchyForm : Form
             SetFormEnabled(false);
         }
 
-        List<BranchInfo>            local   = [];
-        List<BranchInfo>            remote  = [];
-        List<BranchInfo>            tags    = [];
-        Dictionary<string, string?> lMap    = [];
-        Dictionary<string, string?> rMap    = [];
-        int                         pending = 0;   // read off the UI thread; reused below for the Commit counter
-
         IProgress<(int pct, string msg)>? ip = showOverlay
             ? new Progress<(int pct, string msg)>(p =>
               {
@@ -230,39 +240,10 @@ public sealed class BranchHierarchyForm : Form
               })
             : null;
 
+        RepoData data;
         try
         {
-            await Task.Run(() =>
-            {
-                ip?.Report((10, "Carregando branches locais..."));
-                local  = _svc.GetLocalBranches();
-                token.ThrowIfCancellationRequested();
-                ip?.Report((30, "Carregando branches remotas..."));
-                remote = _svc.GetRemoteBranches();
-                token.ThrowIfCancellationRequested();
-                ip?.Report((50, "Carregando tags..."));
-                tags   = _svc.GetTags();
-                token.ThrowIfCancellationRequested();
-                ip?.Report((65, "Calculando hierarquia local..."));
-                lMap   = _svc.BuildParentMap(local);
-                token.ThrowIfCancellationRequested();
-                ip?.Report((80, "Calculando hierarquia remota..."));
-                rMap   = _svc.BuildRemoteParentMap(remote);
-                token.ThrowIfCancellationRequested();
-                ip?.Report((92, "Obtendo informações de sincronização..."));
-                var tracking = _svc.GetBranchTrackingInfo();
-                foreach (var b in local)
-                    if (tracking.TryGetValue(b.FullName, out var ti))
-                    {
-                        b.HasUpstream  = ti.hasUpstream;
-                        b.AheadCount   = ti.ahead;
-                        b.BehindCount  = ti.behind;
-                    }
-                token.ThrowIfCancellationRequested();
-                ip?.Report((96, "Verificando alterações pendentes..."));
-                pending = _svc.GetPendingChangesCount();
-                ip?.Report((100, "Concluído."));
-            }, token);
+            data = await Task.Run(() => FetchRepoData(ip, token), token);
         }
         catch (OperationCanceledException)
         {
@@ -293,34 +274,14 @@ public sealed class BranchHierarchyForm : Form
 
         if (IsDisposed) { _isRefreshing = false; return; }
 
-        _localBranches   = local;
-        _remoteBranches  = remote;
-        _tags            = tags;
-        _localParentMap  = lMap;
-        _remoteParentMap = rMap;
-
-        _tree.BeginUpdate();
-        try
-        {
-            UpdateGitFlowWarning();
-            // Even in forced-GitFlow mode, based-on links override the rigid map so the
-            // visual hierarchy is honored in every mode.
-            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
-            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
-            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
-            ExpandRoots();
-            UpdateStatus();
-            UpdateBranchLabel();
-            UpdatePullPushButtons();
-        }
-        finally { _tree.EndUpdate(); }
-
-        // Reuse the pending-changes count read in the background pass above — no extra git status here.
-        UpdateCommitActionTexts(pending);
+        ApplyRepoData(data);
 
         var postAction = _postRefreshAction;
         _postRefreshAction = null;
-        postAction?.Invoke();
+        if (postAction != null)
+            postAction.Invoke();            // reveal a specific branch/tag (scrolls to it)
+        else
+            ScrollTreeToTop();              // normal reload: vertical scrollbar starts at the top
 
         if (showOverlay)
         {
@@ -332,6 +293,112 @@ public sealed class BranchHierarchyForm : Form
         _isRefreshing = false;
     }
 
+    /// <summary>Immutable snapshot of everything read from the repository in a single pass.</summary>
+    private sealed record RepoData(
+        List<BranchInfo>            Local,
+        List<BranchInfo>            Remote,
+        List<BranchInfo>            Tags,
+        Dictionary<string, string?> LMap,
+        Dictionary<string, string?> RMap,
+        int                         Pending);
+
+    /// <summary>
+    /// Reads all branch/tag data and computes the parent maps. Pure git work — safe to run on a
+    /// background thread (RefreshTreeAsync) or synchronously before the window is shown
+    /// (<see cref="InitialLoadSync"/>). <paramref name="ip"/> is null when no overlay is shown.
+    /// </summary>
+    private RepoData FetchRepoData(IProgress<(int pct, string msg)>? ip, CancellationToken token)
+    {
+        ip?.Report((10, "Carregando branches locais..."));
+        var local = _svc.GetLocalBranches();
+        token.ThrowIfCancellationRequested();
+        ip?.Report((30, "Carregando branches remotas..."));
+        var remote = _svc.GetRemoteBranches();
+        token.ThrowIfCancellationRequested();
+        ip?.Report((50, "Carregando tags..."));
+        var tags = _svc.GetTags();
+        token.ThrowIfCancellationRequested();
+        ip?.Report((65, "Calculando hierarquia local..."));
+        var lMap = _svc.BuildParentMap(local);
+        token.ThrowIfCancellationRequested();
+        ip?.Report((80, "Calculando hierarquia remota..."));
+        var rMap = _svc.BuildRemoteParentMap(remote);
+        token.ThrowIfCancellationRequested();
+        ip?.Report((92, "Obtendo informações de sincronização..."));
+        var tracking = _svc.GetBranchTrackingInfo();
+        foreach (var b in local)
+            if (tracking.TryGetValue(b.FullName, out var ti))
+            {
+                b.HasUpstream = ti.hasUpstream;
+                b.AheadCount  = ti.ahead;
+                b.BehindCount = ti.behind;
+            }
+        token.ThrowIfCancellationRequested();
+        ip?.Report((96, "Verificando alterações pendentes..."));
+        int pending = _svc.GetPendingChangesCount();
+        ip?.Report((100, "Concluído."));
+        return new RepoData(local, remote, tags, lMap, rMap, pending);
+    }
+
+    /// <summary>
+    /// Applies a <see cref="RepoData"/> snapshot to the UI: verifies whether the hierarchy matches
+    /// the GitFlow rule (<see cref="UpdateGitFlowWarning"/>), rebuilds the tree, and refreshes
+    /// labels/counters. UI-thread only. The caller handles scroll/reveal.
+    /// </summary>
+    private void ApplyRepoData(RepoData data)
+    {
+        _localBranches   = data.Local;
+        _remoteBranches  = data.Remote;
+        _tags            = data.Tags;
+        _localParentMap  = data.LMap;
+        _remoteParentMap = data.RMap;
+
+        _tree.BeginUpdate();
+        try
+        {
+            UpdateGitFlowWarning();   // verifies whether the real hierarchy follows the GitFlow rule
+            // Even in forced-GitFlow mode, based-on links override the rigid map so the
+            // visual hierarchy is honored in every mode.
+            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
+            RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
+            // Restore the saved expand/collapse state ONLY when the native handle exists. During the
+            // first load (InitialLoadSync, in the constructor) there is no handle yet, so node.Expand()
+            // /CollapseAll() would not stick; the Shown handler restores it once instead. This avoids a
+            // double, partial restore (constructor without handle + Shown) that lost the saved state.
+            if (_tree.IsHandleCreated) ExpandRoots();
+            UpdateStatus();
+            UpdateBranchLabel();
+            UpdatePullPushButtons();
+        }
+        finally { _tree.EndUpdate(); }
+        ApplyCheckBoxVisibility();   // hide checkboxes on section/folder nodes (no-op until the handle exists)
+        UpdateDeleteButtonText();    // rebuilt tree → no checks → reset the Excluir label
+        UpdateCommitActionTexts(data.Pending);
+    }
+
+    /// <summary>
+    /// First-time load, run synchronously in the constructor BEFORE the window is shown. Verifies
+    /// whether GitFlow is initialized and whether the hierarchy follows the GitFlow rule, pre-fetches
+    /// all repository data, and builds the populated tree — with NO overlay. Per-node checkbox hiding
+    /// and the initial scroll run later from the Shown event (they need the native tree handle).
+    /// </summary>
+    private void InitialLoadSync()
+    {
+        _initialLoadDone = true;
+        UpdateGitFlowInitButton();   // btnGitFlowInit — is GitFlow initialized as defined?
+        try
+        {
+            var data = FetchRepoData(null, CancellationToken.None);
+            ApplyRepoData(data);     // UpdateGitFlowWarning inside verifies the hierarchy rule
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Erro ao carregar dados do repositório:\n{ex.Message}",
+                "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
     // ── Initialization ────────────────────────────────────────────────────────
 
     private void InitializeComponent()
@@ -339,7 +406,7 @@ public sealed class BranchHierarchyForm : Form
         SuspendLayout();
 
         Text            = "ZimerfeldTree - Branch Hierarchy";
-        Size            = new Size(580, 760);
+        Size            = new Size(620, 760);   // widened to fit the extra btnExcluir without cropping Restore
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox     = true;
@@ -378,26 +445,36 @@ public sealed class BranchHierarchyForm : Form
 
         CancelButton = _btnClose;
 
-        // Restore debug state and button enable state.
+        // Restore debug state and lay out the GitFlow buttons.
+        // NOTE: the GitFlow verification (UpdateGitFlowInitButton -> IsGitFlowConfigured)
+        // is intentionally NOT done here. It fires ~10 synchronous git subprocesses
+        // (git config --get ×8 + 2× rev-parse) which, running on the UI thread before the
+        // first WM_PAINT, freeze the window and paint the top controls as empty skeletons.
+        // It now runs later, AFTER the whole screen is drawn (Refresh() in RefreshTreeAsync)
+        // and right before the tree loads — via SetFormEnabled(false) and, after the data
+        // pass, UpdateGitFlowWarning -> UpdateGitFlowInitButton.
         Load += (_, _) =>
         {
             ApplyControlTooltips(_chkShowDebug.Checked);
-            UpdateGitFlowInitButton();
             LayoutGitFlowButtons();
         };
 
-        // Trigger the async load with overlay only on the FIRST time the window becomes visible.
-        // Reactivating ZimerfeldTree after a child Zimerfeld window (GitFlow/Restore) closes must
-        // NOT re-run the overlay refresh: those windows already refreshed the tree live via
-        // RepoMutated while open. Subsequent refreshes go through the explicit paths (Refresh
-        // button/menu, plugin repo events, RepoMutated).
-        VisibleChanged += (_, _) =>
+        // The tree is already populated synchronously in the constructor (InitialLoadSync), before
+        // this window is shown — so there is no first-time overlay. The remaining first-show work
+        // needs the native tree handle (created when the window is shown), and Shown fires once,
+        // before the first paint (so no flicker):
+        //   • ExpandRoots() re-applies the persisted expand/collapse state — node.Expand()/
+        //     CollapseAll() do NOT stick on the native control before the handle exists, so the
+        //     saved states must be restored here for them to be remembered across sessions.
+        //   • ApplyCheckBoxVisibility() hides section/folder checkboxes (native message).
+        //   • ScrollTreeToTop() resets the vertical scrollbar.
+        Shown += (_, _) =>
         {
-            if (Visible && !_initialLoadDone)
-            {
-                _initialLoadDone = true;
-                _ = RefreshTreeAsync(showOverlay: true);
-            }
+            _tree.BeginUpdate();
+            try { ExpandRoots(); }
+            finally { _tree.EndUpdate(); }
+            ApplyCheckBoxVisibility();
+            ScrollTreeToTop();
         };
 
         ResumeLayout(false);
@@ -568,6 +645,11 @@ public sealed class BranchHierarchyForm : Form
         _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 80, Height = 24 };
         _btnCommitDedicated.Click += (_, _) => DoCommit();
 
+        // Deletes the checked branch/tag leaves (or the selected node when none are checked),
+        // mirroring the context-menu "Excluir". Its text tracks the number of checked checkboxes.
+        _btnExcluir = new Button { Name = "btnExcluir", Text = "Excluir", Width = 80, Height = 24 };
+        _btnExcluir.Click += (_, _) => DoDelete();
+
         _btnGitFlowDedicated = new Button
         {
             Name   = "btnGitFlowDedicated",
@@ -587,7 +669,7 @@ public sealed class BranchHierarchyForm : Form
         _btnRestore.Click += (_, _) => DoRestore();
 
         _gitFlowButtonPanel = new Panel { Name = "gitFlowButtonPanel", Dock = DockStyle.Top, Height = 32 };
-        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnGitFlowDedicated, _btnRestore]);
+        _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnExcluir, _btnGitFlowDedicated, _btnRestore]);
         // Positions are set explicitly by LayoutGitFlowButtons() — no Layout event so resize doesn't move buttons.
     }
 
@@ -601,6 +683,7 @@ public sealed class BranchHierarchyForm : Form
             ShowPlusMinus = true,
             ShowRootLines = true,
             HideSelection = false,
+            CheckBoxes    = true,   // multi-select; checkboxes are hidden on non-leaf nodes (see ApplyCheckBoxVisibility)
             DrawMode      = TreeViewDrawMode.OwnerDrawText,
             Font          = new Font("Segoe UI", 9f),
             ImageList     = NodeIcons.GetList()
@@ -612,6 +695,8 @@ public sealed class BranchHierarchyForm : Form
         _tree.MouseDown             += Tree_MouseDown;
         _tree.AfterExpand           += Tree_AfterExpand;
         _tree.AfterCollapse         += Tree_AfterCollapse;
+        _tree.BeforeCheck           += Tree_BeforeCheck;   // only branch/tag leaves are checkable
+        _tree.AfterCheck            += Tree_AfterCheck;    // refresh the Excluir button count
 
         _localRoot = new TreeNode("LOCAL (0)")
         {
@@ -696,7 +781,7 @@ public sealed class BranchHierarchyForm : Form
             new ToolStripSeparator(),
             _miRename, _miDelete,
             new ToolStripSeparator(),
-            _miGitFlow, _miVoltarVersao,
+            _miVoltarVersao,                 // GitFlow item removed from the context menu (use the GitFlow button)
             new ToolStripSeparator(),
             _miExpand, _miCollapse, _miRefresh
         ]);
@@ -741,17 +826,33 @@ public sealed class BranchHierarchyForm : Form
             AutoSize = true,
             Checked  = LoadShowControlIds()
         };
+        _chkDeveloperMode = new CheckBox
+        {
+            Name     = "chkDeveloperMode",
+            Text     = "Modo Developer",
+            AutoSize = true,
+            Checked  = LoadDeveloperMode()
+        };
+
+        // Handlers wired after BOTH checkboxes exist (SaveUiSettings reads both).
         _chkShowDebug.CheckedChanged += (_, _) =>
         {
-            SaveShowControlIds(_chkShowDebug.Checked);
+            SaveUiSettings();
             ApplyControlTooltips(_chkShowDebug.Checked);
+        };
+        _chkDeveloperMode.CheckedChanged += (_, _) =>
+        {
+            SaveUiSettings();
+            // Turning Developer mode OFF drops any checked main/develop so they cannot be deleted.
+            if (!_chkDeveloperMode.Checked) UncheckProtectedBranches();
         };
 
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 36 };
         _bottomPanel.Controls.Add(_btnClose);
         _bottomPanel.Controls.Add(_chkShowDebug);
+        _bottomPanel.Controls.Add(_chkDeveloperMode);
 
-        // Centre Fechar; pin chkShowDebug to the left.
+        // Centre Fechar; pin chkShowDebug to the left, Modo Developer just to its right.
         _bottomPanel.Layout += (_, _) =>
         {
             int cy = (_bottomPanel.Height - _btnClose.Height) / 2;
@@ -759,6 +860,8 @@ public sealed class BranchHierarchyForm : Form
                 (_bottomPanel.Width - _btnClose.Width) / 2, cy);
             _chkShowDebug.Location = new Point(
                 8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+            _chkDeveloperMode.Location = new Point(
+                _chkShowDebug.Right + 12, (_bottomPanel.Height - _chkDeveloperMode.Height) / 2);
         };
     }
 
@@ -1001,6 +1104,8 @@ public sealed class BranchHierarchyForm : Form
         BuildLocalSection(filter, localMap);
         BuildRemotesSection(filter, remoteMap);
         BuildTagsSection(filter);
+        // ApplyCheckBoxVisibility() runs AFTER EndUpdate (the native TVM_SETITEM hide does not
+        // reliably stick while BeginUpdate suppresses the redraw).
     }
 
     private void BuildLocalSection(string filter, Dictionary<string, string?> localMap)
@@ -1232,6 +1337,10 @@ public sealed class BranchHierarchyForm : Form
     {
         return folderName.ToLowerInvariant() switch
         {
+            // Remote-group folder (the remote name, e.g. "origin") keeps the rocket icon
+            // (origin.png). The dedicated RemoteGroup node that used to carry NodeIcons.Remote
+            // was replaced by generic path folders, so restore the icon by name here.
+            "origin"   or "upstream"             => NodeIcons.Remote,
             "feature"  or "features"             => NodeIcons.BranchFeature,
             "bugfix"   or "bug"   or "bugs"       => NodeIcons.BranchBugfix,
             "release"  or "releases"             => NodeIcons.BranchRelease,
@@ -1257,6 +1366,9 @@ public sealed class BranchHierarchyForm : Form
             ExpandRoots();
         }
         finally { _tree.EndUpdate(); }
+        ApplyCheckBoxVisibility();   // hide checkboxes on section/folder nodes (after EndUpdate so it sticks)
+        UpdateDeleteButtonText();    // rebuilt tree → no checks → reset the Excluir label
+        ScrollTreeToTop();           // filtering is a normal reload: keep the scrollbar at the top
     }
 
     private static List<BranchInfo> Filter(List<BranchInfo> source, string filter) =>
@@ -1436,11 +1548,14 @@ public sealed class BranchHierarchyForm : Form
         _btnPull            .TabIndex = 0;
         _btnPush            .TabIndex = 1;
         _btnCommitDedicated .TabIndex = 2;
-        _btnGitFlowDedicated.TabIndex = 3;
+        _btnExcluir         .TabIndex = 3;
+        _btnGitFlowDedicated.TabIndex = 4;
+        _btnRestore         .TabIndex = 5;
 
         // Bottom panel
-        _btnClose    .TabIndex = 0;
-        _chkShowDebug.TabIndex = 1;
+        _btnClose        .TabIndex = 0;
+        _chkShowDebug    .TabIndex = 1;
+        _chkDeveloperMode.TabIndex = 2;
     }
 
     /// <summary>Enables or disables all interactive controls while the loading overlay is active.</summary>
@@ -1451,11 +1566,14 @@ public sealed class BranchHierarchyForm : Form
         _btnRefresh         .Enabled = enabled;
         _btnGitFlow         .Enabled = enabled;
         _btnGitFlowInit     .Enabled = enabled && !IsGitFlowConfigured();
+        _btnCommitDedicated .Enabled = enabled;
+        _btnExcluir         .Enabled = enabled;
         _btnGitFlowDedicated.Enabled = enabled;
         _btnRestore          .Enabled = enabled;
         _tree               .Enabled = enabled;
         _btnClose           .Enabled = enabled;
         _chkShowDebug       .Enabled = enabled;
+        _chkDeveloperMode   .Enabled = enabled;
     }
 
     private void UpdateStatus()
@@ -1488,6 +1606,83 @@ public sealed class BranchHierarchyForm : Form
 
     private BranchInfo? SelectedBranch()
         => _tree.SelectedNode?.Tag as BranchInfo;
+
+    /// <summary>Scrolls the tree so the first node is at the top (vertical scrollbar at the start).</summary>
+    private void ScrollTreeToTop()
+    {
+        if (_tree.Nodes.Count > 0)
+            _tree.TopNode = _tree.Nodes[0];
+    }
+
+    /// <summary>All checked branch/tag leaf nodes across the whole tree (multi-selection set).</summary>
+    private List<TreeNode> CheckedBranchNodes()
+    {
+        var result = new List<TreeNode>();
+        void Walk(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                if (n.Checked && n.Tag is BranchInfo) result.Add(n);
+                Walk(n.Nodes);
+            }
+        }
+        Walk(_tree.Nodes);
+        return result;
+    }
+
+    // ── Per-node checkbox visibility ──────────────────────────────────────────
+    // TreeView.CheckBoxes is all-or-nothing, so checkboxes are hidden on every node that is
+    // NOT a branch/tag leaf (section roots, path folders, placeholders) via the native
+    // TVM_SETITEM message, which clears the node's state-image index (0 = no checkbox).
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TVITEM
+    {
+        public int    mask;
+        public IntPtr hItem;
+        public int    state;
+        public int    stateMask;
+        public IntPtr pszText;
+        public int    cchTextMax;
+        public int    iImage;
+        public int    iSelectedImage;
+        public int    cChildren;
+        public IntPtr lParam;
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, ref TVITEM lParam);
+
+    private const int TVM_SETITEM         = 0x1100 + 63;   // TVM_SETITEMW
+    private const int TVIF_STATE          = 0x0008;
+    private const int TVIS_STATEIMAGEMASK = 0xF000;
+
+    private void HideCheckBox(TreeNode node)
+    {
+        var tvi = new TVITEM
+        {
+            hItem     = node.Handle,
+            mask      = TVIF_STATE,
+            stateMask = TVIS_STATEIMAGEMASK,
+            state     = 0,
+        };
+        SendMessage(_tree.Handle, TVM_SETITEM, IntPtr.Zero, ref tvi);
+    }
+
+    /// <summary>Hides the checkbox on every non-leaf node; branch/tag leaves keep theirs.</summary>
+    private void ApplyCheckBoxVisibility()
+    {
+        if (!_tree.IsHandleCreated) return;
+        void Walk(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                if (n.Tag is not BranchInfo) HideCheckBox(n);
+                Walk(n.Nodes);
+            }
+        }
+        Walk(_tree.Nodes);
+    }
 
     // ── Tree drawing (bold + highlight for current branch) ────────────────────
 
@@ -1538,6 +1733,50 @@ public sealed class BranchHierarchyForm : Form
         if (e.Node?.Tag is BranchInfo) DoCheckout();
     }
 
+    /// <summary>
+    /// Gates the tree checkboxes. Section roots and path folders are never checkable. The protected
+    /// branches (main/master/develop, local and remote) cannot be CHECKED for deletion unless
+    /// "Modo Developer" is on — unchecking is always allowed.
+    /// </summary>
+    private void Tree_BeforeCheck(object? sender, TreeViewCancelEventArgs e)
+    {
+        if (e.Node?.Tag is not BranchInfo info) { e.Cancel = true; return; }
+        // e.Node.Checked is the state BEFORE the toggle: false → about to be checked.
+        if (!e.Node.Checked && !_chkDeveloperMode.Checked && IsProtectedBranch(info))
+            e.Cancel = true;
+    }
+
+    /// <summary>main / master / develop (local or remote) — protected from deletion by default.</summary>
+    private static bool IsProtectedBranch(BranchInfo info)
+    {
+        string name = (info.Type == BranchType.Remote ? info.DisplayName : info.FullName).ToLowerInvariant();
+        return name is "main" or "master" or "develop";
+    }
+
+    /// <summary>Unchecks any checked protected branch (used when Developer mode is turned off).</summary>
+    private void UncheckProtectedBranches()
+    {
+        void Walk(TreeNodeCollection nodes)
+        {
+            foreach (TreeNode n in nodes)
+            {
+                if (n.Checked && n.Tag is BranchInfo info && IsProtectedBranch(info))
+                    n.Checked = false;   // fires AfterCheck → UpdateDeleteButtonText
+                Walk(n.Nodes);
+            }
+        }
+        Walk(_tree.Nodes);
+    }
+
+    private void Tree_AfterCheck(object? sender, TreeViewEventArgs e) => UpdateDeleteButtonText();
+
+    /// <summary>Updates the Excluir button label with the count of checked branch/tag leaves.</summary>
+    private void UpdateDeleteButtonText()
+    {
+        int n = CheckedBranchNodes().Count;
+        _btnExcluir.Text = n >= 1 ? $"Excluir ({n})" : "Excluir";
+    }
+
     private void Tree_KeyDown(object? sender, KeyEventArgs e)
     {
         if (e.KeyCode == Keys.Enter && _tree.SelectedNode?.Tag is BranchInfo) DoCheckout();
@@ -1554,6 +1793,18 @@ public sealed class BranchHierarchyForm : Form
 
     private void CtxMenu_Opening(object? sender, CancelEventArgs e)
     {
+        // Multi-selection (2+ checked branch/tag leaves): only bulk Excluir + Atualizar apply.
+        var checkedNodes = CheckedBranchNodes();
+        if (checkedNodes.Count >= 2)
+        {
+            foreach (ToolStripItem it in _ctxMenu.Items)
+                it.Visible = it == _miDelete || it == _miRefresh;
+            _miDelete.Text = $"Excluir ({checkedNodes.Count})…";
+            return;   // no separators shown — just the two commands
+        }
+
+        _miDelete.Text = "Excluir…";
+
         var info     = SelectedBranch();
         bool branch  = info != null;
         bool local   = info?.Type == BranchType.Local;
@@ -1563,13 +1814,16 @@ public sealed class BranchHierarchyForm : Form
         int miPending = _svc.GetPendingChangesCount();
         UpdateCommitActionTexts(miPending);
 
+        _miCommit      .Visible = true;
         _miCheckout    .Visible = branch;
         _miNewBranch   .Visible = local || tag;
         _miMerge       .Visible = local;
         _miRebase      .Visible = local;
         _miRename      .Visible = local;
         _miDelete      .Visible = local || remote || tag;
-        _miGitFlow     .Visible = branch;
+        _miExpand      .Visible = true;
+        _miCollapse    .Visible = true;
+        _miRefresh     .Visible = true;
 
         string currentBranch = _svc.GetCurrentBranch();
         _miVoltarVersao.Visible = !string.IsNullOrEmpty(currentBranch)
@@ -1781,6 +2035,7 @@ public sealed class BranchHierarchyForm : Form
         _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
         _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
         _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
+        _btnExcluir.Location = new Point(x, y); x += _btnExcluir.Width + 4;
         _btnGitFlowDedicated.Location = new Point(x, y); x += _btnGitFlowDedicated.Width + 4;
         _btnRestore.Location = new Point(x, y);
     }
@@ -2067,8 +2322,30 @@ public sealed class BranchHierarchyForm : Form
 
     private void DoDelete()
     {
-        var info = SelectedBranch();
-        if (info is null) return;
+        // Target the checked branch/tag leaves when any are checked; otherwise the selected node.
+        var checkedNodes = CheckedBranchNodes();
+        var targets = checkedNodes.Count > 0
+            ? checkedNodes.Select(n => (BranchInfo)n.Tag!).ToList()
+            : SelectedBranch() is { } sel ? new List<BranchInfo> { sel } : new List<BranchInfo>();
+
+        // Protect main/master/develop unless Developer mode is on. Checkboxes already block marking
+        // them, so this guards the single-delete path (a protected branch selected, none checked).
+        if (!_chkDeveloperMode.Checked && targets.Any(IsProtectedBranch))
+        {
+            targets = targets.Where(t => !IsProtectedBranch(t)).ToList();
+            if (targets.Count == 0)
+            {
+                MessageBox.Show(
+                    "As branches main/master/develop são protegidas. Ative o \"Modo Developer\" para excluí-las.",
+                    "Branch protegida", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+        }
+
+        if (targets.Count >= 2) { DoDeleteMultiple(targets); return; }
+        if (targets.Count == 0) return;
+
+        var info = targets[0];
 
         if (!Confirm($"Excluir '{info.FullName}'?", "Confirmar exclusão")) return;
 
@@ -2097,6 +2374,40 @@ public sealed class BranchHierarchyForm : Form
         {
             ShowError("Erro ao excluir", result.err);
         }
+        RestoreFocus();
+    }
+
+    /// <summary>Deletes every checked branch/tag in one pass, with a single confirmation.</summary>
+    private void DoDeleteMultiple(List<BranchInfo> infos)
+    {
+        string list = string.Join("\n", infos.Select(i => $"  • {i.FullName}"));
+        if (!Confirm($"Excluir os {infos.Count} itens selecionados?\n\n{list}", "Confirmar exclusão múltipla"))
+            return;
+
+        var errors = new List<string>();
+        foreach (var info in infos)
+        {
+            var (ok, err) = info.Type switch
+            {
+                BranchType.Tag    => _svc.DeleteTag(info.FullName),
+                BranchType.Remote => _svc.DeleteBranch(info.FullName, isRemote: true),
+                _                 => _svc.DeleteBranch(info.FullName, isRemote: false)
+            };
+
+            // Offer a force-delete for local branches that aren't fully merged.
+            if (!ok && info.Type == BranchType.Local
+                    && err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase)
+                    && Confirm($"'{info.FullName}' não está totalmente mesclada. Forçar exclusão?", "Excluir forçado"))
+            {
+                (ok, err) = _svc.DeleteBranchForce(info.FullName);
+            }
+
+            if (!ok) errors.Add($"{info.FullName}: {err.Trim()}");
+        }
+
+        RefreshTree();   // rebuilds the tree → all checkboxes reset
+        if (errors.Count > 0)
+            ShowError("Erro ao excluir", string.Join("\n", errors));
         RestoreFocus();
     }
 
