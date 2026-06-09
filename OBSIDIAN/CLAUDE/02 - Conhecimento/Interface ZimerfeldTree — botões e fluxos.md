@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-07 (btn Restore, overlay 1ª exibição, eco suprimido, contador Commit reaproveitado, sem NotifyRepoChanged ao fechar GitFlow/Restore)
+atualizado: 2026-06-09 (1.0.254: checkboxes multi-seleção, botão Excluir, Modo Developer, persistência expande/recolhe no Shown)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, zimerfeldtree]
 fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 ---
@@ -124,8 +124,20 @@ Três operações disponíveis na janela Restore:
 
 Valores dos campos são persistidos em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`. Ver [[Interface Restore — botões e fluxos]].
 
+### Botão Excluir (`_btnExcluir`) → `DoDelete`
+1. Texto dinâmico via `UpdateDeleteButtonText()`: `Excluir` (0 marcados) → `Excluir (N)`. Atualizado em `AfterCheck` e a cada rebuild.
+2. `DoDelete`: alvos = checkboxes marcados se houver (`CheckedBranchNodes()`); senão o nó selecionado.
+   - 2+ → `DoDeleteMultiple` (confirmação única listando itens, exclusão em lote, força em local não-mesclada).
+   - 1 → fluxo individual. 0 → nada.
+3. **Proteção:** main/master/develop são removidas dos alvos se `Modo Developer` desligado (`IsProtectedBranch`); se sobrar nada, exibe aviso "Branch protegida".
+
+### Checkbox "Modo Developer" (`_chkDeveloperMode`)
+1. Ao lado de `Show Debug` no rodapé. Estado persistido em `ZimerfeldTree.uisettings.json` (`developerMode`) via `SaveUiSettings()`, carregado por `LoadDeveloperMode()`.
+2. `Tree_BeforeCheck` bloqueia **marcar** (não desmarcar) main/master/develop quando desligado.
+3. Ao **desligar**, `UncheckProtectedBranches()` desmarca as protegidas que estavam marcadas.
+
 ### Botão Fechar (`_btnClose`)
-1. `Close()`. Ao fechar, o estado de expansão da árvore é salvo em disco.
+1. `Close()`. Ao fechar, o estado de expansão da árvore é salvo em disco (`FormClosed → SaveTreeState`).
 
 ### Botão Cancelar (overlay, `_btnCancelRefresh`)
 1. Desabilita-se, vira "Cancelando…" e cancela o `CancellationTokenSource` do refresh em curso.
@@ -136,6 +148,8 @@ Valores dos campos são persistidos em `%APPDATA%\GitExtensions\ZimerfeldRestore
 - **Duplo-clique** em folha de branch → `DoCheckout`.
 - **Enter** com branch selecionada → `DoCheckout`.
 - **Clique-direito** → seleciona o nó sob o cursor e abre o menu de contexto.
+- **Checkbox** em cada branch/tag (folha) para seleção múltipla. Seções/pastas têm o checkbox **oculto** (`ApplyCheckBoxVisibility` via `TVM_SETITEM`, após `EndUpdate`) e **bloqueado** (`Tree_BeforeCheck`). `_tree.CheckBoxes = true`.
+- **Persistência expande/recolhe:** `AfterExpand`/`AfterCollapse` gravam o caminho estável (`GetNodeStablePath`) em `_treeStateByRepo` → debounce 500 ms + `FormClosed` → `treestate.json`. Restaurado em `RestoreTreeState`, reaplicado no **`Shown`** (handle nativo já existe; no construtor sem handle não cola).
 
 ## 📋 Menu de contexto (visibilidade depende do tipo do nó)
 Definida em `CtxMenu_Opening`: `branch` = local|remote; `local`/`remote`/`tag` específicos. Separadores órfãos são ocultados.
