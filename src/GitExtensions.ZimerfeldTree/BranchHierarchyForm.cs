@@ -38,6 +38,12 @@ public sealed class BranchHierarchyForm : Form
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
     private bool                         _suppressEcho;               // ignore the PostRepositoryChanged echo of our own NotifyRepoChanged
 
+    // Open modal child dialogs, tracked so they can be force-closed when GitExtensions switches the
+    // active repository (Change Working Directory): a GitFlow/Restore window must not linger over a
+    // repo it no longer matches. Set while ShowDialog runs (DoGitFlow/DoRestore), cleared on close.
+    private GitFlowForm? _gitFlowForm;
+    private RestoreForm? _restoreForm;
+
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
     private Label            _lblWD       = null!;
@@ -175,11 +181,28 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>Called by the plugin when GitExtensions switches the active repository.</summary>
     public void UpdateWorkingDir(string newDir)
     {
+        // When the GitExtensions "Change Working Directory" dropdown actually switches repos, drop any
+        // open GitFlow/Restore child window — it belongs to the old repo. The cboRepo dropdown and the
+        // lblBranch label below are updated to the new repo here and by the subsequent RefreshTree.
+        bool repoChanged = !string.Equals(newDir, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase);
+        if (repoChanged) CloseChildDialogs();
+
         _svc.WorkingDir = newDir;
         _gitFlowUserToggled = false; // re-enable auto-organization for the new repo
         if (!_cboRepo.Items.Contains(newDir))
             _cboRepo.Items.Add(newDir);
         _cboRepo.SelectedItem = newDir;
+    }
+
+    /// <summary>
+    /// Closes the modal GitFlow / Restore child dialogs if either is open. Calling <see cref="Form.Close"/>
+    /// on a modal form ends its ShowDialog loop, after which DoGitFlow/DoRestore resume and clear the field.
+    /// Safe to call when nothing is open (no-op).
+    /// </summary>
+    private void CloseChildDialogs()
+    {
+        if (_gitFlowForm is { IsDisposed: false } gf) gf.Close();
+        if (_restoreForm is { IsDisposed: false } rf) rf.Close();
     }
 
     /// <summary>
@@ -193,11 +216,21 @@ public sealed class BranchHierarchyForm : Form
     /// external changes, but ignores the event when it is the ECHO of our own RepoChangedNotifier
     /// .Notify() (raised by <see cref="NotifyRepoChanged"/>): in that case the tree was already
     /// refreshed live and a second refresh would only flash the overlay needlessly.
+    /// <para><paramref name="newDir"/> is the working directory reported by the event. When it differs
+    /// from the current repo, the active repo was actually switched (e.g. the GitExtensions
+    /// "Change Working Directory" dropdown) — adopt it FIRST (closes open GitFlow/Restore windows and
+    /// updates cboRepo) so the refresh below reads the NEW repo instead of reloading the previous one.</para>
     /// </summary>
-    public void NotifyExternalRepoChanged()
+    public void NotifyExternalRepoChanged(string newDir)
     {
         if (_suppressEcho) return;
-        RefreshTree();
+
+        if (!string.IsNullOrEmpty(newDir) &&
+            !string.Equals(newDir, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateWorkingDir(newDir);   // closes child dialogs + selects the new repo in cboRepo
+        }
+        RefreshTree();                  // rebuilds the tree and refreshes lblBranch for the current repo
     }
 
     /// <summary>
@@ -2143,6 +2176,7 @@ public sealed class BranchHierarchyForm : Form
     private void DoGitFlow()
     {
         using var dlg = new GitFlowForm(_svc, _chkShowDebug.Checked);
+        _gitFlowForm = dlg;   // tracked so a Change-Working-Directory switch can force-close it
 
         // Refresh the tree live when GitFlow mutates the repo (any button) while still modal, and
         // reveal/select the affected branch. RefreshTree() runs behind the modal dialog and does
@@ -2175,6 +2209,7 @@ public sealed class BranchHierarchyForm : Form
         }
 
         dlg.ShowDialog(this);
+        _gitFlowForm = null;   // dialog closed — no longer force-closable
 
         // Recentre this window on the screen after the GitFlow dialog closes.
         Location = new Point(
@@ -2195,6 +2230,7 @@ public sealed class BranchHierarchyForm : Form
     private void DoRestore()
     {
         using var dlg = new RestoreForm(_svc, _chkShowDebug.Checked);
+        _restoreForm = dlg;   // tracked so a Change-Working-Directory switch can force-close it
 
         dlg.RepoMutated += branch =>
         {
@@ -2223,6 +2259,7 @@ public sealed class BranchHierarchyForm : Form
         }
 
         dlg.ShowDialog(this);
+        _restoreForm = null;   // dialog closed — no longer force-closable
 
         // Recentre this window on the screen after the Restore dialog closes.
         Location = new Point(
