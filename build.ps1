@@ -7,17 +7,6 @@
 
 $ErrorActionPreference = "Stop"
 
-# -- 0. Fechar GitExtensions e plugins antes de compilar ----------------------
-$geProcs = Get-Process -Name GitExtensions -ErrorAction SilentlyContinue
-if ($geProcs) {
-    Write-Host "Fechando GitExtensions e plugins..."
-    $geProcs | Stop-Process -Force
-    Start-Sleep -Milliseconds 800
-    Write-Host "GitExtensions encerrado."
-} else {
-    Write-Host "GitExtensions nao esta em execucao."
-}
-
 $nuspec  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\GitExtensions.ZimerfeldTree.nuspec"
 $csproj  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\GitExtensions.ZimerfeldTree.csproj"
 $outDir  = $PSScriptRoot
@@ -34,7 +23,35 @@ $major      = [int]$parts[0]
 $minor      = [int]$parts[1]
 $build      = [int]$parts[2] + 1
 $newVersion = "$major.$minor.$build"
+
+# -- 1b. Detectar mudancas -----------------------------------------------------
+# So' incrementa a versao (e recompila/empacota) se houver fonte mais novo que a
+# DLL ja' compilada. Sem mudancas => mantem a versao atual e encerra.
+$dll     = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\bin\Release\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll"
+$srcRoot = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree"
+$srcFiles = Get-ChildItem $srcRoot -Recurse -File -Include *.cs,*.csproj,*.nuspec,*.resx,*.png |
+            Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' }
+$newestSrc = ($srcFiles | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum
+
+if ((Test-Path $dll) -and $newestSrc -le (Get-Item $dll).LastWriteTimeUtc) {
+    Write-Host ""
+    Write-Host "Nenhuma mudanca detectada nos fontes -- versao mantida em $current (build/pack ignorados)." -ForegroundColor Cyan
+    exit 0
+}
+
 Write-Host "Versao: $current  ->  $newVersion"
+
+# -- 1c. Fechar GitExtensions e plugins antes de compilar ----------------------
+# Feito so' quando ha' mudancas, para nao encerrar o GitExtensions num run sem efeito.
+$geProcs = Get-Process -Name GitExtensions -ErrorAction SilentlyContinue
+if ($geProcs) {
+    Write-Host "Fechando GitExtensions e plugins..."
+    $geProcs | Stop-Process -Force
+    Start-Sleep -Milliseconds 800
+    Write-Host "GitExtensions encerrado."
+} else {
+    Write-Host "GitExtensions nao esta em execucao."
+}
 
 # -- 2. Atualizar nuspec -------------------------------------------------------
 $spec.package.metadata.version = $newVersion
@@ -68,8 +85,26 @@ if (Test-Path $readmeDoc) {
 
 # -- 5. Build ------------------------------------------------------------------
 Write-Host "Compilando..."
-dotnet build $csproj -c Release --nologo -v quiet
-if ($LASTEXITCODE -ne 0) { Write-Error "Build falhou."; exit 1 }
+$buildOutput = & dotnet build $csproj -c Release --nologo -v minimal 2>&1
+$buildExit   = $LASTEXITCODE
+$buildOutput | ForEach-Object { Write-Host $_ }
+
+# Analisa o resultado do build a partir dos diagnosticos emitidos (formato MSBuild:
+# "arquivo(linha,col): error CSxxxx" / "... : warning CSxxxx").
+$buildText    = $buildOutput | Out-String
+$errorCount   = ([regex]::Matches($buildText, '(?im):\s*error\s')).Count
+$warningCount = ([regex]::Matches($buildText, '(?im):\s*warning\s')).Count
+
+if ($buildExit -ne 0 -or $errorCount -gt 0) {
+    Write-Host "Build falhou: $errorCount erro(s)." -ForegroundColor Red
+    exit 1
+}
+elseif ($warningCount -gt 0) {
+    Write-Host "Build concluido com $warningCount aviso(s)." -ForegroundColor Yellow
+}
+else {
+    Write-Host "Build concluido com sucesso (nenhum erro ou aviso)." -ForegroundColor Green
+}
 
 # -- 6. Deploy (requer Admin) --------------------------------------------------
 $pluginsDir = "C:\Program Files\GitExtensions\Plugins"

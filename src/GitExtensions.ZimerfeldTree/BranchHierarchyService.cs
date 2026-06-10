@@ -397,6 +397,74 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    // ── Ref resolution & restore (used to revert an aborted deletion) ─────────────
+
+    /// <summary>Resolves a local branch to its commit SHA (empty string when it doesn't exist).</summary>
+    public string ResolveLocalBranchSha(string name) => RevParse($"refs/heads/{name}");
+
+    /// <summary>Resolves a tag to its commit SHA (empty string when it doesn't exist).</summary>
+    public string ResolveTagSha(string name) => RevParse($"refs/tags/{name}");
+
+    /// <summary>Resolves a remote-tracking branch (e.g. "origin/main") to its commit SHA.</summary>
+    public string ResolveRemoteBranchSha(string fullName) => RevParse($"refs/remotes/{fullName}");
+
+    private string RevParse(string rev)
+    {
+        try
+        {
+            var (o, _, c) = RunGitFull($"rev-parse --verify --quiet \"{EscapeArg(rev)}\"");
+            return c == 0 ? o.Trim() : string.Empty;
+        }
+        catch { return string.Empty; }
+    }
+
+    /// <summary>Recreates a local branch at the given SHA (used to undo a deletion).</summary>
+    public (bool ok, string error) CreateLocalBranch(string name, string sha)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"branch \"{EscapeArg(name)}\" {EscapeArg(sha)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Recreates a tag at the given SHA (used to undo a deletion).</summary>
+    public (bool ok, string error) CreateTag(string name, string sha)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"tag \"{EscapeArg(name)}\" {EscapeArg(sha)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Pushes a branch back to a remote at the given SHA (used to undo a remote deletion).</summary>
+    public (bool ok, string error) RestoreRemoteBranch(string remote, string branchName, string sha)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(remote)) return (false, "nenhum remoto configurado");
+            var (_, err, code) = RunGitFull($"push {remote} {EscapeArg(sha)}:refs/heads/{EscapeArg(branchName)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Pushes a tag back to the default remote at the given SHA (used to undo a remote deletion).</summary>
+    public (bool ok, string error) RestoreRemoteTag(string tagName, string sha)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+            var (_, err, code) = RunGitFull($"push {remote} {EscapeArg(sha)}:refs/tags/{EscapeArg(tagName)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     public (bool ok, string error) RenameBranch(string oldName, string newName)
     {
         try

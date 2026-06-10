@@ -253,7 +253,7 @@ public sealed class BranchHierarchyForm : Form
             _stepsList.Items.Clear();
             _stepsList.Items.Add("• Iniciando...");
             _btnCancelRefresh.Enabled = true;
-            _btnCancelRefresh.Text    = "Cancelar";
+            _btnCancelRefresh.Text    = "Abortar Operação";
             _loadingOverlay.Location  = new Point(
                 (ClientSize.Width  - _loadingOverlay.Width)  / 2,
                 (ClientSize.Height - _loadingOverlay.Height) / 2);
@@ -937,13 +937,13 @@ public sealed class BranchHierarchyForm : Form
         _btnCancelRefresh = new Button
         {
             Name   = "btnCancelRefresh",
-            Text   = "Cancelar",
-            Bounds = new Rectangle(130, 212, 100, 26)
+            Text   = "Abortar Operação",
+            Bounds = new Rectangle(110, 212, 140, 26)
         };
         _btnCancelRefresh.Click += (_, _) =>
         {
             _btnCancelRefresh.Enabled = false;
-            _btnCancelRefresh.Text    = "Cancelando…";
+            _btnCancelRefresh.Text    = "Abortando…";
             _refreshCts?.Cancel();
         };
 
@@ -2481,11 +2481,13 @@ public sealed class BranchHierarchyForm : Form
         _refreshCts = new CancellationTokenSource();
         var token = _refreshCts.Token;
 
-        // Block the form and show the overlay with the list of items being deleted.
+        // Block the form and show the overlay with the list of items being deleted. The Abortar
+        // button stays enabled so the user can stop the pass and revert what was already deleted.
         _progressBar.Value = 0;
         _stepsList.Items.Clear();
         _stepsList.Items.Add("• Iniciando exclusão...");
-        _btnCancelRefresh.Enabled = false;          // deletion is not cancellable mid-pass
+        _btnCancelRefresh.Enabled = true;
+        _btnCancelRefresh.Text    = "Abortar Operação";
         _loadingTitle.Text        = "Excluindo itens selecionados";
         _loadingOverlay.Location  = new Point(
             (ClientSize.Width  - _loadingOverlay.Width)  / 2,
@@ -2494,8 +2496,12 @@ public sealed class BranchHierarchyForm : Form
         _loadingOverlay.BringToFront();
         SetFormEnabled(false);
 
-        var errors = new List<string>();
-        int total  = targets.Count;
+        var errors  = new List<string>();
+        int total   = targets.Count;
+        bool aborted = false;
+
+        // Items deleted so far, with the SHA captured before deletion — enough to recreate them.
+        var deleted = new List<(BranchInfo info, string sha, bool remoteDeleted)>();
 
         IProgress<(int pct, string msg)> prog = new Progress<(int pct, string msg)>(p =>
         {
@@ -2511,18 +2517,56 @@ public sealed class BranchHierarchyForm : Form
             {
                 for (int i = 0; i < total; i++)
                 {
+                    if (token.IsCancellationRequested) { aborted = true; break; }
+
                     var info = targets[i];
                     prog.Report((i * 100 / total, $"Excluindo {DescribeType(info)} '{info.FullName}'..."));
-                    var (ok, err) = DeleteSingle(info, deleteRemote);
-                    if (!ok) errors.Add($"{info.FullName}: {err.Trim()}");
+
+                    string sha = CaptureSha(info);                       // before deletion, to allow undo
+                    var (ok, err, remoteDeleted) = DeleteSingle(info, deleteRemote);
+                    if (ok) deleted.Add((info, sha, remoteDeleted));
+                    else    errors.Add($"{info.FullName}: {err.Trim()}");
+
                     prog.Report(((i + 1) * 100 / total,
                         ok ? $"Excluído: {info.FullName}" : $"Falha: {info.FullName}"));
                 }
             });
 
-            // Reload the tree within the same overlay so the removals are reflected immediately.
+            // Aborted mid-pass: revert everything already deleted, restoring local refs and (when the
+            // remote copy was removed) pushing them back to the remote.
+            if (aborted)
+            {
+                _btnCancelRefresh.Enabled = false;
+                _loadingTitle.Text        = "Revertendo alterações";
+                _progressBar.Value        = 0;
+                _stepsList.Items.Add("• Operação abortada — revertendo exclusões...");
+
+                if (deleted.Count > 0)
+                {
+                    var toRevert = deleted.ToList();
+                    await Task.Run(() =>
+                    {
+                        for (int i = 0; i < toRevert.Count; i++)
+                        {
+                            var d = toRevert[i];
+                            prog.Report((i * 100 / toRevert.Count, $"Restaurando '{d.info.FullName}'..."));
+                            var (rok, rerr) = RestoreSingle(d.info, d.sha, d.remoteDeleted);
+                            if (!rok) errors.Add($"restauração de {d.info.FullName}: {rerr.Trim()}");
+                            prog.Report(((i + 1) * 100 / toRevert.Count,
+                                rok ? $"Restaurado: {d.info.FullName}" : $"Falha ao restaurar: {d.info.FullName}"));
+                        }
+                    });
+                }
+            }
+            else
+            {
+                _btnCancelRefresh.Enabled = false;
+            }
+
+            // Reload the tree within the same overlay so the result is reflected immediately. Use a
+            // fresh (non-cancelled) token — the original token may have been cancelled by the abort.
             prog.Report((100, "Atualizando árvore..."));
-            var data = await Task.Run(() => FetchRepoData(null, token), token);
+            var data = await Task.Run(() => FetchRepoData(null, CancellationToken.None), CancellationToken.None);
             if (!IsDisposed)
             {
                 ApplyRepoData(data);
@@ -2548,34 +2592,48 @@ public sealed class BranchHierarchyForm : Form
         }
 
         if (!IsDisposed && errors.Count > 0)
-            ShowError("Erro ao excluir", string.Join("\n", errors));
+            ShowError(aborted ? "Operação abortada — avisos" : "Erro ao excluir",
+                      string.Join("\n", errors));
         RestoreFocus();
     }
+
+    /// <summary>Captures the commit SHA of a target before deletion, so the deletion can be undone.</summary>
+    private string CaptureSha(BranchInfo info) => info.Type switch
+    {
+        BranchType.Tag    => _svc.ResolveTagSha(info.FullName),
+        BranchType.Remote => _svc.ResolveRemoteBranchSha(info.FullName),
+        _                 => _svc.ResolveLocalBranchSha(info.FullName),
+    };
 
     /// <summary>
     /// Deletes one branch/tag locally and, when <paramref name="deleteRemote"/> is set, from the
     /// default remote too. Runs on a background thread; the not-fully-merged force prompt is
-    /// marshalled back to the UI thread. Returns (ok, error) for the whole item.
+    /// marshalled back to the UI thread. Returns (ok, error, remoteDeleted) — <c>remoteDeleted</c>
+    /// indicates the remote copy was removed and must be pushed back if the operation is reverted.
     /// </summary>
-    private (bool ok, string err) DeleteSingle(BranchInfo info, bool deleteRemote)
+    private (bool ok, string err, bool remoteDeleted) DeleteSingle(BranchInfo info, bool deleteRemote)
     {
         switch (info.Type)
         {
             case BranchType.Tag:
             {
                 var (ok, err) = _svc.DeleteLocalTag(info.FullName);
-                if (!ok) return (false, err);
+                if (!ok) return (false, err, false);
                 if (deleteRemote)
                 {
                     var (rok, rerr) = _svc.DeleteRemoteTag(info.FullName);
-                    if (!rok) return (false, rerr);
+                    if (!rok) return (false, rerr, false);
+                    return (true, string.Empty, true);
                 }
-                return (true, string.Empty);
+                return (true, string.Empty, false);
             }
 
             case BranchType.Remote:
+            {
                 // A remote-tracking branch only exists on the remote — deletion is inherently remote.
-                return _svc.DeleteBranch(info.FullName, isRemote: true);
+                var (ok, err) = _svc.DeleteBranch(info.FullName, isRemote: true);
+                return (ok, err, ok);
+            }
 
             default:
             {
@@ -2585,14 +2643,56 @@ public sealed class BranchHierarchyForm : Form
                     bool force = Invoke(() => Confirm(
                         $"A branch '{info.FullName}' não está totalmente mesclada. Forçar exclusão?",
                         "Excluir forçado"));
-                    if (!force) return (false, "exclusão cancelada (branch não mesclada)");
+                    if (!force) return (false, "exclusão cancelada (branch não mesclada)", false);
                     (ok, err) = _svc.DeleteBranchForce(info.FullName);
                 }
-                if (!ok) return (false, err);
+                if (!ok) return (false, err, false);
 
                 if (deleteRemote)
                 {
                     var (rok, rerr) = _svc.DeleteRemoteBranch(info.DisplayName);
+                    if (!rok) return (false, rerr, false);
+                    return (true, string.Empty, true);
+                }
+                return (true, string.Empty, false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Undoes a single deletion captured during an aborted pass: recreates the local ref at its
+    /// original SHA and, when the remote copy was removed, pushes it back to the remote.
+    /// </summary>
+    private (bool ok, string err) RestoreSingle(BranchInfo info, string sha, bool remoteDeleted)
+    {
+        if (string.IsNullOrEmpty(sha))
+            return (false, "SHA original não capturado — não foi possível restaurar");
+
+        switch (info.Type)
+        {
+            case BranchType.Tag:
+            {
+                var (ok, err) = _svc.CreateTag(info.FullName, sha);
+                if (!ok) return (false, err);
+                if (remoteDeleted)
+                {
+                    var (rok, rerr) = _svc.RestoreRemoteTag(info.FullName, sha);
+                    if (!rok) return (false, rerr);
+                }
+                return (true, string.Empty);
+            }
+
+            case BranchType.Remote:
+                // Only ever existed on the remote — push it back; no local ref to recreate.
+                return _svc.RestoreRemoteBranch(info.RemoteName ?? _svc.GetDefaultRemote(), info.DisplayName, sha);
+
+            default:
+            {
+                var (ok, err) = _svc.CreateLocalBranch(info.FullName, sha);
+                if (!ok) return (false, err);
+                if (remoteDeleted)
+                {
+                    var (rok, rerr) = _svc.RestoreRemoteBranch(_svc.GetDefaultRemote(), info.DisplayName, sha);
                     if (!rok) return (false, rerr);
                 }
                 return (true, string.Empty);
