@@ -2382,76 +2382,222 @@ public sealed class BranchHierarchyForm : Form
             }
         }
 
-        if (targets.Count >= 2) { DoDeleteMultiple(targets); return; }
         if (targets.Count == 0) return;
 
-        var info = targets[0];
+        // Confirmation dialog listing the items, with an unchecked "Excluir Remotamente ?" option.
+        var (confirmed, deleteRemote) = ConfirmDelete(targets);
+        if (!confirmed) return;
 
-        if (!Confirm($"Excluir '{info.FullName}'?", "Confirmar exclusão")) return;
+        _ = DoDeleteAsync(targets, deleteRemote);
+    }
 
-        (bool ok, string err) result = info.Type switch
+    /// <summary>
+    /// Modal confirmation for deletion. Asks "Deseja realmente excluir os itens selecionados ?",
+    /// lists every target branch/tag, and offers an unchecked "Excluir Remotamente ?" checkbox.
+    /// Returns whether the user confirmed and whether remote deletion was requested.
+    /// </summary>
+    private (bool confirmed, bool deleteRemote) ConfirmDelete(List<BranchInfo> targets)
+    {
+        using var dlg = new Form
         {
-            BranchType.Tag    => _svc.DeleteTag(info.FullName),
-            BranchType.Remote => _svc.DeleteBranch(info.FullName, isRemote: true),
-            _                 => _svc.DeleteBranch(info.FullName, isRemote: false)
+            Text            = "Confirmar exclusão",
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition   = FormStartPosition.CenterParent,
+            MinimizeBox     = false,
+            MaximizeBox     = false,
+            ShowInTaskbar   = false,
+            ClientSize      = new Size(440, 340),
+            Font            = Font
         };
 
-        if (result.ok)
+        var lblPrompt = new Label
         {
-            RefreshTree();
-        }
-        else if (result.err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
+            Text      = "Deseja realmente excluir os itens selecionados ?",
+            AutoSize  = false,
+            Bounds    = new Rectangle(12, 12, 416, 20),
+            Font      = new Font(Font, FontStyle.Bold)
+        };
+
+        var list = new ListBox
         {
-            if (Confirm($"A branch não está totalmente mesclada. Forçar exclusão de '{info.FullName}'?",
-                        "Excluir forçado"))
+            Bounds         = new Rectangle(12, 40, 416, 200),
+            SelectionMode  = SelectionMode.None,
+            IntegralHeight = false,
+            TabStop        = false
+        };
+        foreach (var t in targets)
+            list.Items.Add($"• {t.FullName}  ({DescribeType(t)})");
+
+        var chkRemote = new CheckBox
+        {
+            Text     = "Excluir Remotamente ?",
+            Checked  = false,
+            AutoSize = true,
+            Location = new Point(12, 250)
+        };
+
+        var btnOk = new Button
+        {
+            Text         = "Excluir",
+            DialogResult = DialogResult.OK,
+            Bounds       = new Rectangle(252, 298, 84, 30)
+        };
+        var btnCancel = new Button
+        {
+            Text         = "Cancelar",
+            DialogResult = DialogResult.Cancel,
+            Bounds       = new Rectangle(344, 298, 84, 30)
+        };
+
+        dlg.Controls.AddRange([lblPrompt, list, chkRemote, btnOk, btnCancel]);
+        dlg.AcceptButton = btnOk;
+        dlg.CancelButton = btnCancel;
+
+        bool ok = dlg.ShowDialog(this) == DialogResult.OK;
+        return (ok, ok && chkRemote.Checked);
+    }
+
+    /// <summary>Human-readable kind of a target, used in confirmation and progress messages.</summary>
+    private static string DescribeType(BranchInfo info) => info.Type switch
+    {
+        BranchType.Tag    => "tag",
+        BranchType.Remote => "branch remota",
+        _                 => "branch local",
+    };
+
+    /// <summary>
+    /// Deletes every target with the loading overlay blocking the form. The steps list shows each
+    /// branch/tag name as it is removed and the progress bar advances by one slice per deletion
+    /// (increment = 100 / number of deletions). When <paramref name="deleteRemote"/> is true, each
+    /// local branch / tag is also removed from the default remote. The tree is reloaded within the
+    /// same overlay once all deletions complete.
+    /// </summary>
+    private async Task DoDeleteAsync(List<BranchInfo> targets, bool deleteRemote)
+    {
+        if (_isRefreshing) return;
+        _isRefreshing = true;
+
+        _refreshCts?.Cancel();
+        _refreshCts = new CancellationTokenSource();
+        var token = _refreshCts.Token;
+
+        // Block the form and show the overlay with the list of items being deleted.
+        _progressBar.Value = 0;
+        _stepsList.Items.Clear();
+        _stepsList.Items.Add("• Iniciando exclusão...");
+        _btnCancelRefresh.Enabled = false;          // deletion is not cancellable mid-pass
+        _loadingTitle.Text        = "Excluindo itens selecionados";
+        _loadingOverlay.Location  = new Point(
+            (ClientSize.Width  - _loadingOverlay.Width)  / 2,
+            (ClientSize.Height - _loadingOverlay.Height) / 2);
+        _loadingOverlay.Visible = true;
+        _loadingOverlay.BringToFront();
+        SetFormEnabled(false);
+
+        var errors = new List<string>();
+        int total  = targets.Count;
+
+        IProgress<(int pct, string msg)> prog = new Progress<(int pct, string msg)>(p =>
+        {
+            _progressBar.Value = Math.Max(0, Math.Min(100, p.pct));
+            _stepsList.Items.Add($"• {p.msg}");
+            int last = _stepsList.Items.Count - 1;
+            if (last >= 0) _stepsList.TopIndex = last;
+        });
+
+        try
+        {
+            await Task.Run(() =>
             {
-                var (ok2, err2) = _svc.DeleteBranchForce(info.FullName);
-                if (ok2) RefreshTree();
-                else ShowError("Erro ao excluir", err2);
+                for (int i = 0; i < total; i++)
+                {
+                    var info = targets[i];
+                    prog.Report((i * 100 / total, $"Excluindo {DescribeType(info)} '{info.FullName}'..."));
+                    var (ok, err) = DeleteSingle(info, deleteRemote);
+                    if (!ok) errors.Add($"{info.FullName}: {err.Trim()}");
+                    prog.Report(((i + 1) * 100 / total,
+                        ok ? $"Excluído: {info.FullName}" : $"Falha: {info.FullName}"));
+                }
+            });
+
+            // Reload the tree within the same overlay so the removals are reflected immediately.
+            prog.Report((100, "Atualizando árvore..."));
+            var data = await Task.Run(() => FetchRepoData(null, token), token);
+            if (!IsDisposed)
+            {
+                ApplyRepoData(data);
+                ScrollTreeToTop();
             }
+            await Task.Delay(700);
         }
-        else
+        catch (Exception ex)
         {
-            // A tag deletion can fail on the remote step after the local tag was already removed —
-            // refresh so the tree reflects the local removal, then report the remote warning.
-            if (info.Type == BranchType.Tag) RefreshTree();
-            ShowError("Erro ao excluir", result.err);
+            if (!IsDisposed)
+                MessageBox.Show($"Erro durante a exclusão:\n{ex.Message}",
+                    "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                _loadingOverlay.Visible = false;
+                _loadingTitle.Text      = "Carregando dados do repositório";   // restore default title
+                SetFormEnabled(true);
+            }
+            _isRefreshing = false;
+        }
+
+        if (!IsDisposed && errors.Count > 0)
+            ShowError("Erro ao excluir", string.Join("\n", errors));
         RestoreFocus();
     }
 
-    /// <summary>Deletes every checked branch/tag in one pass, with a single confirmation.</summary>
-    private void DoDeleteMultiple(List<BranchInfo> infos)
+    /// <summary>
+    /// Deletes one branch/tag locally and, when <paramref name="deleteRemote"/> is set, from the
+    /// default remote too. Runs on a background thread; the not-fully-merged force prompt is
+    /// marshalled back to the UI thread. Returns (ok, error) for the whole item.
+    /// </summary>
+    private (bool ok, string err) DeleteSingle(BranchInfo info, bool deleteRemote)
     {
-        string list = string.Join("\n", infos.Select(i => $"  • {i.FullName}"));
-        if (!Confirm($"Excluir os {infos.Count} itens selecionados?\n\n{list}", "Confirmar exclusão múltipla"))
-            return;
-
-        var errors = new List<string>();
-        foreach (var info in infos)
+        switch (info.Type)
         {
-            var (ok, err) = info.Type switch
+            case BranchType.Tag:
             {
-                BranchType.Tag    => _svc.DeleteTag(info.FullName),
-                BranchType.Remote => _svc.DeleteBranch(info.FullName, isRemote: true),
-                _                 => _svc.DeleteBranch(info.FullName, isRemote: false)
-            };
-
-            // Offer a force-delete for local branches that aren't fully merged.
-            if (!ok && info.Type == BranchType.Local
-                    && err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase)
-                    && Confirm($"'{info.FullName}' não está totalmente mesclada. Forçar exclusão?", "Excluir forçado"))
-            {
-                (ok, err) = _svc.DeleteBranchForce(info.FullName);
+                var (ok, err) = _svc.DeleteLocalTag(info.FullName);
+                if (!ok) return (false, err);
+                if (deleteRemote)
+                {
+                    var (rok, rerr) = _svc.DeleteRemoteTag(info.FullName);
+                    if (!rok) return (false, rerr);
+                }
+                return (true, string.Empty);
             }
 
-            if (!ok) errors.Add($"{info.FullName}: {err.Trim()}");
-        }
+            case BranchType.Remote:
+                // A remote-tracking branch only exists on the remote — deletion is inherently remote.
+                return _svc.DeleteBranch(info.FullName, isRemote: true);
 
-        RefreshTree();   // rebuilds the tree → all checkboxes reset
-        if (errors.Count > 0)
-            ShowError("Erro ao excluir", string.Join("\n", errors));
-        RestoreFocus();
+            default:
+            {
+                var (ok, err) = _svc.DeleteBranch(info.FullName, isRemote: false);
+                if (!ok && err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
+                {
+                    bool force = Invoke(() => Confirm(
+                        $"A branch '{info.FullName}' não está totalmente mesclada. Forçar exclusão?",
+                        "Excluir forçado"));
+                    if (!force) return (false, "exclusão cancelada (branch não mesclada)");
+                    (ok, err) = _svc.DeleteBranchForce(info.FullName);
+                }
+                if (!ok) return (false, err);
+
+                if (deleteRemote)
+                {
+                    var (rok, rerr) = _svc.DeleteRemoteBranch(info.DisplayName);
+                    if (!rok) return (false, rerr);
+                }
+                return (true, string.Empty);
+            }
+        }
     }
 
     // ── UI helpers ────────────────────────────────────────────────────────────
