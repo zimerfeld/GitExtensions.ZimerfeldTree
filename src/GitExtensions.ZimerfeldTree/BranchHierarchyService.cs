@@ -346,6 +346,125 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>Deletes a tag locally only (<c>git tag -d</c>). Does not touch any remote.</summary>
+    public (bool ok, string error) DeleteLocalTag(string tagName)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"tag -d \"{EscapeArg(tagName)}\"");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>
+    /// Deletes a tag from the default remote (<c>git push &lt;remote&gt; --delete &lt;tag&gt;</c>).
+    /// A remote that doesn't carry the tag is treated as success — the goal is already met.
+    /// </summary>
+    public (bool ok, string error) DeleteRemoteTag(string tagName)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+
+            var (_, rerr, rcode) = RunGitFull($"push {remote} --delete \"{EscapeArg(tagName)}\"");
+            if (rcode == 0) return (true, string.Empty);
+            if (rerr.Contains("remote ref does not exist", StringComparison.OrdinalIgnoreCase))
+                return (true, string.Empty);
+            return (false, $"falha ao remover do remoto '{remote}': {rerr.Trim()}");
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>
+    /// Deletes a local branch from the default remote (<c>git push &lt;remote&gt; --delete &lt;branch&gt;</c>).
+    /// A remote that doesn't carry the branch is treated as success.
+    /// </summary>
+    public (bool ok, string error) DeleteRemoteBranch(string branchName)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+
+            var (_, rerr, rcode) = RunGitFull($"push {remote} --delete \"{EscapeArg(branchName)}\"");
+            if (rcode == 0) return (true, string.Empty);
+            if (rerr.Contains("remote ref does not exist", StringComparison.OrdinalIgnoreCase))
+                return (true, string.Empty);
+            return (false, $"falha ao remover do remoto '{remote}': {rerr.Trim()}");
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    // ── Ref resolution & restore (used to revert an aborted deletion) ─────────────
+
+    /// <summary>Resolves a local branch to its commit SHA (empty string when it doesn't exist).</summary>
+    public string ResolveLocalBranchSha(string name) => RevParse($"refs/heads/{name}");
+
+    /// <summary>Resolves a tag to its commit SHA (empty string when it doesn't exist).</summary>
+    public string ResolveTagSha(string name) => RevParse($"refs/tags/{name}");
+
+    /// <summary>Resolves a remote-tracking branch (e.g. "origin/main") to its commit SHA.</summary>
+    public string ResolveRemoteBranchSha(string fullName) => RevParse($"refs/remotes/{fullName}");
+
+    private string RevParse(string rev)
+    {
+        try
+        {
+            var (o, _, c) = RunGitFull($"rev-parse --verify --quiet \"{EscapeArg(rev)}\"");
+            return c == 0 ? o.Trim() : string.Empty;
+        }
+        catch { return string.Empty; }
+    }
+
+    /// <summary>Recreates a local branch at the given SHA (used to undo a deletion).</summary>
+    public (bool ok, string error) CreateLocalBranch(string name, string sha)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"branch \"{EscapeArg(name)}\" {EscapeArg(sha)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Recreates a tag at the given SHA (used to undo a deletion).</summary>
+    public (bool ok, string error) CreateTag(string name, string sha)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"tag \"{EscapeArg(name)}\" {EscapeArg(sha)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Pushes a branch back to a remote at the given SHA (used to undo a remote deletion).</summary>
+    public (bool ok, string error) RestoreRemoteBranch(string remote, string branchName, string sha)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(remote)) return (false, "nenhum remoto configurado");
+            var (_, err, code) = RunGitFull($"push {remote} {EscapeArg(sha)}:refs/heads/{EscapeArg(branchName)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>Pushes a tag back to the default remote at the given SHA (used to undo a remote deletion).</summary>
+    public (bool ok, string error) RestoreRemoteTag(string tagName, string sha)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+            var (_, err, code) = RunGitFull($"push {remote} {EscapeArg(sha)}:refs/tags/{EscapeArg(tagName)}");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     public (bool ok, string error) RenameBranch(string oldName, string newName)
     {
         try

@@ -38,6 +38,12 @@ public sealed class BranchHierarchyForm : Form
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
     private bool                         _suppressEcho;               // ignore the PostRepositoryChanged echo of our own NotifyRepoChanged
 
+    // Open modal child dialogs, tracked so they can be force-closed when GitExtensions switches the
+    // active repository (Change Working Directory): a GitFlow/Restore window must not linger over a
+    // repo it no longer matches. Set while ShowDialog runs (DoGitFlow/DoRestore), cleared on close.
+    private GitFlowForm? _gitFlowForm;
+    private RestoreForm? _restoreForm;
+
     // ── Controls ─────────────────────────────────────────────────────────────
     private Panel            _topPanel    = null!;
     private Label            _lblWD       = null!;
@@ -175,11 +181,28 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>Called by the plugin when GitExtensions switches the active repository.</summary>
     public void UpdateWorkingDir(string newDir)
     {
+        // When the GitExtensions "Change Working Directory" dropdown actually switches repos, drop any
+        // open GitFlow/Restore child window — it belongs to the old repo. The cboRepo dropdown and the
+        // lblBranch label below are updated to the new repo here and by the subsequent RefreshTree.
+        bool repoChanged = !string.Equals(newDir, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase);
+        if (repoChanged) CloseChildDialogs();
+
         _svc.WorkingDir = newDir;
         _gitFlowUserToggled = false; // re-enable auto-organization for the new repo
         if (!_cboRepo.Items.Contains(newDir))
             _cboRepo.Items.Add(newDir);
         _cboRepo.SelectedItem = newDir;
+    }
+
+    /// <summary>
+    /// Closes the modal GitFlow / Restore child dialogs if either is open. Calling <see cref="Form.Close"/>
+    /// on a modal form ends its ShowDialog loop, after which DoGitFlow/DoRestore resume and clear the field.
+    /// Safe to call when nothing is open (no-op).
+    /// </summary>
+    private void CloseChildDialogs()
+    {
+        if (_gitFlowForm is { IsDisposed: false } gf) gf.Close();
+        if (_restoreForm is { IsDisposed: false } rf) rf.Close();
     }
 
     /// <summary>
@@ -193,11 +216,21 @@ public sealed class BranchHierarchyForm : Form
     /// external changes, but ignores the event when it is the ECHO of our own RepoChangedNotifier
     /// .Notify() (raised by <see cref="NotifyRepoChanged"/>): in that case the tree was already
     /// refreshed live and a second refresh would only flash the overlay needlessly.
+    /// <para><paramref name="newDir"/> is the working directory reported by the event. When it differs
+    /// from the current repo, the active repo was actually switched (e.g. the GitExtensions
+    /// "Change Working Directory" dropdown) — adopt it FIRST (closes open GitFlow/Restore windows and
+    /// updates cboRepo) so the refresh below reads the NEW repo instead of reloading the previous one.</para>
     /// </summary>
-    public void NotifyExternalRepoChanged()
+    public void NotifyExternalRepoChanged(string newDir)
     {
         if (_suppressEcho) return;
-        RefreshTree();
+
+        if (!string.IsNullOrEmpty(newDir) &&
+            !string.Equals(newDir, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase))
+        {
+            UpdateWorkingDir(newDir);   // closes child dialogs + selects the new repo in cboRepo
+        }
+        RefreshTree();                  // rebuilds the tree and refreshes lblBranch for the current repo
     }
 
     /// <summary>
@@ -220,7 +253,7 @@ public sealed class BranchHierarchyForm : Form
             _stepsList.Items.Clear();
             _stepsList.Items.Add("• Iniciando...");
             _btnCancelRefresh.Enabled = true;
-            _btnCancelRefresh.Text    = "Cancelar";
+            _btnCancelRefresh.Text    = "Abortar Operação";
             _loadingOverlay.Location  = new Point(
                 (ClientSize.Width  - _loadingOverlay.Width)  / 2,
                 (ClientSize.Height - _loadingOverlay.Height) / 2);
@@ -904,13 +937,13 @@ public sealed class BranchHierarchyForm : Form
         _btnCancelRefresh = new Button
         {
             Name   = "btnCancelRefresh",
-            Text   = "Cancelar",
-            Bounds = new Rectangle(130, 212, 100, 26)
+            Text   = "Abortar Operação",
+            Bounds = new Rectangle(110, 212, 140, 26)
         };
         _btnCancelRefresh.Click += (_, _) =>
         {
             _btnCancelRefresh.Enabled = false;
-            _btnCancelRefresh.Text    = "Cancelando…";
+            _btnCancelRefresh.Text    = "Abortando…";
             _refreshCts?.Cancel();
         };
 
@@ -2143,6 +2176,7 @@ public sealed class BranchHierarchyForm : Form
     private void DoGitFlow()
     {
         using var dlg = new GitFlowForm(_svc, _chkShowDebug.Checked);
+        _gitFlowForm = dlg;   // tracked so a Change-Working-Directory switch can force-close it
 
         // Refresh the tree live when GitFlow mutates the repo (any button) while still modal, and
         // reveal/select the affected branch. RefreshTree() runs behind the modal dialog and does
@@ -2175,6 +2209,7 @@ public sealed class BranchHierarchyForm : Form
         }
 
         dlg.ShowDialog(this);
+        _gitFlowForm = null;   // dialog closed — no longer force-closable
 
         // Recentre this window on the screen after the GitFlow dialog closes.
         Location = new Point(
@@ -2195,6 +2230,7 @@ public sealed class BranchHierarchyForm : Form
     private void DoRestore()
     {
         using var dlg = new RestoreForm(_svc, _chkShowDebug.Checked);
+        _restoreForm = dlg;   // tracked so a Change-Working-Directory switch can force-close it
 
         dlg.RepoMutated += branch =>
         {
@@ -2223,6 +2259,7 @@ public sealed class BranchHierarchyForm : Form
         }
 
         dlg.ShowDialog(this);
+        _restoreForm = null;   // dialog closed — no longer force-closable
 
         // Recentre this window on the screen after the Restore dialog closes.
         Location = new Point(
@@ -2345,76 +2382,322 @@ public sealed class BranchHierarchyForm : Form
             }
         }
 
-        if (targets.Count >= 2) { DoDeleteMultiple(targets); return; }
         if (targets.Count == 0) return;
 
-        var info = targets[0];
+        // Confirmation dialog listing the items, with an unchecked "Excluir Remotamente ?" option.
+        var (confirmed, deleteRemote) = ConfirmDelete(targets);
+        if (!confirmed) return;
 
-        if (!Confirm($"Excluir '{info.FullName}'?", "Confirmar exclusão")) return;
+        _ = DoDeleteAsync(targets, deleteRemote);
+    }
 
-        (bool ok, string err) result = info.Type switch
+    /// <summary>
+    /// Modal confirmation for deletion. Asks "Deseja realmente excluir os itens selecionados ?",
+    /// lists every target branch/tag, and offers an unchecked "Excluir Remotamente ?" checkbox.
+    /// Returns whether the user confirmed and whether remote deletion was requested.
+    /// </summary>
+    private (bool confirmed, bool deleteRemote) ConfirmDelete(List<BranchInfo> targets)
+    {
+        using var dlg = new Form
         {
-            BranchType.Tag    => _svc.DeleteTag(info.FullName),
-            BranchType.Remote => _svc.DeleteBranch(info.FullName, isRemote: true),
-            _                 => _svc.DeleteBranch(info.FullName, isRemote: false)
+            Text            = "Confirmar exclusão",
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition   = FormStartPosition.CenterParent,
+            MinimizeBox     = false,
+            MaximizeBox     = false,
+            ShowInTaskbar   = false,
+            ClientSize      = new Size(440, 340),
+            Font            = Font
         };
 
-        if (result.ok)
+        var lblPrompt = new Label
         {
-            RefreshTree();
-        }
-        else if (result.err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
+            Text      = "Deseja realmente excluir os itens selecionados ?",
+            AutoSize  = false,
+            Bounds    = new Rectangle(12, 12, 416, 20),
+            Font      = new Font(Font, FontStyle.Bold)
+        };
+
+        var list = new ListBox
         {
-            if (Confirm($"A branch não está totalmente mesclada. Forçar exclusão de '{info.FullName}'?",
-                        "Excluir forçado"))
+            Bounds         = new Rectangle(12, 40, 416, 200),
+            SelectionMode  = SelectionMode.None,
+            IntegralHeight = false,
+            TabStop        = false
+        };
+        foreach (var t in targets)
+            list.Items.Add($"• {t.FullName}  ({DescribeType(t)})");
+
+        var chkRemote = new CheckBox
+        {
+            Text     = "Excluir Remotamente ?",
+            Checked  = false,
+            AutoSize = true,
+            Location = new Point(12, 250)
+        };
+
+        var btnOk = new Button
+        {
+            Text         = "Excluir",
+            DialogResult = DialogResult.OK,
+            Bounds       = new Rectangle(252, 298, 84, 30)
+        };
+        var btnCancel = new Button
+        {
+            Text         = "Cancelar",
+            DialogResult = DialogResult.Cancel,
+            Bounds       = new Rectangle(344, 298, 84, 30)
+        };
+
+        dlg.Controls.AddRange([lblPrompt, list, chkRemote, btnOk, btnCancel]);
+        dlg.AcceptButton = btnOk;
+        dlg.CancelButton = btnCancel;
+
+        bool ok = dlg.ShowDialog(this) == DialogResult.OK;
+        return (ok, ok && chkRemote.Checked);
+    }
+
+    /// <summary>Human-readable kind of a target, used in confirmation and progress messages.</summary>
+    private static string DescribeType(BranchInfo info) => info.Type switch
+    {
+        BranchType.Tag    => "tag",
+        BranchType.Remote => "branch remota",
+        _                 => "branch local",
+    };
+
+    /// <summary>
+    /// Deletes every target with the loading overlay blocking the form. The steps list shows each
+    /// branch/tag name as it is removed and the progress bar advances by one slice per deletion
+    /// (increment = 100 / number of deletions). When <paramref name="deleteRemote"/> is true, each
+    /// local branch / tag is also removed from the default remote. The tree is reloaded within the
+    /// same overlay once all deletions complete.
+    /// </summary>
+    private async Task DoDeleteAsync(List<BranchInfo> targets, bool deleteRemote)
+    {
+        if (_isRefreshing) return;
+        _isRefreshing = true;
+
+        _refreshCts?.Cancel();
+        _refreshCts = new CancellationTokenSource();
+        var token = _refreshCts.Token;
+
+        // Block the form and show the overlay with the list of items being deleted. The Abortar
+        // button stays enabled so the user can stop the pass and revert what was already deleted.
+        _progressBar.Value = 0;
+        _stepsList.Items.Clear();
+        _stepsList.Items.Add("• Iniciando exclusão...");
+        _btnCancelRefresh.Enabled = true;
+        _btnCancelRefresh.Text    = "Abortar Operação";
+        _loadingTitle.Text        = "Excluindo itens selecionados";
+        _loadingOverlay.Location  = new Point(
+            (ClientSize.Width  - _loadingOverlay.Width)  / 2,
+            (ClientSize.Height - _loadingOverlay.Height) / 2);
+        _loadingOverlay.Visible = true;
+        _loadingOverlay.BringToFront();
+        SetFormEnabled(false);
+
+        var errors  = new List<string>();
+        int total   = targets.Count;
+        bool aborted = false;
+
+        // Items deleted so far, with the SHA captured before deletion — enough to recreate them.
+        var deleted = new List<(BranchInfo info, string sha, bool remoteDeleted)>();
+
+        IProgress<(int pct, string msg)> prog = new Progress<(int pct, string msg)>(p =>
+        {
+            _progressBar.Value = Math.Max(0, Math.Min(100, p.pct));
+            _stepsList.Items.Add($"• {p.msg}");
+            int last = _stepsList.Items.Count - 1;
+            if (last >= 0) _stepsList.TopIndex = last;
+        });
+
+        try
+        {
+            await Task.Run(() =>
             {
-                var (ok2, err2) = _svc.DeleteBranchForce(info.FullName);
-                if (ok2) RefreshTree();
-                else ShowError("Erro ao excluir", err2);
+                for (int i = 0; i < total; i++)
+                {
+                    if (token.IsCancellationRequested) { aborted = true; break; }
+
+                    var info = targets[i];
+                    prog.Report((i * 100 / total, $"Excluindo {DescribeType(info)} '{info.FullName}'..."));
+
+                    string sha = CaptureSha(info);                       // before deletion, to allow undo
+                    var (ok, err, remoteDeleted) = DeleteSingle(info, deleteRemote);
+                    if (ok) deleted.Add((info, sha, remoteDeleted));
+                    else    errors.Add($"{info.FullName}: {err.Trim()}");
+
+                    prog.Report(((i + 1) * 100 / total,
+                        ok ? $"Excluído: {info.FullName}" : $"Falha: {info.FullName}"));
+                }
+            });
+
+            // Aborted mid-pass: revert everything already deleted, restoring local refs and (when the
+            // remote copy was removed) pushing them back to the remote.
+            if (aborted)
+            {
+                _btnCancelRefresh.Enabled = false;
+                _loadingTitle.Text        = "Revertendo alterações";
+                _progressBar.Value        = 0;
+                _stepsList.Items.Add("• Operação abortada — revertendo exclusões...");
+
+                if (deleted.Count > 0)
+                {
+                    var toRevert = deleted.ToList();
+                    await Task.Run(() =>
+                    {
+                        for (int i = 0; i < toRevert.Count; i++)
+                        {
+                            var d = toRevert[i];
+                            prog.Report((i * 100 / toRevert.Count, $"Restaurando '{d.info.FullName}'..."));
+                            var (rok, rerr) = RestoreSingle(d.info, d.sha, d.remoteDeleted);
+                            if (!rok) errors.Add($"restauração de {d.info.FullName}: {rerr.Trim()}");
+                            prog.Report(((i + 1) * 100 / toRevert.Count,
+                                rok ? $"Restaurado: {d.info.FullName}" : $"Falha ao restaurar: {d.info.FullName}"));
+                        }
+                    });
+                }
             }
+            else
+            {
+                _btnCancelRefresh.Enabled = false;
+            }
+
+            // Reload the tree within the same overlay so the result is reflected immediately. Use a
+            // fresh (non-cancelled) token — the original token may have been cancelled by the abort.
+            prog.Report((100, "Atualizando árvore..."));
+            var data = await Task.Run(() => FetchRepoData(null, CancellationToken.None), CancellationToken.None);
+            if (!IsDisposed)
+            {
+                ApplyRepoData(data);
+                ScrollTreeToTop();
+            }
+            await Task.Delay(700);
         }
-        else
+        catch (Exception ex)
         {
-            // A tag deletion can fail on the remote step after the local tag was already removed —
-            // refresh so the tree reflects the local removal, then report the remote warning.
-            if (info.Type == BranchType.Tag) RefreshTree();
-            ShowError("Erro ao excluir", result.err);
+            if (!IsDisposed)
+                MessageBox.Show($"Erro durante a exclusão:\n{ex.Message}",
+                    "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                _loadingOverlay.Visible = false;
+                _loadingTitle.Text      = "Carregando dados do repositório";   // restore default title
+                SetFormEnabled(true);
+            }
+            _isRefreshing = false;
+        }
+
+        if (!IsDisposed && errors.Count > 0)
+            ShowError(aborted ? "Operação abortada — avisos" : "Erro ao excluir",
+                      string.Join("\n", errors));
         RestoreFocus();
     }
 
-    /// <summary>Deletes every checked branch/tag in one pass, with a single confirmation.</summary>
-    private void DoDeleteMultiple(List<BranchInfo> infos)
+    /// <summary>Captures the commit SHA of a target before deletion, so the deletion can be undone.</summary>
+    private string CaptureSha(BranchInfo info) => info.Type switch
     {
-        string list = string.Join("\n", infos.Select(i => $"  • {i.FullName}"));
-        if (!Confirm($"Excluir os {infos.Count} itens selecionados?\n\n{list}", "Confirmar exclusão múltipla"))
-            return;
+        BranchType.Tag    => _svc.ResolveTagSha(info.FullName),
+        BranchType.Remote => _svc.ResolveRemoteBranchSha(info.FullName),
+        _                 => _svc.ResolveLocalBranchSha(info.FullName),
+    };
 
-        var errors = new List<string>();
-        foreach (var info in infos)
+    /// <summary>
+    /// Deletes one branch/tag locally and, when <paramref name="deleteRemote"/> is set, from the
+    /// default remote too. Runs on a background thread; the not-fully-merged force prompt is
+    /// marshalled back to the UI thread. Returns (ok, error, remoteDeleted) — <c>remoteDeleted</c>
+    /// indicates the remote copy was removed and must be pushed back if the operation is reverted.
+    /// </summary>
+    private (bool ok, string err, bool remoteDeleted) DeleteSingle(BranchInfo info, bool deleteRemote)
+    {
+        switch (info.Type)
         {
-            var (ok, err) = info.Type switch
+            case BranchType.Tag:
             {
-                BranchType.Tag    => _svc.DeleteTag(info.FullName),
-                BranchType.Remote => _svc.DeleteBranch(info.FullName, isRemote: true),
-                _                 => _svc.DeleteBranch(info.FullName, isRemote: false)
-            };
-
-            // Offer a force-delete for local branches that aren't fully merged.
-            if (!ok && info.Type == BranchType.Local
-                    && err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase)
-                    && Confirm($"'{info.FullName}' não está totalmente mesclada. Forçar exclusão?", "Excluir forçado"))
-            {
-                (ok, err) = _svc.DeleteBranchForce(info.FullName);
+                var (ok, err) = _svc.DeleteLocalTag(info.FullName);
+                if (!ok) return (false, err, false);
+                if (deleteRemote)
+                {
+                    var (rok, rerr) = _svc.DeleteRemoteTag(info.FullName);
+                    if (!rok) return (false, rerr, false);
+                    return (true, string.Empty, true);
+                }
+                return (true, string.Empty, false);
             }
 
-            if (!ok) errors.Add($"{info.FullName}: {err.Trim()}");
-        }
+            case BranchType.Remote:
+            {
+                // A remote-tracking branch only exists on the remote — deletion is inherently remote.
+                var (ok, err) = _svc.DeleteBranch(info.FullName, isRemote: true);
+                return (ok, err, ok);
+            }
 
-        RefreshTree();   // rebuilds the tree → all checkboxes reset
-        if (errors.Count > 0)
-            ShowError("Erro ao excluir", string.Join("\n", errors));
-        RestoreFocus();
+            default:
+            {
+                var (ok, err) = _svc.DeleteBranch(info.FullName, isRemote: false);
+                if (!ok && err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
+                {
+                    bool force = Invoke(() => Confirm(
+                        $"A branch '{info.FullName}' não está totalmente mesclada. Forçar exclusão?",
+                        "Excluir forçado"));
+                    if (!force) return (false, "exclusão cancelada (branch não mesclada)", false);
+                    (ok, err) = _svc.DeleteBranchForce(info.FullName);
+                }
+                if (!ok) return (false, err, false);
+
+                if (deleteRemote)
+                {
+                    var (rok, rerr) = _svc.DeleteRemoteBranch(info.DisplayName);
+                    if (!rok) return (false, rerr, false);
+                    return (true, string.Empty, true);
+                }
+                return (true, string.Empty, false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Undoes a single deletion captured during an aborted pass: recreates the local ref at its
+    /// original SHA and, when the remote copy was removed, pushes it back to the remote.
+    /// </summary>
+    private (bool ok, string err) RestoreSingle(BranchInfo info, string sha, bool remoteDeleted)
+    {
+        if (string.IsNullOrEmpty(sha))
+            return (false, "SHA original não capturado — não foi possível restaurar");
+
+        switch (info.Type)
+        {
+            case BranchType.Tag:
+            {
+                var (ok, err) = _svc.CreateTag(info.FullName, sha);
+                if (!ok) return (false, err);
+                if (remoteDeleted)
+                {
+                    var (rok, rerr) = _svc.RestoreRemoteTag(info.FullName, sha);
+                    if (!rok) return (false, rerr);
+                }
+                return (true, string.Empty);
+            }
+
+            case BranchType.Remote:
+                // Only ever existed on the remote — push it back; no local ref to recreate.
+                return _svc.RestoreRemoteBranch(info.RemoteName ?? _svc.GetDefaultRemote(), info.DisplayName, sha);
+
+            default:
+            {
+                var (ok, err) = _svc.CreateLocalBranch(info.FullName, sha);
+                if (!ok) return (false, err);
+                if (remoteDeleted)
+                {
+                    var (rok, rerr) = _svc.RestoreRemoteBranch(_svc.GetDefaultRemote(), info.DisplayName, sha);
+                    if (!rok) return (false, rerr);
+                }
+                return (true, string.Empty);
+            }
+        }
     }
 
     // ── UI helpers ────────────────────────────────────────────────────────────

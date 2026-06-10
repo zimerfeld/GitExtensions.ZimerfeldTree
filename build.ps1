@@ -7,17 +7,6 @@
 
 $ErrorActionPreference = "Stop"
 
-# -- 0. Fechar GitExtensions e plugins antes de compilar ----------------------
-$geProcs = Get-Process -Name GitExtensions -ErrorAction SilentlyContinue
-if ($geProcs) {
-    Write-Host "Fechando GitExtensions e plugins..."
-    $geProcs | Stop-Process -Force
-    Start-Sleep -Milliseconds 800
-    Write-Host "GitExtensions encerrado."
-} else {
-    Write-Host "GitExtensions nao esta em execucao."
-}
-
 $nuspec  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\GitExtensions.ZimerfeldTree.nuspec"
 $csproj  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\GitExtensions.ZimerfeldTree.csproj"
 $outDir  = $PSScriptRoot
@@ -34,7 +23,35 @@ $major      = [int]$parts[0]
 $minor      = [int]$parts[1]
 $build      = [int]$parts[2] + 1
 $newVersion = "$major.$minor.$build"
+
+# -- 1b. Detectar mudancas -----------------------------------------------------
+# So' incrementa a versao (e recompila/empacota) se houver fonte mais novo que a
+# DLL ja' compilada. Sem mudancas => mantem a versao atual e encerra.
+$dll     = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\bin\Release\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll"
+$srcRoot = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree"
+$srcFiles = Get-ChildItem $srcRoot -Recurse -File -Include *.cs,*.csproj,*.nuspec,*.resx,*.png |
+            Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' }
+$newestSrc = ($srcFiles | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum
+
+if ((Test-Path $dll) -and $newestSrc -le (Get-Item $dll).LastWriteTimeUtc) {
+    Write-Host ""
+    Write-Host "Nenhuma mudanca detectada nos fontes -- versao mantida em $current (build/pack ignorados)." -ForegroundColor Cyan
+    exit 0
+}
+
 Write-Host "Versao: $current  ->  $newVersion"
+
+# -- 1c. Fechar GitExtensions e plugins antes de compilar ----------------------
+# Feito so' quando ha' mudancas, para nao encerrar o GitExtensions num run sem efeito.
+$geProcs = Get-Process -Name GitExtensions -ErrorAction SilentlyContinue
+if ($geProcs) {
+    Write-Host "Fechando GitExtensions e plugins..."
+    $geProcs | Stop-Process -Force
+    Start-Sleep -Milliseconds 800
+    Write-Host "GitExtensions encerrado."
+} else {
+    Write-Host "GitExtensions nao esta em execucao."
+}
 
 # -- 2. Atualizar nuspec -------------------------------------------------------
 $spec.package.metadata.version = $newVersion
@@ -68,8 +85,26 @@ if (Test-Path $readmeDoc) {
 
 # -- 5. Build ------------------------------------------------------------------
 Write-Host "Compilando..."
-dotnet build $csproj -c Release --nologo -v quiet
-if ($LASTEXITCODE -ne 0) { Write-Error "Build falhou."; exit 1 }
+$buildOutput = & dotnet build $csproj -c Release --nologo -v minimal 2>&1
+$buildExit   = $LASTEXITCODE
+$buildOutput | ForEach-Object { Write-Host $_ }
+
+# Analisa o resultado do build a partir dos diagnosticos emitidos (formato MSBuild:
+# "arquivo(linha,col): error CSxxxx" / "... : warning CSxxxx").
+$buildText    = $buildOutput | Out-String
+$errorCount   = ([regex]::Matches($buildText, '(?im):\s*error\s')).Count
+$warningCount = ([regex]::Matches($buildText, '(?im):\s*warning\s')).Count
+
+if ($buildExit -ne 0 -or $errorCount -gt 0) {
+    Write-Host "Build falhou: $errorCount erro(s)." -ForegroundColor Red
+    exit 1
+}
+elseif ($warningCount -gt 0) {
+    Write-Host "Build concluido com $warningCount aviso(s)." -ForegroundColor Yellow
+}
+else {
+    Write-Host "Build concluido com sucesso (nenhum erro ou aviso)." -ForegroundColor Green
+}
 
 # -- 6. Deploy (requer Admin) --------------------------------------------------
 $pluginsDir = "C:\Program Files\GitExtensions\Plugins"
@@ -115,11 +150,16 @@ if (-not $nugetExe) {
 # extrai o grupo lib cujo framework esta na sua lista de monikers { net5.0..net10.0, any,
 # netstandard2.0 }. lib\ raiz = grupo "any" (extraido); uma subpasta net9.0-windows NAO
 # esta na lista e quebraria a instalacao. Por isso filtramos esse aviso especifico.
+$nu5101Suppressed = $false
 & $nugetExe pack $nuspec -OutputDirectory $outDir 2>&1 |
-    Where-Object { $_ -notmatch 'NU5101' } |
-    ForEach-Object { Write-Host $_ }
+    ForEach-Object {
+        if ($_ -match 'NU5101') { $nu5101Suppressed = $true }
+        else { Write-Host $_ }
+    }
 if ($LASTEXITCODE -ne 0) { Write-Error "nuget pack falhou."; exit 1 }
-Write-Host "(NU5101 omitido: DLL em lib\ raiz e' intencional — exigido pelo Plugin Manager)"
+if ($nu5101Suppressed) {
+    Write-Host "(NU5101 omitido: DLL em lib\ raiz e' intencional — exigido pelo Plugin Manager)"
+}
 
 # Remove pacotes de versoes anteriores
 Get-ChildItem "$outDir\GitExtensions.ZimerfeldTree.*.nupkg" |

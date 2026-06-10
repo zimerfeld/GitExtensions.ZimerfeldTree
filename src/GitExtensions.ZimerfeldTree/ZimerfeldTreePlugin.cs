@@ -41,6 +41,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     public override bool Execute(GitUIEventArgs args)
     {
         string workDir = args.GitModule?.WorkingDir ?? string.Empty;
+        DebugLog($"Execute    inst=#{_instanceId} dir='{workDir}'");
 
         if (_form is null || _form.IsDisposed)
         {
@@ -102,11 +103,28 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         commands.PostCheckoutRevision   += OnBranchChanged;
         commands.PostCommit             += OnPostCommit;   // dedicated: also restores focus
         commands.PostRepositoryChanged  += OnExternalChange;
+
+        string regDir = commands.Module?.WorkingDir ?? string.Empty;
+        DebugLog($"Register   inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{regDir}'");
+
+        // The host calls Register for the UICommands of the NEWLY active repo whenever it switches
+        // repositories (e.g. the "Change Working Directory" dropdown). If the tree window is already
+        // open, adopt that working dir here — this is the reliable switch signal even when no Post*
+        // event follows. Guards in UpdateWorkingDir make it a no-op when the repo did not change.
+        if (_form is { IsDisposed: false } form && !string.IsNullOrEmpty(regDir))
+        {
+            form.InvokeIfRequired(() =>
+            {
+                form.UpdateWorkingDir(regDir);
+                form.RefreshTree();
+            });
+        }
     }
 
     /// <summary>Unsubscribe from all events.</summary>
     public override void Unregister(IGitUICommands commands)
     {
+        DebugLog($"Unregister inst=#{_instanceId} dir='{commands.Module?.WorkingDir ?? string.Empty}'");
         commands.PostBrowseInitialize   -= OnRepositoryChanged;
         commands.PostCheckoutBranch     -= OnBranchChanged;
         commands.PostCheckoutRevision   -= OnBranchChanged;
@@ -121,9 +139,10 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
 
     private void OnRepositoryChanged(object? sender, GitUIEventArgs e)
     {
+        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
+        DebugLog($"PostBrowseInitialize inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{newDir}'");
         if (_form is null || _form.IsDisposed) return;
 
-        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
         _form.InvokeIfRequired(() =>
         {
             _form.UpdateWorkingDir(newDir);
@@ -133,6 +152,7 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
 
     private void OnBranchChanged(object? sender, GitUIPostActionEventArgs e)
     {
+        DebugLog($"PostCheckout inst=#{_instanceId} formOpen={_form is { IsDisposed: false }}");
         if (_form is null || _form.IsDisposed) return;
         _form.InvokeIfRequired(() => _form.RefreshTree());
     }
@@ -155,8 +175,33 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     // former but ignores the latter (tree already current) — avoiding a redundant overlay flash.
     private void OnExternalChange(object? sender, GitUIEventArgs e)
     {
+        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
+        DebugLog($"PostRepositoryChanged inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{newDir}'");
         if (_form is null || _form.IsDisposed) return;
-        _form.InvokeIfRequired(() => _form.NotifyExternalRepoChanged());
+        // The "Change Working Directory" dropdown switches the active repo through this event (not
+        // PostBrowseInitialize), so pass the new working dir along: the form adopts it before
+        // refreshing, otherwise the tree would reload the previous repo and the switch wouldn't show.
+        _form.InvokeIfRequired(() => _form.NotifyExternalRepoChanged(newDir));
+    }
+
+    // ── Diagnostic logging (temporary) ──────────────────────────────────────────
+    // Appends one timestamped line per plugin lifecycle/event to a log file, so the exact sequence
+    // fired on a "Change Working Directory" switch can be confirmed. Best-effort; never throws.
+    private static int _instanceCounter;
+    private readonly int _instanceId = System.Threading.Interlocked.Increment(ref _instanceCounter);
+
+    private static readonly string DebugLogPath = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "GitExtensions", "ZimerfeldTree.debug.log");
+
+    internal static void DebugLog(string message)
+    {
+        try
+        {
+            System.IO.File.AppendAllText(DebugLogPath,
+                $"{DateTime.Now:HH:mm:ss.fff}  {message}{Environment.NewLine}");
+        }
+        catch { /* logging must never break the plugin */ }
     }
 }
 
