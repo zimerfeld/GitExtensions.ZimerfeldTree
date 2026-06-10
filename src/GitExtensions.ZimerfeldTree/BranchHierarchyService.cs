@@ -346,6 +346,57 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>Deletes a tag locally only (<c>git tag -d</c>). Does not touch any remote.</summary>
+    public (bool ok, string error) DeleteLocalTag(string tagName)
+    {
+        try
+        {
+            var (_, err, code) = RunGitFull($"tag -d \"{EscapeArg(tagName)}\"");
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>
+    /// Deletes a tag from the default remote (<c>git push &lt;remote&gt; --delete &lt;tag&gt;</c>).
+    /// A remote that doesn't carry the tag is treated as success — the goal is already met.
+    /// </summary>
+    public (bool ok, string error) DeleteRemoteTag(string tagName)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+
+            var (_, rerr, rcode) = RunGitFull($"push {remote} --delete \"{EscapeArg(tagName)}\"");
+            if (rcode == 0) return (true, string.Empty);
+            if (rerr.Contains("remote ref does not exist", StringComparison.OrdinalIgnoreCase))
+                return (true, string.Empty);
+            return (false, $"falha ao remover do remoto '{remote}': {rerr.Trim()}");
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
+    /// <summary>
+    /// Deletes a local branch from the default remote (<c>git push &lt;remote&gt; --delete &lt;branch&gt;</c>).
+    /// A remote that doesn't carry the branch is treated as success.
+    /// </summary>
+    public (bool ok, string error) DeleteRemoteBranch(string branchName)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return (true, string.Empty);
+
+            var (_, rerr, rcode) = RunGitFull($"push {remote} --delete \"{EscapeArg(branchName)}\"");
+            if (rcode == 0) return (true, string.Empty);
+            if (rerr.Contains("remote ref does not exist", StringComparison.OrdinalIgnoreCase))
+                return (true, string.Empty);
+            return (false, $"falha ao remover do remoto '{remote}': {rerr.Trim()}");
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     public (bool ok, string error) RenameBranch(string oldName, string newName)
     {
         try
