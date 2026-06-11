@@ -4,9 +4,9 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.282**
+**Versão atual: 1.0.287**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.282 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.287 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -71,6 +71,24 @@ Exibidos acima da árvore quando há uma branch em checkout:
   - Ao excluir uma **tag**, ela é removida **localmente** (`git tag -d`) **e do remoto** (`git push <remote> --delete <tag>`); se a tag não existir no remoto, a remoção local ainda é considerada bem-sucedida.
 - O **menu de contexto** acompanha: com **2+** checkboxes marcados, mostra apenas **Excluir (N)** e **Atualizar** (o item GitFlow foi removido do menu de contexto).
 - Após excluir, a árvore é reconstruída e os checkboxes são limpos.
+
+O fluxo completo de exclusão em lote:
+
+**1. Antes — itens marcados** (botão mostra `Excluir (8)`):
+
+![Antes da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBeforeDelete.png)
+
+**2. Confirmação única** listando todos os itens, com a opção **Excluir Remotamente?**:
+
+![Confirmar exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotConfirmDelete.png)
+
+**3. Durante a exclusão** — overlay de progresso com a lista de passos e o botão **Abortar Operação**:
+
+![Durante a exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotDuringDelete.png)
+
+**4. Depois** — a árvore é reconstruída já sem os itens excluídos e com os contadores atualizados:
+
+![Depois da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotAfterDelete.png)
 
 #### Proteção de branches principais e "Modo Developer"
 
@@ -199,6 +217,7 @@ ZimerfeldTree/
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
 - Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela BranchHierarchy é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
 - **Checkout + revelar a branch afetada**: após cada botão, o plugin faz `git checkout` da branch afetada e, na árvore, **expande os nós da seção LOCAL até alcançá-la** e a seleciona. Para **Start/Publish/Track/Update** a branch afetada é a própria (`<prefixo><nome>`); para **Finish** (a branch é removida) o plugin revela a branch resultante atual (ex.: `develop`), sem refazer checkout
+- O painel **Resultado** exibe a saída de cada comando `git` em fonte monoespaçada, com fundo bege (`#EFEBD8`) idêntico ao do console nativo do GitExtensions (janelas Push/Fetch)
 
 ### Janela GitFlow — branch base no Start
 
@@ -294,7 +313,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 - A janela Restore é posicionada ao lado de BranchHierarchy, ambas centralizadas na tela (mesmo comportamento da janela GitFlow)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é atualizada em background sem perder o foco da janela Restore
-- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada
+- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada, com fundo bege (`#EFEBD8`) idêntico ao do console nativo do GitExtensions (janelas Push/Fetch)
 - Link **About Restore** no canto superior direito descreve cada operação
 
 ### Janela Restore — comportamento geral
@@ -303,7 +322,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 - Janela **modal**, posicionada ao lado de BranchHierarchy com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
 - Contém três grupos de operações independentes: **Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**
 - Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
-- O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, scroll automático para o fim)
+- O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, fundo bege `#EFEBD8` igual ao do console nativo do GitExtensions, scroll automático para o fim)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
 - Os últimos valores usados em cada campo são **persistidos** em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` e restaurados na próxima abertura
 - Link **About Restore** no canto superior direito descreve o propósito de cada operação
@@ -409,6 +428,8 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\install.ps1
 ```
 
+![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotInstall.png)
+
 ### Opção B — Manual
 
 Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
@@ -428,7 +449,24 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\uninstall.ps1
 ```
 
+![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUninstall.png)
+
 A remoção da DLL não afeta nenhuma outra parte do GitExtensions.
+
+---
+
+## Atualização da DLL
+
+Para atualizar apenas a DLL já instalada (sem reinstalar), execute o PowerShell **como Administrador**:
+
+```powershell
+cd C:\GitExtensions\ZimerfeldTree\tools
+.\update-dll.ps1
+```
+
+![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUpdate.png)
+
+Reinicie o GitExtensions para aplicar a nova DLL.
 
 ---
 
@@ -524,6 +562,14 @@ O script:
 3. Compila em modo Release (`net9.0-windows`)
 4. Se for Administrador, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`
 5. Empacota o `.nupkg` em `C:\NUGET\ZimerfeldTree\`
+
+Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
+
+![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBuild.png)
+
+Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
+
+![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotNoBuild.png)
 
 ---
 

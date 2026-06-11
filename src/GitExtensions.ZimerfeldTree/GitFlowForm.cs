@@ -315,7 +315,9 @@ public sealed class GitFlowForm : Form
             ReadOnly   = true,
             ScrollBars = ScrollBars.Both,
             WordWrap   = false,
-            BackColor  = SystemColors.Window,
+            // Match the GitExtensions native console output background (the beige seen in the
+            // "Push to origin" / fetch windows) instead of plain white.
+            BackColor  = Color.FromArgb(0xEF, 0xEB, 0xD8),
             Bounds     = new Rectangle(10, 22, 644, 310),
             Anchor     = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Font       = new Font("Consolas", 9f)
@@ -737,10 +739,11 @@ public sealed class GitFlowForm : Form
                 _svc.RebaseBasedOnOnFinish(fullBranch, featureMergeTarget);
         }
 
-        // ── 4. Non-release: remove remote branch and reveal ───────────────────
+        // ── 4. Non-release: remove remote branch (unless keepBranch) and reveal ─
         if (!isRelease)
         {
-            DeleteRemoteBranchIfExists(remote, fullBranch);
+            if (!_chkKeep.Checked)
+                DeleteRemoteBranchIfExists(remote, fullBranch);
             RevealInTree(_svc.GetCurrentBranch(), checkout: false);
             return;
         }
@@ -763,8 +766,9 @@ public sealed class GitFlowForm : Form
         // Push the release tag (created locally by the merge step above).
         RunFlow($"push \"{remote}\" \"refs/tags/{safeName}\"", suppressError: true);
 
-        // Delete the remote release branch only if it still exists.
-        DeleteRemoteBranchIfExists(remote, fullBranch);
+        // Delete the remote release branch only if it still exists and keepBranch is off.
+        if (!_chkKeep.Checked)
+            DeleteRemoteBranchIfExists(remote, fullBranch);
 
         RunFlow($"checkout \"{devBranch}\"");
         RevealInTree(devBranch, checkout: false);

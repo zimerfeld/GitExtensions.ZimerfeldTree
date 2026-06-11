@@ -282,7 +282,9 @@ public sealed class RestoreForm : Form
             ReadOnly   = true,
             ScrollBars = ScrollBars.Both,
             WordWrap   = false,
-            BackColor  = SystemColors.Window,
+            // Match the GitExtensions native console output background (the beige seen in the
+            // "Push to origin" / fetch windows) instead of plain white.
+            BackColor  = Color.FromArgb(0xEF, 0xEB, 0xD8),
             Font       = new Font("Consolas", 9f),
             Bounds     = new Rectangle(10, 22, 516, 218),
             Anchor     = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right

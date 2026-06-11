@@ -39,7 +39,8 @@ if ((Test-Path $dll) -and $newestSrc -le (Get-Item $dll).LastWriteTimeUtc) {
     exit 0
 }
 
-Write-Host "Versao: $current  ->  $newVersion"
+Write-Host "Versao: $current  ->  " -NoNewline
+Write-Host $newVersion -ForegroundColor Green
 
 # -- 1c. Fechar GitExtensions e plugins antes de compilar ----------------------
 # Feito so' quando ha' mudancas, para nao encerrar o GitExtensions num run sem efeito.
@@ -87,7 +88,16 @@ if (Test-Path $readmeDoc) {
 Write-Host "Compilando..."
 $buildOutput = & dotnet build $csproj -c Release --nologo -v minimal 2>&1
 $buildExit   = $LASTEXITCODE
-$buildOutput | ForEach-Object { Write-Host $_ }
+$buildOutput | ForEach-Object {
+    $line = "$_"
+    # Oculta as mensagens dos eventos de prebuild do GitExtensions.Extensibility
+    if ($line -match 'GitExtensions\.Extensibility') { return }
+    # Colore o resumo do MSBuild: sucesso em verde, avisos em amarelo, erros em vermelho
+    if     ($line -match '^\s*Build succeeded\.')  { Write-Host $line -ForegroundColor Green }
+    elseif ($line -match '^\s*\d+\s+Warning\(s\)') { Write-Host $line -ForegroundColor Yellow }
+    elseif ($line -match '^\s*\d+\s+Error\(s\)')   { Write-Host $line -ForegroundColor Red }
+    else { Write-Host $line }
+}
 
 # Analisa o resultado do build a partir dos diagnosticos emitidos (formato MSBuild:
 # "arquivo(linha,col): error CSxxxx" / "... : warning CSxxxx").
@@ -150,16 +160,10 @@ if (-not $nugetExe) {
 # extrai o grupo lib cujo framework esta na sua lista de monikers { net5.0..net10.0, any,
 # netstandard2.0 }. lib\ raiz = grupo "any" (extraido); uma subpasta net9.0-windows NAO
 # esta na lista e quebraria a instalacao. Por isso filtramos esse aviso especifico.
-$nu5101Suppressed = $false
 & $nugetExe pack $nuspec -OutputDirectory $outDir 2>&1 |
-    ForEach-Object {
-        if ($_ -match 'NU5101') { $nu5101Suppressed = $true }
-        else { Write-Host $_ }
-    }
+    Where-Object { $_ -notmatch 'NU5101' } |
+    ForEach-Object { Write-Host $_ }
 if ($LASTEXITCODE -ne 0) { Write-Error "nuget pack falhou."; exit 1 }
-if ($nu5101Suppressed) {
-    Write-Host "(NU5101 omitido: DLL em lib\ raiz e' intencional — exigido pelo Plugin Manager)"
-}
 
 # Remove pacotes de versoes anteriores
 Get-ChildItem "$outDir\GitExtensions.ZimerfeldTree.*.nupkg" |

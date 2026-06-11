@@ -51,10 +51,19 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             catch { /* RepoChangedNotifier may not be available in every build */ }
 
             // Open the native commit dialog in-process so Commit Template plugins load correctly.
+            // workingDir is the repo selected in the tree window's cboRepo: bind the commands to it via
+            // WithWorkingDirectory so the dialog commits against that repo (and its checked-out branch,
+            // shown in lblBranch) rather than the GitExtensions host's active repository.
             // Returns null when unavailable (caller falls back to spawning a new process).
-            Func<IWin32Window, bool?> openCommit = owner =>
+            Func<IWin32Window, string, bool?> openCommit = (owner, workingDir) =>
             {
-                try { return _commands?.StartCommitDialog(owner, string.Empty, false); }
+                try
+                {
+                    var commands = string.IsNullOrEmpty(workingDir)
+                        ? _commands
+                        : _commands?.WithWorkingDirectory(workingDir);
+                    return commands?.StartCommitDialog(owner, string.Empty, false);
+                }
                 catch { return null; }
             };
 
@@ -98,91 +107,34 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         base.Register(commands);
         _commands = commands;
 
-        commands.PostBrowseInitialize   += OnRepositoryChanged;
-        commands.PostCheckoutBranch     += OnBranchChanged;
-        commands.PostCheckoutRevision   += OnBranchChanged;
-        commands.PostCommit             += OnPostCommit;   // dedicated: also restores focus
-        commands.PostRepositoryChanged  += OnExternalChange;
-
         string regDir = commands.Module?.WorkingDir ?? string.Empty;
         DebugLog($"Register   inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{regDir}'");
 
-        // The host calls Register for the UICommands of the NEWLY active repo whenever it switches
-        // repositories (e.g. the "Change Working Directory" dropdown). If the tree window is already
-        // open, adopt that working dir here — this is the reliable switch signal even when no Post*
-        // event follows. Guards in UpdateWorkingDir make it a no-op when the repo did not change.
-        if (_form is { IsDisposed: false } form && !string.IsNullOrEmpty(regDir))
-        {
-            form.InvokeIfRequired(() =>
-            {
-                form.UpdateWorkingDir(regDir);
-                form.RefreshTree();
-            });
-        }
+        // NOTE: ZimerfeldTree is fully decoupled from the GitExtensions host UI. We subscribe to NO
+        // host events, so nothing done in the GitExtensions interface — switching repos via the
+        // "Change Working Directory" dropdown, checking out a branch, committing, etc. — affects an
+        // open tree window. The window's repository is chosen exclusively through its own cboRepo, and
+        // it refreshes only via its own buttons/menus/operations. The host working dir is used only
+        // once, as the PRE-SELECTED cboRepo value when the window is opened (see Execute →
+        // BranchHierarchyForm ctor → LoadRepositories).
     }
 
     /// <summary>Unsubscribe from all events.</summary>
     public override void Unregister(IGitUICommands commands)
     {
         DebugLog($"Unregister inst=#{_instanceId} dir='{commands.Module?.WorkingDir ?? string.Empty}'");
-        commands.PostBrowseInitialize   -= OnRepositoryChanged;
-        commands.PostCheckoutBranch     -= OnBranchChanged;
-        commands.PostCheckoutRevision   -= OnBranchChanged;
-        commands.PostCommit             -= OnPostCommit;
-        commands.PostRepositoryChanged  -= OnExternalChange;
 
         _commands = null;
         base.Unregister(commands);
     }
 
     // ── Event handlers ────────────────────────────────────────────────────────
-
-    private void OnRepositoryChanged(object? sender, GitUIEventArgs e)
-    {
-        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
-        DebugLog($"PostBrowseInitialize inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{newDir}'");
-        if (_form is null || _form.IsDisposed) return;
-
-        _form.InvokeIfRequired(() =>
-        {
-            _form.UpdateWorkingDir(newDir);
-            _form.RefreshTree();
-        });
-    }
-
-    private void OnBranchChanged(object? sender, GitUIPostActionEventArgs e)
-    {
-        DebugLog($"PostCheckout inst=#{_instanceId} formOpen={_form is { IsDisposed: false }}");
-        if (_form is null || _form.IsDisposed) return;
-        _form.InvokeIfRequired(() => _form.RefreshTree());
-    }
-
-    // Separate handler for PostCommit: refreshes the tree AND restores focus to ZimerfeldTree,
-    // so the window comes back to the front after the GitExtensions Commit dialog closes.
-    private void OnPostCommit(object? sender, GitUIPostActionEventArgs e)
-    {
-        if (_form is null || _form.IsDisposed) return;
-        _form.InvokeIfRequired(() =>
-        {
-            _form.RefreshTree();
-            _form.FocusAfterCommit();
-        });
-    }
-
-    // PostRepositoryChanged fires both on genuine external changes (GitExtensions main window) and
-    // as an "echo" of our own RepoChangedNotifier.Notify() (raised by the form's NotifyRepoChanged
-    // after a child window like GitFlow/Restore closes). NotifyExternalRepoChanged refreshes on the
-    // former but ignores the latter (tree already current) — avoiding a redundant overlay flash.
-    private void OnExternalChange(object? sender, GitUIEventArgs e)
-    {
-        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
-        DebugLog($"PostRepositoryChanged inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{newDir}'");
-        if (_form is null || _form.IsDisposed) return;
-        // The "Change Working Directory" dropdown switches the active repo through this event (not
-        // PostBrowseInitialize), so pass the new working dir along: the form adopts it before
-        // refreshing, otherwise the tree would reload the previous repo and the switch wouldn't show.
-        _form.InvokeIfRequired(() => _form.NotifyExternalRepoChanged(newDir));
-    }
+    //
+    // NOTE: The plugin intentionally subscribes to NO GitExtensions host events. Nothing done in the
+    // GitExtensions interface — switching repos via "Change Working Directory", checking out a branch,
+    // committing, etc. — affects an open ZimerfeldTree window. The window owns its repository selection
+    // (cboRepo) and refreshes only through its own buttons/menus/operations. The host working dir is
+    // consulted only once, when the window is opened (Execute → ctor), to pre-select cboRepo.
 
     // ── Diagnostic logging (temporary) ──────────────────────────────────────────
     // Appends one timestamped line per plugin lifecycle/event to a log file, so the exact sequence

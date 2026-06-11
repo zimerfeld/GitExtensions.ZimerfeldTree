@@ -212,8 +212,27 @@ tools\update-dll.ps1   # atualiza só a DLL
 ```
 O `build.ps1`: (1) lê e incrementa `<version>` no nuspec; (2) sincroniza `<Version>` no csproj; (3) atualiza `README.md` e `FUNCIONALIDADES.md`; (4) builda em Release; (5) se Admin, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`; (6) roda `nuget pack`.
 
+Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
+
+![[ScreenshotBuild.png]]
+
+Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
+
+![[ScreenshotNoBuild.png]]
+
 **Instalação manual:** copiar `GitExtensions.Plugins.ZimerfeldTree.dll` para `C:\Program Files\GitExtensions\Plugins\` e reiniciar o GitExtensions.
-**Desinstalação:** deletar essa DLL (não afeta o GitExtensions).
+
+`tools\install.ps1` (como Admin):
+
+![[ScreenshotInstall.png]]
+
+**Desinstalação:** deletar essa DLL (não afeta o GitExtensions). Via `tools\uninstall.ps1`:
+
+![[ScreenshotUninstall.png]]
+
+**Atualizar só a DLL:** `tools\update-dll.ps1` (como Admin) — copia a DLL recém-buildada para `Plugins\` sem reinstalar:
+
+![[ScreenshotUpdate.png]]
 
 ## ⛔ Limitações de hierarquia de branches
 - **Agrupamento é por nome (`/`), não por parentesco de commits** para o eixo de pastas — `master` e `develop` aparecem como irmãos; para aninhar por nome use `/`.

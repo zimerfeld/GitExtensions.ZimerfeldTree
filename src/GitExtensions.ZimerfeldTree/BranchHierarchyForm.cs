@@ -18,9 +18,12 @@ public sealed class BranchHierarchyForm : Form
     private readonly Action? _notifyRepoChanged; // called after checkout so GitExtensions refreshes
     /// <summary>
     /// Delegate provided by the plugin that opens the native GitExtensions commit dialog in-process.
+    /// The string argument is the working directory to commit against — passed so the dialog targets
+    /// the repository currently selected in cboRepo (and thus its checked-out branch shown in lblBranch),
+    /// not the GitExtensions host's active repository.
     /// Returns true = commits were made, false = dialog closed without committing, null = unavailable (fall back).
     /// </summary>
-    private readonly Func<IWin32Window, bool?>? _openCommitDialog;
+    private readonly Func<IWin32Window, string, bool?>? _openCommitDialog;
     /// <summary>
     /// Delegate provided by the plugin that opens the native GitExtensions push dialog in-process.
     /// Returns true if push was completed, false otherwise.
@@ -36,7 +39,6 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
-    private bool                         _suppressEcho;               // ignore the PostRepositoryChanged echo of our own NotifyRepoChanged
 
     // Open modal child dialogs, tracked so they can be force-closed when GitExtensions switches the
     // active repository (Change Working Directory): a GitFlow/Restore window must not linger over a
@@ -92,6 +94,8 @@ public sealed class BranchHierarchyForm : Form
     private Dictionary<string, HashSet<string>> _treeStateByRepo = [];
     /// <summary>True while we are restoring saved state — suppresses AfterExpand/AfterCollapse saves.</summary>
     private bool _restoringState;
+    /// <summary>True between a left double-click MouseDown and its NodeMouseDoubleClick — cancels the default expand/collapse toggle so double-click only does checkout.</summary>
+    private bool _suppressDoubleClickToggle;
     /// <summary>Debounce timer that delays disk writes when many nodes expand/collapse rapidly.</summary>
     private System.Windows.Forms.Timer? _saveDebounce;
     private static readonly string StateFilePath = Path.Combine(
@@ -158,7 +162,7 @@ public sealed class BranchHierarchyForm : Form
 
     // ─────────────────────────────────────────────────────────────────────────
     public BranchHierarchyForm(string workingDir, Action? notifyRepoChanged = null,
-        Func<IWin32Window, bool?>? openCommitDialog = null,
+        Func<IWin32Window, string, bool?>? openCommitDialog = null,
         Func<IWin32Window, bool>? openPushDialog = null)
     {
         _svc = new BranchHierarchyService(workingDir);
@@ -210,28 +214,6 @@ public sealed class BranchHierarchyForm : Form
     /// Shows the "Carregando…" overlay while reading. Concurrent calls are collapsed into one.
     /// </summary>
     public void RefreshTree() => _ = RefreshTreeAsync(showOverlay: true);
-
-    /// <summary>
-    /// Called by the plugin on GitExtensions' PostRepositoryChanged. Refreshes the tree on genuine
-    /// external changes, but ignores the event when it is the ECHO of our own RepoChangedNotifier
-    /// .Notify() (raised by <see cref="NotifyRepoChanged"/>): in that case the tree was already
-    /// refreshed live and a second refresh would only flash the overlay needlessly.
-    /// <para><paramref name="newDir"/> is the working directory reported by the event. When it differs
-    /// from the current repo, the active repo was actually switched (e.g. the GitExtensions
-    /// "Change Working Directory" dropdown) — adopt it FIRST (closes open GitFlow/Restore windows and
-    /// updates cboRepo) so the refresh below reads the NEW repo instead of reloading the previous one.</para>
-    /// </summary>
-    public void NotifyExternalRepoChanged(string newDir)
-    {
-        if (_suppressEcho) return;
-
-        if (!string.IsNullOrEmpty(newDir) &&
-            !string.Equals(newDir, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase))
-        {
-            UpdateWorkingDir(newDir);   // closes child dialogs + selects the new repo in cboRepo
-        }
-        RefreshTree();                  // rebuilds the tree and refreshes lblBranch for the current repo
-    }
 
     /// <summary>
     /// Loads all branch/tag data on a background thread, optionally showing a centered
@@ -729,6 +711,8 @@ public sealed class BranchHierarchyForm : Form
         _tree.NodeMouseDoubleClick  += Tree_NodeMouseDoubleClick;
         _tree.KeyDown               += Tree_KeyDown;
         _tree.MouseDown             += Tree_MouseDown;
+        _tree.BeforeExpand          += Tree_BeforeExpandCollapse;
+        _tree.BeforeCollapse        += Tree_BeforeExpandCollapse;
         _tree.AfterExpand           += Tree_AfterExpand;
         _tree.AfterCollapse         += Tree_AfterCollapse;
         _tree.BeforeCheck           += Tree_BeforeCheck;   // only branch/tag leaves are checkable
@@ -1766,6 +1750,9 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_NodeMouseDoubleClick(object? sender, TreeNodeMouseClickEventArgs e)
     {
+        // Fires after Tree_BeforeExpandCollapse has consumed the guard for folder nodes; clearing it
+        // here also covers leaf branches (no toggle fires) so the flag never leaks to a later toggle.
+        _suppressDoubleClickToggle = false;
         if (e.Node?.Tag is BranchInfo) DoCheckout();
     }
 
@@ -1820,11 +1807,27 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_MouseDown(object? sender, MouseEventArgs e)
     {
+        // A left double-click does checkout (see Tree_NodeMouseDoubleClick) and must NOT toggle
+        // expand/collapse. This MouseDown fires before the toggle, so we raise the guard here and
+        // cancel the pending expand/collapse in Tree_BeforeExpandCollapse.
+        if (e.Button == MouseButtons.Left && e.Clicks == 2)
+            _suppressDoubleClickToggle = true;
+
         if (e.Button == MouseButtons.Right)
         {
             var node = _tree.GetNodeAt(e.X, e.Y);
             if (node != null) _tree.SelectedNode = node;
         }
+    }
+
+    /// <summary>
+    /// Suppresses the default expand/collapse toggle that a left double-click would otherwise
+    /// trigger. The guard is set in <see cref="Tree_MouseDown"/> and cleared in
+    /// <see cref="Tree_NodeMouseDoubleClick"/>, so single-click toggles and the +/- glyph keep working.
+    /// </summary>
+    private void Tree_BeforeExpandCollapse(object? sender, TreeViewCancelEventArgs e)
+    {
+        if (_suppressDoubleClickToggle) e.Cancel = true;
     }
 
     private void CtxMenu_Opening(object? sender, CancelEventArgs e)
@@ -1926,7 +1929,9 @@ public sealed class BranchHierarchyForm : Form
         // so Commit Template plugins (e.g. Zimerfeld: Auto-resumo) are visible.
         if (_openCommitDialog != null)
         {
-            bool? result = _openCommitDialog(this);
+            // Pass _svc.WorkingDir (the repo selected in cboRepo) so the native dialog commits against
+            // that repository and its checked-out branch (shown in lblBranch), not the host's repo.
+            bool? result = _openCommitDialog(this, _svc.WorkingDir);
             if (result.HasValue)
             {
                 if (result.Value) { RefreshTree(); NotifyRepoChanged(); }
@@ -2716,27 +2721,13 @@ public sealed class BranchHierarchyForm : Form
             BeginInvoke(() => { if (!IsDisposed && Visible) Activate(); });
     }
 
-    /// <summary>
-    /// Brings this window to the front after a commit completes in the GitExtensions Commit dialog.
-    /// Called by the plugin's PostCommit event handler so the tree stays visible after committing.
-    /// Uses BeginInvoke to ensure activation runs after the commit dialog has fully closed.
-    /// </summary>
-    public void FocusAfterCommit()
-    {
-        if (!IsDisposed && Visible)
-            BeginInvoke(() => { if (!IsDisposed && Visible) { BringToFront(); Activate(); } });
-    }
-
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
     private void NotifyRepoChanged()
     {
-        // GitExtensions raises PostRepositoryChanged in response to Notify() (synchronously, on the
-        // UI thread), which bounces back to us as NotifyExternalRepoChanged. Guard against that echo:
-        // the tree is already current, so the echo must not trigger a second (overlay) refresh. The
-        // flag is cleared on the next message-loop turn, after the synchronous echo has been handled.
-        _suppressEcho = true;
-        try { _notifyRepoChanged?.Invoke(); }
-        finally { BeginInvoke(() => _suppressEcho = false); }
+        // Tells GitExtensions to refresh its own main window. We no longer subscribe to
+        // PostRepositoryChanged, so the resulting echo is simply not received here — the tree was
+        // already refreshed live by the operation that called this method.
+        _notifyRepoChanged?.Invoke();
         RestoreFocus();
     }
 
