@@ -51,10 +51,19 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             catch { /* RepoChangedNotifier may not be available in every build */ }
 
             // Open the native commit dialog in-process so Commit Template plugins load correctly.
+            // workingDir is the repo selected in the tree window's cboRepo: bind the commands to it via
+            // WithWorkingDirectory so the dialog commits against that repo (and its checked-out branch,
+            // shown in lblBranch) rather than the GitExtensions host's active repository.
             // Returns null when unavailable (caller falls back to spawning a new process).
-            Func<IWin32Window, bool?> openCommit = owner =>
+            Func<IWin32Window, string, bool?> openCommit = (owner, workingDir) =>
             {
-                try { return _commands?.StartCommitDialog(owner, string.Empty, false); }
+                try
+                {
+                    var commands = string.IsNullOrEmpty(workingDir)
+                        ? _commands
+                        : _commands?.WithWorkingDirectory(workingDir);
+                    return commands?.StartCommitDialog(owner, string.Empty, false);
+                }
                 catch { return null; }
             };
 
