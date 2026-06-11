@@ -739,10 +739,11 @@ public sealed class GitFlowForm : Form
                 _svc.RebaseBasedOnOnFinish(fullBranch, featureMergeTarget);
         }
 
-        // ── 4. Non-release: remove remote branch and reveal ───────────────────
+        // ── 4. Non-release: remove remote branch (unless keepBranch) and reveal ─
         if (!isRelease)
         {
-            DeleteRemoteBranchIfExists(remote, fullBranch);
+            if (!_chkKeep.Checked)
+                DeleteRemoteBranchIfExists(remote, fullBranch);
             RevealInTree(_svc.GetCurrentBranch(), checkout: false);
             return;
         }
@@ -765,8 +766,9 @@ public sealed class GitFlowForm : Form
         // Push the release tag (created locally by the merge step above).
         RunFlow($"push \"{remote}\" \"refs/tags/{safeName}\"", suppressError: true);
 
-        // Delete the remote release branch only if it still exists.
-        DeleteRemoteBranchIfExists(remote, fullBranch);
+        // Delete the remote release branch only if it still exists and keepBranch is off.
+        if (!_chkKeep.Checked)
+            DeleteRemoteBranchIfExists(remote, fullBranch);
 
         RunFlow($"checkout \"{devBranch}\"");
         RevealInTree(devBranch, checkout: false);
