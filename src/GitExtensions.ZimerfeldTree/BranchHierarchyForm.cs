@@ -2693,17 +2693,6 @@ public sealed class BranchHierarchyForm : Form
             BeginInvoke(() => { if (!IsDisposed && Visible) Activate(); });
     }
 
-    /// <summary>
-    /// Brings this window to the front after a commit completes in the GitExtensions Commit dialog.
-    /// Called by the plugin's PostCommit event handler so the tree stays visible after committing.
-    /// Uses BeginInvoke to ensure activation runs after the commit dialog has fully closed.
-    /// </summary>
-    public void FocusAfterCommit()
-    {
-        if (!IsDisposed && Visible)
-            BeginInvoke(() => { if (!IsDisposed && Visible) { BringToFront(); Activate(); } });
-    }
-
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
     private void NotifyRepoChanged()
     {

@@ -98,29 +98,22 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         base.Register(commands);
         _commands = commands;
 
-        commands.PostCheckoutBranch     += OnBranchChanged;
-        commands.PostCheckoutRevision   += OnBranchChanged;
-        commands.PostCommit             += OnPostCommit;   // dedicated: also restores focus
-
         string regDir = commands.Module?.WorkingDir ?? string.Empty;
         DebugLog($"Register   inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{regDir}'");
 
-        // NOTE: We deliberately do NOT adopt the host's working dir into an already-open tree window.
-        // The GitExtensions "Change Working Directory" dropdown must not drive ZimerfeldTree's repo
-        // selection (cboRepo) or its operations once the window is open — cboRepo is the single source
-        // of truth there. The host working dir is only used as the PRE-SELECTED cboRepo value when the
-        // window is first opened (see Execute → BranchHierarchyForm ctor → LoadRepositories).
-        // For the same reason we no longer subscribe to PostBrowseInitialize / PostRepositoryChanged,
-        // which fire on host repo switches.
+        // NOTE: ZimerfeldTree is fully decoupled from the GitExtensions host UI. We subscribe to NO
+        // host events, so nothing done in the GitExtensions interface — switching repos via the
+        // "Change Working Directory" dropdown, checking out a branch, committing, etc. — affects an
+        // open tree window. The window's repository is chosen exclusively through its own cboRepo, and
+        // it refreshes only via its own buttons/menus/operations. The host working dir is used only
+        // once, as the PRE-SELECTED cboRepo value when the window is opened (see Execute →
+        // BranchHierarchyForm ctor → LoadRepositories).
     }
 
     /// <summary>Unsubscribe from all events.</summary>
     public override void Unregister(IGitUICommands commands)
     {
         DebugLog($"Unregister inst=#{_instanceId} dir='{commands.Module?.WorkingDir ?? string.Empty}'");
-        commands.PostCheckoutBranch     -= OnBranchChanged;
-        commands.PostCheckoutRevision   -= OnBranchChanged;
-        commands.PostCommit             -= OnPostCommit;
 
         _commands = null;
         base.Unregister(commands);
@@ -128,30 +121,11 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
 
     // ── Event handlers ────────────────────────────────────────────────────────
     //
-    // NOTE: There is intentionally no handler for PostBrowseInitialize / PostRepositoryChanged.
-    // Host repo switches (e.g. the "Change Working Directory" dropdown) must not affect an open
-    // ZimerfeldTree window — its repo is chosen exclusively through cboRepo. Only PostCheckoutBranch /
-    // PostCheckoutRevision / PostCommit are observed, and they merely refresh the CURRENT (cboRepo)
-    // repo's tree; they never change which repo is selected.
-
-    private void OnBranchChanged(object? sender, GitUIPostActionEventArgs e)
-    {
-        DebugLog($"PostCheckout inst=#{_instanceId} formOpen={_form is { IsDisposed: false }}");
-        if (_form is null || _form.IsDisposed) return;
-        _form.InvokeIfRequired(() => _form.RefreshTree());
-    }
-
-    // Separate handler for PostCommit: refreshes the tree AND restores focus to ZimerfeldTree,
-    // so the window comes back to the front after the GitExtensions Commit dialog closes.
-    private void OnPostCommit(object? sender, GitUIPostActionEventArgs e)
-    {
-        if (_form is null || _form.IsDisposed) return;
-        _form.InvokeIfRequired(() =>
-        {
-            _form.RefreshTree();
-            _form.FocusAfterCommit();
-        });
-    }
+    // NOTE: The plugin intentionally subscribes to NO GitExtensions host events. Nothing done in the
+    // GitExtensions interface — switching repos via "Change Working Directory", checking out a branch,
+    // committing, etc. — affects an open ZimerfeldTree window. The window owns its repository selection
+    // (cboRepo) and refreshes only through its own buttons/menus/operations. The host working dir is
+    // consulted only once, when the window is opened (Execute → ctor), to pre-select cboRepo.
 
     // ── Diagnostic logging (temporary) ──────────────────────────────────────────
     // Appends one timestamped line per plugin lifecycle/event to a log file, so the exact sequence
