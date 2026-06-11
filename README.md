@@ -1,7 +1,7 @@
-﻿**Version:** 1.0.296  
+﻿**Version:** 1.0.298  
 **Updated:** 2026-06-11
 
-**Versão:** 1.0.296  
+**Versão:** 1.0.298  
 **Atualizado em:** 2026-06-11
 
 # <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="ZimerfeldTree icon" width="48" height="48" align="absmiddle" /> GitExtensions.ZimerfeldTree
