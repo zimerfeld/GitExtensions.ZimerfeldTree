@@ -4,9 +4,9 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.287**
+**Versão atual: 1.0.288**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.287 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.288 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -345,10 +345,10 @@ Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução v
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop`             | **imagem personalizada embutida** (chave + martelo como reserva)              |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | nó-pasta "feature"    | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16">   | `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva)      |
-| —                                                                                                                                                         | `bugfix/*`            | joaninha vermelha (glifo desenhado em GDI+)                                    |
+| —                                                                                                                                                         | `bugfix/*`            | 🐞 joaninha vermelha (glifo desenhado em GDI+)                                 |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*`           | **imagem personalizada embutida** (pacote/caixa marrom como reserva)          |
-| —                                                                                                                                                         | `hotfix/*`            | extintor de incêndio vermelho (glifo desenhado em GDI+)                       |
-| —                                                                                                                                                         | `support/*`           | maleta de primeiros socorros (glifo desenhado em GDI+)                        |
+| —                                                                                                                                                         | `hotfix/*`            | 🧯 extintor de incêndio vermelho (glifo desenhado em GDI+)                       |
+| —                                                                                                                                                         | `support/*`           | 🧰 maleta de primeiros socorros (glifo desenhado em GDI+)                        |
 
 Branches locais genéricas usam garfo laranja e nós de caminho usam pasta âmbar. As **seções raiz** (LOCAL, REMOTES, TAGS), o **grupo de remote** (ex.: `origin`), as **branches remotas** e as **tags** também usam imagens personalizadas embutidas (ver abaixo).
 
@@ -451,6 +451,12 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 
 ![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUninstall.png)
 
+Como alternativa, delete manualmente o arquivo:
+
+```
+C:\Program Files\GitExtensions\Plugins\GitExtensions.Plugins.ZimerfeldTree.dll
+```
+
 A remoção da DLL não afeta nenhuma outra parte do GitExtensions.
 
 ---
@@ -467,6 +473,32 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 ![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUpdate.png)
 
 Reinicie o GitExtensions para aplicar a nova DLL.
+
+---
+
+## Build
+
+```powershell
+# Incrementa versão, compila e gera .nupkg
+# Execute como Administrador para também copiar o DLL para Plugins\
+pwsh C:\NUGET\ZimerfeldTree\build.ps1
+```
+
+O script:
+
+1. Lê a versão atual do `.nuspec` e incrementa o `build` (major.minor.**build**)
+2. Atualiza `.nuspec` e `.csproj` com a nova versão
+3. Compila em modo Release (`net9.0-windows`)
+4. Se for Administrador, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`
+5. Empacota o `.nupkg` em `C:\NUGET\ZimerfeldTree\`
+
+Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
+
+![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBuild.png)
+
+Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
+
+![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotNoBuild.png)
 
 ---
 
@@ -544,44 +576,6 @@ Isso garante que a nova branch diverge imediatamente de sua base e a hierarquia 
 1. Abra um repositório no GitExtensions
 2. Vá em **Plugins → ZimerfeldTree**
 3. A janela de hierarquia fica aberta ao lado — navega, filtra, faz checkout sem sair dela
-
----
-
-## Build
-
-```powershell
-# Incrementa versão, compila e gera .nupkg
-# Execute como Administrador para também copiar o DLL para Plugins\
-pwsh C:\NUGET\ZimerfeldTree\build.ps1
-```
-
-O script:
-
-1. Lê a versão atual do `.nuspec` e incrementa o `build` (major.minor.**build**)
-2. Atualiza `.nuspec` e `.csproj` com a nova versão
-3. Compila em modo Release (`net9.0-windows`)
-4. Se for Administrador, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`
-5. Empacota o `.nupkg` em `C:\NUGET\ZimerfeldTree\`
-
-Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
-
-![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBuild.png)
-
-Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
-
-![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotNoBuild.png)
-
----
-
-## Desinstalação
-
-Delete o arquivo:
-
-```
-C:\Program Files\GitExtensions\Plugins\GitExtensions.Plugins.ZimerfeldTree.dll
-```
-
-O GitExtensions não é afetado pela remoção do plugin.
 
 ---
 
