@@ -32,10 +32,10 @@ internal static class NodeIcons
     public const int BranchMaster  = 8;  // master / main   — gold shield
     public const int BranchDevelop = 9;  // develop         — gray open-end wrench
     public const int BranchFeature = 10; // feature folder  — git branch glyph (embedded)
-    public const int BranchBugfix  = 11; // bugfix/*        — red ladybug
+    public const int BranchBugfix  = 11; // bugfix/*        — custom image (red ladybug fallback)
     public const int BranchRelease = 12; // release/*       — brown package
-    public const int BranchHotfix  = 13; // hotfix/*        — orange warning sign
-    public const int BranchSupport = 14; // support/*       — gray gear
+    public const int BranchHotfix  = 13; // hotfix/*        — custom image (fire extinguisher fallback)
+    public const int BranchSupport = 14; // support/*       — custom image (first-aid kit fallback)
 
     public const int BranchFeatureLeaf = 15; // feature/* leaf  — green leaf (sub-node of feature)
 
@@ -71,14 +71,14 @@ internal static class NodeIcons
         _list.Images.Add(LoadEmbedded("develop.png") ?? Wrench());
         // 10 feature/*      — custom embedded image (falls back to green leaf)
         _list.Images.Add(LoadEmbedded("feature.png") ?? Leaf());
-        // 11 bugfix/*       — red ladybug
-        _list.Images.Add(Ladybug());
+        // 11 bugfix/*       — custom embedded image (falls back to red ladybug)
+        _list.Images.Add(LoadEmbedded("bugfix.png") ?? Ladybug());
         // 12 release/*      — custom embedded image (falls back to brown package)
         _list.Images.Add(LoadEmbedded("release.png") ?? Package());
-        // 13 hotfix/*       — orange warning sign
-        _list.Images.Add(WarningSign());
-        // 14 support/*      — gray gear
-        _list.Images.Add(Gear());
+        // 13 hotfix/*       — custom embedded image (falls back to red fire extinguisher)
+        _list.Images.Add(LoadEmbedded("hotfix.png") ?? FireExtinguisher());
+        // 14 support/*      — custom embedded image (falls back to first-aid kit)
+        _list.Images.Add(LoadEmbedded("support.png") ?? FirstAidKit());
         // 15 feature/* leaf — custom embedded image (falls back to green leaf)
         _list.Images.Add(LoadEmbedded("folha.png") ?? Leaf());
 
@@ -305,7 +305,7 @@ internal static class NodeIcons
     {
         var bmp = Blank(); using var g = AA(bmp);
         using var head = new SolidBrush(Color.Black);
-        using var body = new SolidBrush(Color.FromArgb(0xDD, 0x20, 0x20));
+        using var body = new SolidBrush(Color.FromArgb(0xEE, 0x10, 0x10));
         using var line = new Pen(Color.Black, 1f);
         using var spot = new SolidBrush(Color.Black);
         g.FillEllipse(head, 4,  1, 8, 6);    // head
@@ -333,62 +333,64 @@ internal static class NodeIcons
     }
 
     /// <summary>
-    /// Red fire extinguisher: gray handle, red cylinder with white gauge dot,
-    /// dark hose and nozzle — hotfix branch.
+    /// Red fire extinguisher: bold red domed cylinder, black carry handle and valve
+    /// on top, a white label band for contrast, and a black hose with nozzle on the
+    /// right — hotfix branch. Drawn with simple, high-contrast shapes so it reads
+    /// clearly at 16×16.
     /// </summary>
-    private static Bitmap WarningSign()
+    private static Bitmap FireExtinguisher()
     {
         var bmp = Blank(); using var g = AA(bmp);
-        using var red    = new SolidBrush(Color.FromArgb(0xCC, 0x22, 0x22));
-        using var dkRed  = new SolidBrush(Color.FromArgb(0x88, 0x11, 0x11));
-        using var silver = new SolidBrush(Color.FromArgb(0xC0, 0xC0, 0xC0));
-        using var white  = new SolidBrush(Color.White);
-        using var dark   = new SolidBrush(Color.FromArgb(0x35, 0x35, 0x35));
-        using var hose   = new Pen(Color.FromArgb(0x35, 0x35, 0x35), 1.3f)
+        using var red   = new SolidBrush(Color.FromArgb(0xD4, 0x14, 0x14));
+        using var dkRed = new SolidBrush(Color.FromArgb(0x96, 0x0C, 0x0C));
+        using var black = new SolidBrush(Color.FromArgb(0x22, 0x22, 0x22));
+        using var white = new SolidBrush(Color.White);
+        using var hose  = new Pen(Color.FromArgb(0x22, 0x22, 0x22), 1.4f)
             { StartCap = LineCap.Round, EndCap = LineCap.Round };
 
-        // Handle (top)
-        g.FillRectangle(silver, 5, 0, 5, 2);   // horizontal grip bar
-        g.FillRectangle(silver, 8, 0, 2, 4);   // vertical post
+        // Carry handle + valve neck (black), centred on the body
+        g.FillRectangle(black, 5, 0, 6, 2);    // horizontal carry handle
+        g.FillRectangle(black, 7, 1, 2, 4);    // valve neck into the body
 
-        // Cylinder: top cap + body + bottom cap
-        g.FillEllipse(red,   3,  4, 7, 4);     // top dome
-        g.FillRectangle(red, 3,  6, 7, 8);     // body
-        g.FillEllipse(dkRed, 3, 12, 7, 3);     // bottom cap
+        // Red cylinder body (domed top & bottom)
+        g.FillEllipse(red,   4,  4, 8, 4);     // top dome
+        g.FillRectangle(red, 4,  6, 8, 8);     // body
+        g.FillEllipse(red,   4, 11, 8, 4);     // bottom dome
+        g.FillEllipse(dkRed, 4, 12, 8, 3);     // bottom shading
 
-        // Pressure gauge (white circle on body)
-        g.FillEllipse(white, 5, 7, 3, 3);
+        // White label band for contrast
+        g.FillRectangle(white, 5, 9, 6, 2);
 
-        // Hose + nozzle (right side)
-        g.DrawLine(hose, 10f, 8f, 13f, 11f);   // hose
-        g.FillRectangle(dark, 12, 10, 4, 2);   // nozzle
+        // Hose + nozzle on the right
+        g.DrawLine(hose, 11.5f, 6f, 14.5f, 9f);
+        g.FillRectangle(black, 13, 8, 3, 2);
 
         return bmp;
     }
 
     /// <summary>
-    /// First-aid kit bag: light-gray rectangular body with a dark border, an arch
-    /// handle at the top, and a bold red medical cross in the center — support branch.
+    /// First-aid kit: a white rectangular body with a dark border and an arch handle
+    /// at the top, with a bold red medical cross stamped on the front — support branch.
     /// </summary>
-    private static Bitmap Gear()
+    private static Bitmap FirstAidKit()
     {
         var bmp = Blank(); using var g = AA(bmp);
-        using var bg     = new SolidBrush(Color.FromArgb(0xF2, 0xF2, 0xF2));  // light gray bag
-        using var border = new Pen(Color.FromArgb(0x30, 0x30, 0x30), 1f);
+        using var body   = new SolidBrush(Color.White);                       // white bag
+        using var border = new Pen(Color.FromArgb(0x30, 0x30, 0x30), 1.2f);
         using var handle = new Pen(Color.FromArgb(0x30, 0x30, 0x30), 1.5f)
             { StartCap = LineCap.Round, EndCap = LineCap.Round };
-        using var cross  = new Pen(Color.FromArgb(0xCC, 0x00, 0x00), 2.5f)
-            { StartCap = LineCap.Square, EndCap = LineCap.Square };
+        using var cross  = new Pen(Color.FromArgb(0xD0, 0x00, 0x00), 3f)
+            { StartCap = LineCap.Round, EndCap = LineCap.Round };
 
         // Arch handle at top
         g.DrawArc(handle, 6, 1, 4, 4, 180, 180);
 
-        // Bag body
-        g.FillRectangle(bg,     2,  5, 12, 10);
+        // White bag body with dark border
+        g.FillRectangle(body,   2,  5, 12, 10);
         g.DrawRectangle(border, 2,  5, 12, 10);
 
-        // Red cross centred in the bag body (center x=8, center y=10)
-        g.DrawLine(cross, 4f, 10f, 12f, 10f);   // horizontal bar
+        // Bold red medical cross stamped on the front (center x=8, center y=10)
+        g.DrawLine(cross, 5f, 10f, 11f, 10f);   // horizontal bar
         g.DrawLine(cross, 8f,  7f,  8f, 13f);   // vertical bar
 
         return bmp;
