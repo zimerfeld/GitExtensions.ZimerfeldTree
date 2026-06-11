@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.287</Version>
+    <Version>1.0.289</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -53,6 +53,9 @@
     <EmbeddedResource Include="Resources\feature.png" Condition="Exists('Resources\feature.png')" />
     <EmbeddedResource Include="Resources\folha.png" Condition="Exists('Resources\folha.png')" />
     <EmbeddedResource Include="Resources\release.png" Condition="Exists('Resources\release.png')" />
+    <EmbeddedResource Include="Resources\bugfix.png"  Condition="Exists('Resources\bugfix.png')" />
+    <EmbeddedResource Include="Resources\hotfix.png"  Condition="Exists('Resources\hotfix.png')" />
+    <EmbeddedResource Include="Resources\support.png" Condition="Exists('Resources\support.png')" />
     <EmbeddedResource Include="Resources\local.png"   Condition="Exists('Resources\local.png')" />
     <EmbeddedResource Include="Resources\remotes.png" Condition="Exists('Resources\remotes.png')" />
     <EmbeddedResource Include="Resources\tags.png"    Condition="Exists('Resources\tags.png')" />

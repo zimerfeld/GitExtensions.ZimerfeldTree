@@ -419,10 +419,10 @@ public sealed class BranchHierarchyForm : Form
         SuspendLayout();
 
         Text            = "ZimerfeldTree - BranchHierarchy";
-        Size            = new Size(620, 760);   // widened to fit the extra btnExcluir without cropping Restore
+        Size            = new Size(608, 760);   // client 592: button row ends flush at btnRestore's right edge (= right-docked btnGitFlow)
         StartPosition   = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.Sizable;
-        MaximizeBox     = true;
+        FormBorderStyle = FormBorderStyle.FixedSingle;   // não redimensionável pelo usuário
+        MaximizeBox     = false;                          // maximizar redimensionaria a janela
         MinimizeBox     = true;
         KeyPreview      = true;
         Font            = new Font("Segoe UI", 9f);
@@ -585,6 +585,13 @@ public sealed class BranchHierarchyForm : Form
             Font   = new Font(Font, FontStyle.Bold)
         };
         _btnRefresh.Click += (_, _) => RefreshTree();
+        // Use the same icon as the context-menu "Atualizar" action; drop the ↺ glyph so the
+        // compact button shows just the icon (falls back to ↺ if the resource is missing).
+        if (LoadMenuIcon("ctx-refresh.png") is { } refreshImg)
+        {
+            _btnRefresh.Image = refreshImg;
+            _btnRefresh.Text  = string.Empty;
+        }
 
         _filterPanel.Controls.Add(_txtFilter);
         _filterPanel.Controls.Add(_btnRefresh);
@@ -612,6 +619,7 @@ public sealed class BranchHierarchyForm : Form
             Text  = "Organizar como GitFlow"
         };
         _btnGitFlow.Click += BtnGitFlow_Click;
+        ApplyButtonIcon(_btnGitFlow, "ctx-gitflow.png");
 
         _warnPanel = new Panel
         {
@@ -635,6 +643,7 @@ public sealed class BranchHierarchyForm : Form
             Text   = "GitFlow Initialize"
         };
         _btnGitFlowInit.Click += (_, _) => DoGitFlowInit();
+        ApplyButtonIcon(_btnGitFlowInit, "ctx-gitflow.png");
 
         _gitFlowInitPanel = new Panel
         {
@@ -660,19 +669,19 @@ public sealed class BranchHierarchyForm : Form
         _btnPush = new Button { Name = "btnPush", Text = "Push", Width = 80, Height = 24 };
         _btnPush.Click += (_, _) => DoPush();
 
-        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 80, Height = 24 };
+        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 100, Height = 24 };
         _btnCommitDedicated.Click += (_, _) => DoCommit();
 
         // Deletes the checked branch/tag leaves (or the selected node when none are checked),
         // mirroring the context-menu "Excluir". Its text tracks the number of checked checkboxes.
-        _btnExcluir = new Button { Name = "btnExcluir", Text = "Excluir", Width = 80, Height = 24 };
+        _btnExcluir = new Button { Name = "btnExcluir", Text = "Excluir", Width = 100, Height = 24 };
         _btnExcluir.Click += (_, _) => DoDelete();
 
         _btnGitFlowDedicated = new Button
         {
             Name   = "btnGitFlowDedicated",
             Text   = "GitFlow",
-            Width  = 120,
+            Width  = 100,   // narrower so btnRestore is not cropped at the right edge
             Height = 24
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
@@ -681,10 +690,17 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnRestore",
             Text   = "Restore",
-            Width  = 120,
+            Width  = 100,   // matches btnGitFlowDedicated; right edge aligns with the right-docked btnGitFlow
             Height = 24
         };
         _btnRestore.Click += (_, _) => DoRestore();
+
+        // Each button shows the same icon as its matching right-click action. Pull/Push have no
+        // context-menu counterpart, so they stay text-only.
+        ApplyButtonIcon(_btnCommitDedicated, "ctx-commit.png");
+        ApplyButtonIcon(_btnExcluir,         "ctx-delete.png");
+        ApplyButtonIcon(_btnGitFlowDedicated, "ctx-gitflow.png");
+        ApplyButtonIcon(_btnRestore,         "ctx-restore.png");
 
         _gitFlowButtonPanel = new Panel { Name = "gitFlowButtonPanel", Dock = DockStyle.Top, Height = 32 };
         _gitFlowButtonPanel.Controls.AddRange([_btnPull, _btnPush, _btnCommitDedicated, _btnExcluir, _btnGitFlowDedicated, _btnRestore]);
@@ -746,6 +762,21 @@ public sealed class BranchHierarchyForm : Form
             return stream is null ? null : new Bitmap(stream);
         }
         catch { return null; }
+    }
+
+    /// <summary>
+    /// Places the given context-menu icon at the left of a button, before its text, so the
+    /// button mirrors the icon shown for the same action in the right-click menu. No-op when
+    /// the resource is missing (the button keeps its text only). Image+text are centred as a
+    /// group, so callers should leave enough width for both.
+    /// </summary>
+    private static void ApplyButtonIcon(Button btn, string iconFile)
+    {
+        if (LoadMenuIcon(iconFile) is { } img)
+        {
+            btn.Image             = img;
+            btn.TextImageRelation = TextImageRelation.ImageBeforeText;
+        }
     }
 
     private void BuildContextMenu()

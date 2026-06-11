@@ -2,11 +2,11 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.287**
+**Versão atual: 1.0.289**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.287 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.289 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -20,7 +20,7 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - **TAGS** também agrupa por `/` (sem ancestralidade)
 - LOCAL, REMOTES e TAGS exibe `(nenhuma branch local encontrada)` quando não há branches
 - A janela abre **centralizada na tela** (horizontal e vertical)
-- Janela **redimensionável** com botões **Minimizar**, **Maximizar** e **Fechar** padrão do Windows (`Sizable`)
+- Janela de tamanho **fixo** (não redimensionável pelo usuário, `FixedSingle`), com botões **Minimizar** e **Fechar** padrão do Windows; **Maximizar desabilitado** (maximizar redimensionaria a janela)
 - A janela é **independente** do GitExtensions: minimizar o GitExtensions não afeta a janela BranchHierarchy
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches
@@ -58,6 +58,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 - **Restore** — abre a janela **Restore** com três operações de restauração de histórico (ver seção abaixo)
 - **Excluir** / **Excluir (N)** — exclui branches/tags selecionados; o texto reflete a quantidade de checkboxes marcados (ver seção abaixo)
+- **Ícones nos botões** — cada botão exibe, **antes do texto**, o mesmo ícone usado pela ação correspondente no menu de contexto: **Commit** (`ctx-commit`), **Excluir** (`ctx-delete`), **GitFlow** (`ctx-gitflow`), **Restore** (`ctx-restore`) e o botão de atualizar da barra de filtro (`ctx-refresh`, substitui o glifo `↺`). Os botões **GitFlow Initialize** e **Organizar como GitFlow** também usam o ícone `ctx-gitflow`. **Pull** e **Push** não têm ação equivalente no menu de contexto, portanto permanecem somente com texto. Se um ícone não puder ser carregado, o botão mantém apenas o texto
 
 ### Seleção múltipla e exclusão de branches
 
@@ -76,19 +77,19 @@ O fluxo completo de exclusão em lote:
 
 **1. Antes — itens marcados** (botão mostra `Excluir (8)`):
 
-![Antes da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBeforeDelete.png)
+![Antes da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBeforeDelete.png)
 
 **2. Confirmação única** listando todos os itens, com a opção **Excluir Remotamente?**:
 
-![Confirmar exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotConfirmDelete.png)
+![Confirmar exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotConfirmDelete.png)
 
 **3. Durante a exclusão** — overlay de progresso com a lista de passos e o botão **Abortar Operação**:
 
-![Durante a exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotDuringDelete.png)
+![Durante a exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotDuringDelete.png)
 
 **4. Depois** — a árvore é reconstruída já sem os itens excluídos e com os contadores atualizados:
 
-![Depois da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotAfterDelete.png)
+![Depois da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotAfterDelete.png)
 
 #### Proteção de branches principais e "Modo Developer"
 
@@ -154,18 +155,18 @@ Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.pn
 
 | Ícone                                                                                                                                                             | Item                    | Disponível para                                                                     |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                | Local, remota, tag                                                                  |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…      | Local, tag                                                                          |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16">      | Mesclar na branch atual | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16">     | Rebase na branch atual  | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16">     | Renomear…               | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16">     | Excluir…                | Local, remota, tag                                                                  |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16">    | GitFlow…                | Branch (local/remota/tag)                                                           |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16">    | Restore…                | Quando branch atual ≠ `develop` — abre a janela Restore                    |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16">     | Expandir tudo           | Sempre                                                                              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Recolher tudo           | Sempre                                                                              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Atualizar               | Sempre                                                                              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                | Local, remota, tag                                                                  |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…      | Local, tag                                                                          |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16">      | Mesclar na branch atual | Local                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16">     | Rebase na branch atual  | Local                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16">     | Renomear…               | Local                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16">     | Excluir…                | Local, remota, tag                                                                  |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16">    | GitFlow…                | Branch (local/remota/tag)                                                           |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16">    | Restore…                | Quando branch atual ≠ `develop` — abre a janela Restore                    |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16">     | Expandir tudo           | Sempre                                                                              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Recolher tudo           | Sempre                                                                              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Atualizar               | Sempre                                                                              |
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: _Zimerfeld: Auto-resumo_) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no BranchHierarchy divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
 
@@ -211,7 +212,7 @@ ZimerfeldTree/
 
 ### Janela GitFlow
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotGitFlow.png)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotGitFlow.png)
 
 - Ao fechar a janela GitFlow, a janela BranchHierarchy é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
@@ -272,7 +273,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotRestore.png)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotRestore.png)
 
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de BranchHierarchy, com três operações para resgatar estados do histórico git:
 
@@ -341,14 +342,14 @@ Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução v
 
 | Imagem                                                                                                                                                    | Branch                | Ícone                                                                         |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------- |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/master.png" width="16" height="16">  | `master` / `main`     | **imagem personalizada embutida** (escudo dourado como reserva)               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop`             | **imagem personalizada embutida** (chave + martelo como reserva)              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | nó-pasta "feature"    | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16">   | `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva)      |
-| —                                                                                                                                                         | `bugfix/*`            | joaninha vermelha (glifo desenhado em GDI+)                                    |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*`           | **imagem personalizada embutida** (pacote/caixa marrom como reserva)          |
-| —                                                                                                                                                         | `hotfix/*`            | extintor de incêndio vermelho (glifo desenhado em GDI+)                       |
-| —                                                                                                                                                         | `support/*`           | maleta de primeiros socorros (glifo desenhado em GDI+)                        |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/master.png" width="16" height="16">  | `master` / `main`     | **imagem personalizada embutida** (escudo dourado como reserva)               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop`             | **imagem personalizada embutida** (chave + martelo como reserva)              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | nó-pasta "feature"    | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16">   | `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva)      |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/bugfix.png" width="16" height="16"> | `bugfix/*` | **imagem personalizada embutida** (joaninha vermelha como reserva) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*`           | **imagem personalizada embutida** (pacote/caixa marrom como reserva)          |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/hotfix.png" width="16" height="16"> | `hotfix/*` | **imagem personalizada embutida** (extintor de incêndio vermelho como reserva) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/support.png" width="16" height="16"> | `support/*` | **imagem personalizada embutida** (maleta de primeiros socorros branca com cruz vermelha como reserva) |
 
 Branches locais genéricas usam garfo laranja e nós de caminho usam pasta âmbar. As **seções raiz** (LOCAL, REMOTES, TAGS), o **grupo de remote** (ex.: `origin`), as **branches remotas** e as **tags** também usam imagens personalizadas embutidas (ver abaixo).
 
@@ -369,7 +370,9 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 | nó-pasta "feature"               | `Resources/feature.png`       | galho de branch                  |
 | `feature/*` (sub-nós)            | `Resources/folha.png`         | folha verde                      |
 | `release/*`                      | `Resources/release.png`       | pacote/caixa marrom              |
-
+| `bugfix/*` | `Resources/bugfix.png` | joaninha vermelha |
+| `hotfix/*` | `Resources/hotfix.png` | extintor de incêndio vermelho |
+| `support/*` | `Resources/support.png` | maleta branca com cruz vermelha |
 - O plugin permanece **autocontido**: as imagens viajam dentro da DLL, sem depender de arquivos externos na máquina do usuário.
 - Cada `<EmbeddedResource>` é **condicional à existência do arquivo** (`Condition="Exists(...)"`); se o PNG não existir no build, o recurso não é embutido e o nó usa o glifo desenhado de reserva — o build nunca quebra por falta da imagem.
 - Se o recurso estiver **ausente ou ilegível** em tempo de execução, o ícone cai automaticamente na reserva, preservando o comportamento anterior.
@@ -428,7 +431,9 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\install.ps1
 ```
 
-![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotInstall.png)
+![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotInstall.png)
+
+> O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
 ### Opção B — Manual
 
@@ -449,7 +454,15 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\uninstall.ps1
 ```
 
-![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUninstall.png)
+![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUninstall.png)
+
+> O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
+
+Como alternativa, delete manualmente o arquivo:
+
+```
+C:\Program Files\GitExtensions\Plugins\GitExtensions.Plugins.ZimerfeldTree.dll
+```
 
 A remoção da DLL não afeta nenhuma outra parte do GitExtensions.
 
@@ -464,9 +477,37 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\update-dll.ps1
 ```
 
-![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUpdate.png)
+![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUpdate.png)
+
+> O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
 Reinicie o GitExtensions para aplicar a nova DLL.
+
+---
+
+## Build
+
+```powershell
+# Incrementa versão, compila e gera .nupkg
+# Execute como Administrador para também copiar o DLL para Plugins\
+pwsh C:\NUGET\ZimerfeldTree\build.ps1
+```
+
+O script:
+
+1. Lê a versão atual do `.nuspec` e incrementa o `build` (major.minor.**build**)
+2. Atualiza `.nuspec` e `.csproj` com a nova versão
+3. Compila em modo Release (`net9.0-windows`)
+4. Se for Administrador, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`
+5. Empacota o `.nupkg` em `C:\NUGET\ZimerfeldTree\`
+
+Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
+
+![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBuild.png)
+
+Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
+
+![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotNoBuild.png)
 
 ---
 
@@ -544,44 +585,6 @@ Isso garante que a nova branch diverge imediatamente de sua base e a hierarquia 
 1. Abra um repositório no GitExtensions
 2. Vá em **Plugins → ZimerfeldTree**
 3. A janela de hierarquia fica aberta ao lado — navega, filtra, faz checkout sem sair dela
-
----
-
-## Build
-
-```powershell
-# Incrementa versão, compila e gera .nupkg
-# Execute como Administrador para também copiar o DLL para Plugins\
-pwsh C:\NUGET\ZimerfeldTree\build.ps1
-```
-
-O script:
-
-1. Lê a versão atual do `.nuspec` e incrementa o `build` (major.minor.**build**)
-2. Atualiza `.nuspec` e `.csproj` com a nova versão
-3. Compila em modo Release (`net9.0-windows`)
-4. Se for Administrador, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`
-5. Empacota o `.nupkg` em `C:\NUGET\ZimerfeldTree\`
-
-Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
-
-![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBuild.png)
-
-Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
-
-![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotNoBuild.png)
-
----
-
-## Desinstalação
-
-Delete o arquivo:
-
-```
-C:\Program Files\GitExtensions\Plugins\GitExtensions.Plugins.ZimerfeldTree.dll
-```
-
-O GitExtensions não é afetado pela remoção do plugin.
 
 ---
 
