@@ -18,9 +18,12 @@ public sealed class BranchHierarchyForm : Form
     private readonly Action? _notifyRepoChanged; // called after checkout so GitExtensions refreshes
     /// <summary>
     /// Delegate provided by the plugin that opens the native GitExtensions commit dialog in-process.
+    /// The string argument is the working directory to commit against — passed so the dialog targets
+    /// the repository currently selected in cboRepo (and thus its checked-out branch shown in lblBranch),
+    /// not the GitExtensions host's active repository.
     /// Returns true = commits were made, false = dialog closed without committing, null = unavailable (fall back).
     /// </summary>
-    private readonly Func<IWin32Window, bool?>? _openCommitDialog;
+    private readonly Func<IWin32Window, string, bool?>? _openCommitDialog;
     /// <summary>
     /// Delegate provided by the plugin that opens the native GitExtensions push dialog in-process.
     /// Returns true if push was completed, false otherwise.
@@ -159,7 +162,7 @@ public sealed class BranchHierarchyForm : Form
 
     // ─────────────────────────────────────────────────────────────────────────
     public BranchHierarchyForm(string workingDir, Action? notifyRepoChanged = null,
-        Func<IWin32Window, bool?>? openCommitDialog = null,
+        Func<IWin32Window, string, bool?>? openCommitDialog = null,
         Func<IWin32Window, bool>? openPushDialog = null)
     {
         _svc = new BranchHierarchyService(workingDir);
@@ -1926,7 +1929,9 @@ public sealed class BranchHierarchyForm : Form
         // so Commit Template plugins (e.g. Zimerfeld: Auto-resumo) are visible.
         if (_openCommitDialog != null)
         {
-            bool? result = _openCommitDialog(this);
+            // Pass _svc.WorkingDir (the repo selected in cboRepo) so the native dialog commits against
+            // that repository and its checked-out branch (shown in lblBranch), not the host's repo.
+            bool? result = _openCommitDialog(this, _svc.WorkingDir);
             if (result.HasValue)
             {
                 if (result.Value) { RefreshTree(); NotifyRepoChanged(); }
@@ -2714,17 +2719,6 @@ public sealed class BranchHierarchyForm : Form
     {
         if (!IsDisposed && Visible)
             BeginInvoke(() => { if (!IsDisposed && Visible) Activate(); });
-    }
-
-    /// <summary>
-    /// Brings this window to the front after a commit completes in the GitExtensions Commit dialog.
-    /// Called by the plugin's PostCommit event handler so the tree stays visible after committing.
-    /// Uses BeginInvoke to ensure activation runs after the commit dialog has fully closed.
-    /// </summary>
-    public void FocusAfterCommit()
-    {
-        if (!IsDisposed && Visible)
-            BeginInvoke(() => { if (!IsDisposed && Visible) { BringToFront(); Activate(); } });
     }
 
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
