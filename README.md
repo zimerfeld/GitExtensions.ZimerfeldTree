@@ -1,4 +1,4 @@
-# GitExtensions.ZimerfeldTree
+﻿# <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="ZimerfeldTree icon" width="48" height="48" align="absmiddle" /> GitExtensions.ZimerfeldTree
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree.
 

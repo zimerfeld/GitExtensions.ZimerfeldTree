@@ -3,7 +3,13 @@
 .SYNOPSIS
     Compila o plugin, incrementa a versao (major.minor.build) e gera o .nupkg.
     Executar como Administrador para tambem fazer o deploy em GitExtensions.
+.PARAMETER Force
+    Ignora a deteccao de mudancas e sempre incrementa a versao, recompila e empacota.
 #>
+[CmdletBinding()]
+param(
+    [switch]$Force
+)
 
 $ErrorActionPreference = "Stop"
 
@@ -25,17 +31,40 @@ $build      = [int]$parts[2] + 1
 $newVersion = "$major.$minor.$build"
 
 # -- 1b. Detectar mudancas -----------------------------------------------------
-# So' incrementa a versao (e recompila/empacota) se houver fonte mais novo que a
-# DLL ja' compilada. Sem mudancas => mantem a versao atual e encerra.
-$dll     = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree\bin\Release\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll"
-$srcRoot = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree"
+# So' incrementa a versao (e recompila/empacota) se houver fonte OU texto/documento
+# empacotado mais novo que o ultimo .nupkg gerado. Sem mudancas => mantem a versao
+# atual e encerra. Use -Force para sempre empacotar.
+#
+# Incluimos os .md e demais textos (README*, FUNCIONALIDADES, LICENSE, scripts de
+# tools\) porque eles entram no pacote -- mudar so' a documentacao tambem deve gerar
+# uma nova versao no nuget.
+#
+# A comparacao e' feita contra o .nupkg (e NAO contra a DLL) de proposito: quando so'
+# textos mudam, o build incremental do dotnet pode nao regravar a DLL, o que faria a
+# deteccao disparar em loop a cada execucao. O pack, por outro lado, sempre regenera o
+# .nupkg, entao ele e' a ancora confiavel do "ultimo empacotamento".
+$srcRoot  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree"
 $srcFiles = Get-ChildItem $srcRoot -Recurse -File -Include *.cs,*.csproj,*.nuspec,*.resx,*.png |
             Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' }
-$newestSrc = ($srcFiles | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum
+# Documentos/textos da raiz e scripts que tambem entram no pacote (ver .nuspec <files>)
+$docFiles = @(
+    "$PSScriptRoot\README.md",
+    "$PSScriptRoot\README.pt-BR.md",
+    "$PSScriptRoot\README.en-US.md",
+    "$PSScriptRoot\LICENSE.txt",
+    "$PSScriptRoot\tools\install.ps1",
+    "$PSScriptRoot\tools\uninstall.ps1"
+) | Where-Object { Test-Path $_ } | ForEach-Object { Get-Item $_ }
+$inputFiles = @($srcFiles) + @($docFiles)
+$newestSrc  = ($inputFiles | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum
 
-if ((Test-Path $dll) -and $newestSrc -le (Get-Item $dll).LastWriteTimeUtc) {
+$lastPkg = Get-ChildItem "$outDir\GitExtensions.ZimerfeldTree.*.nupkg" -ErrorAction SilentlyContinue |
+           Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+
+if (-not $Force -and $lastPkg -and $newestSrc -le $lastPkg.LastWriteTimeUtc) {
     Write-Host ""
-    Write-Host "Nenhuma mudanca detectada nos fontes -- versao mantida em $current (build/pack ignorados)." -ForegroundColor Cyan
+    Write-Host "Nenhuma mudanca detectada em fontes ou textos -- versao mantida em $current (build/pack ignorados)." -ForegroundColor Cyan
+    Write-Host "Use -Force para empacotar mesmo assim." -ForegroundColor DarkGray
     exit 0
 }
 
@@ -63,18 +92,7 @@ $csprojContent = Get-Content $csproj -Raw -Encoding UTF8
 $csprojContent = $csprojContent -replace '<Version>[^<]+</Version>', "<Version>$newVersion</Version>"
 [System.IO.File]::WriteAllText($csproj, $csprojContent, [System.Text.Encoding]::UTF8)
 
-# -- 4. Atualizar FUNCIONALIDADES.md -------------------------------------------
-$funcDoc = "$PSScriptRoot\FUNCIONALIDADES.md"
-if (Test-Path $funcDoc) {
-    $today   = (Get-Date).ToString("yyyy-MM-dd")
-    $content = Get-Content $funcDoc -Raw -Encoding UTF8
-    $content = $content -replace '\*\*Versão:\*\* [^\r\n]+', "**Versão:** $newVersion"
-    $content = $content -replace '\*\*Atualizado em:\*\* [^\r\n]+', "**Atualizado em:** $today"
-    [System.IO.File]::WriteAllText($funcDoc, $content, [System.Text.Encoding]::UTF8)
-    Write-Host "FUNCIONALIDADES.md atualizado para $newVersion ($today)"
-}
-
-# -- 4b. Atualizar README.md --------------------------------------------------
+# -- 4. Atualizar README.md ----------------------------------------------------
 $readmeDoc = "$PSScriptRoot\README.md"
 if (Test-Path $readmeDoc) {
     $content = Get-Content $readmeDoc -Raw -Encoding UTF8
