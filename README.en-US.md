@@ -1,5 +1,13 @@
 # GitExtensions.ZimerfeldTree
 
+<div align="right">
+  <sub><b>Help keep this project always up to date&nbsp;💛</b></sub>
+  <br/>
+  <a href="https://github.com/sponsors/zimerfeld">
+    <img src="https://img.shields.io/badge/%E2%9D%A4%20Sponsor-zimerfeld-EA4AAA?logo=githubsponsors&logoColor=white&style=for-the-badge" alt="Sponsor zimerfeld on GitHub" height="32" />
+  </a>
+</div>
+
 [Português](README.pt-BR.md) | [English](README.en-US.md)
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
