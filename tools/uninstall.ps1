@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Remove o plugin ZimerfeldTree do GitExtensions sem causar danos ao programa.
@@ -69,6 +69,38 @@ Re-execute o PowerShell como Administrador e repita:
   .\uninstall.ps1
 "@
     exit 1
+}
+
+# ── Close GitExtensions if running ────────────────────────────────────────────
+
+$geProcesses = Get-Process -Name "GitExtensions" -ErrorAction SilentlyContinue
+
+if ($geProcesses) {
+    Write-Host "GitExtensions está aberto. Fechando antes de remover o plugin..." -ForegroundColor Yellow
+
+    # Tenta fechar normalmente (graceful) primeiro
+    foreach ($p in $geProcesses) {
+        $p.CloseMainWindow() | Out-Null
+    }
+
+    # Aguarda até 10s pelo encerramento normal
+    try {
+        $geProcesses | Wait-Process -Timeout 10 -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "GitExtensions não fechou em 10s. Encerrando à força..."
+        Get-Process -Name "GitExtensions" -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+
+    # Confirma que todos os processos foram encerrados
+    Start-Sleep -Milliseconds 500
+    if (Get-Process -Name "GitExtensions" -ErrorAction SilentlyContinue) {
+        Write-Error "Não foi possível encerrar o GitExtensions. Feche-o manualmente e repita."
+        exit 1
+    }
+
+    Write-Host "GitExtensions encerrado." -ForegroundColor Green
 }
 
 # ── Remove DLL ────────────────────────────────────────────────────────────────

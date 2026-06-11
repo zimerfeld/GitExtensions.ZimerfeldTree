@@ -315,7 +315,9 @@ public sealed class GitFlowForm : Form
             ReadOnly   = true,
             ScrollBars = ScrollBars.Both,
             WordWrap   = false,
-            BackColor  = SystemColors.Window,
+            // Match the GitExtensions native console output background (the beige seen in the
+            // "Push to origin" / fetch windows) instead of plain white.
+            BackColor  = Color.FromArgb(0xEF, 0xEB, 0xD8),
             Bounds     = new Rectangle(10, 22, 644, 310),
             Anchor     = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
             Font       = new Font("Consolas", 9f)
