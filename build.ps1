@@ -35,9 +35,9 @@ $newVersion = "$major.$minor.$build"
 # empacotado mais novo que o ultimo .nupkg gerado. Sem mudancas => mantem a versao
 # atual e encerra. Use -Force para sempre empacotar.
 #
-# Incluimos os .md e demais textos (README*, FUNCIONALIDADES, LICENSE, scripts de
-# tools\) porque eles entram no pacote -- mudar so' a documentacao tambem deve gerar
-# uma nova versao no nuget.
+# Incluimos TODOS os .md do repositorio e demais textos (LICENSE, scripts de tools\)
+# porque a documentacao tambem deve gerar uma nova versao no nuget -- editar qualquer
+# arquivo .md (em qualquer pasta) dispara o incremento de versao.
 #
 # A comparacao e' feita contra o .nupkg (e NAO contra a DLL) de proposito: quando so'
 # textos mudam, o build incremental do dotnet pode nao regravar a DLL, o que faria a
@@ -46,15 +46,16 @@ $newVersion = "$major.$minor.$build"
 $srcRoot  = "$PSScriptRoot\src\GitExtensions.ZimerfeldTree"
 $srcFiles = Get-ChildItem $srcRoot -Recurse -File -Include *.cs,*.csproj,*.nuspec,*.resx,*.png |
             Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' }
-# Documentos/textos da raiz e scripts que tambem entram no pacote (ver .nuspec <files>)
-$docFiles = @(
-    "$PSScriptRoot\README.md",
-    "$PSScriptRoot\README.pt-BR.md",
-    "$PSScriptRoot\README.en-US.md",
+# Todos os .md do repositorio (qualquer pasta) -- editar qualquer documentacao gera
+# nova versao. Mais os textos/scripts fixos que tambem entram no pacote (.nuspec <files>).
+$mdFiles  = Get-ChildItem $PSScriptRoot -Recurse -File -Filter *.md |
+            Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' }
+$otherDocs = @(
     "$PSScriptRoot\LICENSE.txt",
     "$PSScriptRoot\tools\install.ps1",
     "$PSScriptRoot\tools\uninstall.ps1"
 ) | Where-Object { Test-Path $_ } | ForEach-Object { Get-Item $_ }
+$docFiles = @($mdFiles) + @($otherDocs)
 $inputFiles = @($srcFiles) + @($docFiles)
 $newestSrc  = ($inputFiles | Measure-Object -Property LastWriteTimeUtc -Maximum).Maximum
 

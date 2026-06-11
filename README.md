@@ -8,8 +8,8 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ## Languages
 
-- [Português (Brasil)](README.pt-BR.md)
-- [English (United States)](README.en-US.md)
+- [Português (Brasil)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.pt-BR.md)
+- [English (United States)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.en-US.md)
 
 ## Package
 
