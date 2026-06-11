@@ -36,7 +36,6 @@ public sealed class BranchHierarchyForm : Form
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
-    private bool                         _suppressEcho;               // ignore the PostRepositoryChanged echo of our own NotifyRepoChanged
 
     // Open modal child dialogs, tracked so they can be force-closed when GitExtensions switches the
     // active repository (Change Working Directory): a GitFlow/Restore window must not linger over a
@@ -210,28 +209,6 @@ public sealed class BranchHierarchyForm : Form
     /// Shows the "Carregando…" overlay while reading. Concurrent calls are collapsed into one.
     /// </summary>
     public void RefreshTree() => _ = RefreshTreeAsync(showOverlay: true);
-
-    /// <summary>
-    /// Called by the plugin on GitExtensions' PostRepositoryChanged. Refreshes the tree on genuine
-    /// external changes, but ignores the event when it is the ECHO of our own RepoChangedNotifier
-    /// .Notify() (raised by <see cref="NotifyRepoChanged"/>): in that case the tree was already
-    /// refreshed live and a second refresh would only flash the overlay needlessly.
-    /// <para><paramref name="newDir"/> is the working directory reported by the event. When it differs
-    /// from the current repo, the active repo was actually switched (e.g. the GitExtensions
-    /// "Change Working Directory" dropdown) — adopt it FIRST (closes open GitFlow/Restore windows and
-    /// updates cboRepo) so the refresh below reads the NEW repo instead of reloading the previous one.</para>
-    /// </summary>
-    public void NotifyExternalRepoChanged(string newDir)
-    {
-        if (_suppressEcho) return;
-
-        if (!string.IsNullOrEmpty(newDir) &&
-            !string.Equals(newDir, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase))
-        {
-            UpdateWorkingDir(newDir);   // closes child dialogs + selects the new repo in cboRepo
-        }
-        RefreshTree();                  // rebuilds the tree and refreshes lblBranch for the current repo
-    }
 
     /// <summary>
     /// Loads all branch/tag data on a background thread, optionally showing a centered
@@ -2730,13 +2707,10 @@ public sealed class BranchHierarchyForm : Form
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
     private void NotifyRepoChanged()
     {
-        // GitExtensions raises PostRepositoryChanged in response to Notify() (synchronously, on the
-        // UI thread), which bounces back to us as NotifyExternalRepoChanged. Guard against that echo:
-        // the tree is already current, so the echo must not trigger a second (overlay) refresh. The
-        // flag is cleared on the next message-loop turn, after the synchronous echo has been handled.
-        _suppressEcho = true;
-        try { _notifyRepoChanged?.Invoke(); }
-        finally { BeginInvoke(() => _suppressEcho = false); }
+        // Tells GitExtensions to refresh its own main window. We no longer subscribe to
+        // PostRepositoryChanged, so the resulting echo is simply not received here — the tree was
+        // already refreshed live by the operation that called this method.
+        _notifyRepoChanged?.Invoke();
         RestoreFocus();
     }
 

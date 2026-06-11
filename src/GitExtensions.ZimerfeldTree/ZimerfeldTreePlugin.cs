@@ -98,57 +98,41 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
         base.Register(commands);
         _commands = commands;
 
-        commands.PostBrowseInitialize   += OnRepositoryChanged;
         commands.PostCheckoutBranch     += OnBranchChanged;
         commands.PostCheckoutRevision   += OnBranchChanged;
         commands.PostCommit             += OnPostCommit;   // dedicated: also restores focus
-        commands.PostRepositoryChanged  += OnExternalChange;
 
         string regDir = commands.Module?.WorkingDir ?? string.Empty;
         DebugLog($"Register   inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{regDir}'");
 
-        // The host calls Register for the UICommands of the NEWLY active repo whenever it switches
-        // repositories (e.g. the "Change Working Directory" dropdown). If the tree window is already
-        // open, adopt that working dir here — this is the reliable switch signal even when no Post*
-        // event follows. Guards in UpdateWorkingDir make it a no-op when the repo did not change.
-        if (_form is { IsDisposed: false } form && !string.IsNullOrEmpty(regDir))
-        {
-            form.InvokeIfRequired(() =>
-            {
-                form.UpdateWorkingDir(regDir);
-                form.RefreshTree();
-            });
-        }
+        // NOTE: We deliberately do NOT adopt the host's working dir into an already-open tree window.
+        // The GitExtensions "Change Working Directory" dropdown must not drive ZimerfeldTree's repo
+        // selection (cboRepo) or its operations once the window is open — cboRepo is the single source
+        // of truth there. The host working dir is only used as the PRE-SELECTED cboRepo value when the
+        // window is first opened (see Execute → BranchHierarchyForm ctor → LoadRepositories).
+        // For the same reason we no longer subscribe to PostBrowseInitialize / PostRepositoryChanged,
+        // which fire on host repo switches.
     }
 
     /// <summary>Unsubscribe from all events.</summary>
     public override void Unregister(IGitUICommands commands)
     {
         DebugLog($"Unregister inst=#{_instanceId} dir='{commands.Module?.WorkingDir ?? string.Empty}'");
-        commands.PostBrowseInitialize   -= OnRepositoryChanged;
         commands.PostCheckoutBranch     -= OnBranchChanged;
         commands.PostCheckoutRevision   -= OnBranchChanged;
         commands.PostCommit             -= OnPostCommit;
-        commands.PostRepositoryChanged  -= OnExternalChange;
 
         _commands = null;
         base.Unregister(commands);
     }
 
     // ── Event handlers ────────────────────────────────────────────────────────
-
-    private void OnRepositoryChanged(object? sender, GitUIEventArgs e)
-    {
-        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
-        DebugLog($"PostBrowseInitialize inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{newDir}'");
-        if (_form is null || _form.IsDisposed) return;
-
-        _form.InvokeIfRequired(() =>
-        {
-            _form.UpdateWorkingDir(newDir);
-            _form.RefreshTree();
-        });
-    }
+    //
+    // NOTE: There is intentionally no handler for PostBrowseInitialize / PostRepositoryChanged.
+    // Host repo switches (e.g. the "Change Working Directory" dropdown) must not affect an open
+    // ZimerfeldTree window — its repo is chosen exclusively through cboRepo. Only PostCheckoutBranch /
+    // PostCheckoutRevision / PostCommit are observed, and they merely refresh the CURRENT (cboRepo)
+    // repo's tree; they never change which repo is selected.
 
     private void OnBranchChanged(object? sender, GitUIPostActionEventArgs e)
     {
@@ -167,21 +151,6 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             _form.RefreshTree();
             _form.FocusAfterCommit();
         });
-    }
-
-    // PostRepositoryChanged fires both on genuine external changes (GitExtensions main window) and
-    // as an "echo" of our own RepoChangedNotifier.Notify() (raised by the form's NotifyRepoChanged
-    // after a child window like GitFlow/Restore closes). NotifyExternalRepoChanged refreshes on the
-    // former but ignores the latter (tree already current) — avoiding a redundant overlay flash.
-    private void OnExternalChange(object? sender, GitUIEventArgs e)
-    {
-        string newDir = e.GitModule?.WorkingDir ?? string.Empty;
-        DebugLog($"PostRepositoryChanged inst=#{_instanceId} formOpen={_form is { IsDisposed: false }} dir='{newDir}'");
-        if (_form is null || _form.IsDisposed) return;
-        // The "Change Working Directory" dropdown switches the active repo through this event (not
-        // PostBrowseInitialize), so pass the new working dir along: the form adopts it before
-        // refreshing, otherwise the tree would reload the previous repo and the switch wouldn't show.
-        _form.InvokeIfRequired(() => _form.NotifyExternalRepoChanged(newDir));
     }
 
     // ── Diagnostic logging (temporary) ──────────────────────────────────────────

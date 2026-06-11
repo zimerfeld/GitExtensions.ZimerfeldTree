@@ -92,8 +92,9 @@ $buildOutput | ForEach-Object {
     $line = "$_"
     # Oculta as mensagens dos eventos de prebuild do GitExtensions.Extensibility
     if ($line -match 'GitExtensions\.Extensibility') { return }
-    # Colore o resumo do MSBuild: avisos em amarelo, erros em vermelho
-    if     ($line -match '^\s*\d+\s+Warning\(s\)') { Write-Host $line -ForegroundColor Yellow }
+    # Colore o resumo do MSBuild: sucesso em verde, avisos em amarelo, erros em vermelho
+    if     ($line -match '^\s*Build succeeded\.')  { Write-Host $line -ForegroundColor Green }
+    elseif ($line -match '^\s*\d+\s+Warning\(s\)') { Write-Host $line -ForegroundColor Yellow }
     elseif ($line -match '^\s*\d+\s+Error\(s\)')   { Write-Host $line -ForegroundColor Red }
     else { Write-Host $line }
 }
