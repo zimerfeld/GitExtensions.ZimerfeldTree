@@ -20,7 +20,7 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - **TAGS** também agrupa por `/` (sem ancestralidade)
 - LOCAL, REMOTES e TAGS exibe `(nenhuma branch local encontrada)` quando não há branches
 - A janela abre **centralizada na tela** (horizontal e vertical)
-- Janela **redimensionável** com botões **Minimizar**, **Maximizar** e **Fechar** padrão do Windows (`Sizable`)
+- Janela de tamanho **fixo** (não redimensionável pelo usuário, `FixedSingle`), com botões **Minimizar** e **Fechar** padrão do Windows; **Maximizar desabilitado** (maximizar redimensionaria a janela)
 - A janela é **independente** do GitExtensions: minimizar o GitExtensions não afeta a janela BranchHierarchy
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches

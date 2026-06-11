@@ -419,10 +419,10 @@ public sealed class BranchHierarchyForm : Form
         SuspendLayout();
 
         Text            = "ZimerfeldTree - BranchHierarchy";
-        Size            = new Size(640, 760);   // wide enough for the full Pull…Restore button row without cropping
+        Size            = new Size(608, 760);   // client 592: button row ends flush at btnRestore's right edge (= right-docked btnGitFlow)
         StartPosition   = FormStartPosition.CenterScreen;
-        FormBorderStyle = FormBorderStyle.Sizable;
-        MaximizeBox     = true;
+        FormBorderStyle = FormBorderStyle.FixedSingle;   // não redimensionável pelo usuário
+        MaximizeBox     = false;                          // maximizar redimensionaria a janela
         MinimizeBox     = true;
         KeyPreview      = true;
         Font            = new Font("Segoe UI", 9f);
@@ -690,7 +690,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnRestore",
             Text   = "Restore",
-            Width  = 120,
+            Width  = 100,   // matches btnGitFlowDedicated; right edge aligns with the right-docked btnGitFlow
             Height = 24
         };
         _btnRestore.Click += (_, _) => DoRestore();
