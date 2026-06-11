@@ -1,4 +1,4 @@
-﻿# GitExtensions.ZimerfeldTree
+# GitExtensions.ZimerfeldTree
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -58,6 +58,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso
 - **Restore** — abre a janela **Restore** com três operações de restauração de histórico (ver seção abaixo)
 - **Excluir** / **Excluir (N)** — exclui branches/tags selecionados; o texto reflete a quantidade de checkboxes marcados (ver seção abaixo)
+- **Ícones nos botões** — cada botão exibe, **antes do texto**, o mesmo ícone usado pela ação correspondente no menu de contexto: **Commit** (`ctx-commit`), **Excluir** (`ctx-delete`), **GitFlow** (`ctx-gitflow`), **Restore** (`ctx-restore`) e o botão de atualizar da barra de filtro (`ctx-refresh`, substitui o glifo `↺`). Os botões **GitFlow Initialize** e **Organizar como GitFlow** também usam o ícone `ctx-gitflow`. **Pull** e **Push** não têm ação equivalente no menu de contexto, portanto permanecem somente com texto. Se um ícone não puder ser carregado, o botão mantém apenas o texto
 
 ### Seleção múltipla e exclusão de branches
 
@@ -345,10 +346,10 @@ Cada nó da árvore recebe um ícone 16 × 16 px gerado em tempo de execução v
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop`             | **imagem personalizada embutida** (chave + martelo como reserva)              |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | nó-pasta "feature"    | **imagem personalizada embutida** (galho de branch; folha verde como reserva) |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16">   | `feature/*` (sub-nós) | **imagem personalizada embutida** `folha.png` (folha verde como reserva)      |
-| —                                                                                                                                                         | `bugfix/*`            | 🐞 joaninha vermelha (glifo desenhado em GDI+)                                 |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/bugfix.png" width="16" height="16"> | `bugfix/*` | **imagem personalizada embutida** (joaninha vermelha como reserva) |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*`           | **imagem personalizada embutida** (pacote/caixa marrom como reserva)          |
-| —                                                                                                                                                         | `hotfix/*`            | 🧯 extintor de incêndio vermelho (glifo desenhado em GDI+)                       |
-| —                                                                                                                                                         | `support/*`           | 🧰 maleta de primeiros socorros (glifo desenhado em GDI+)                        |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/hotfix.png" width="16" height="16"> | `hotfix/*` | **imagem personalizada embutida** (extintor de incêndio vermelho como reserva) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/src/GitExtensions.ZimerfeldTree/Resources/support.png" width="16" height="16"> | `support/*` | **imagem personalizada embutida** (maleta de primeiros socorros branca com cruz vermelha como reserva) |
 
 Branches locais genéricas usam garfo laranja e nós de caminho usam pasta âmbar. As **seções raiz** (LOCAL, REMOTES, TAGS), o **grupo de remote** (ex.: `origin`), as **branches remotas** e as **tags** também usam imagens personalizadas embutidas (ver abaixo).
 
@@ -369,7 +370,9 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 | nó-pasta "feature"               | `Resources/feature.png`       | galho de branch                  |
 | `feature/*` (sub-nós)            | `Resources/folha.png`         | folha verde                      |
 | `release/*`                      | `Resources/release.png`       | pacote/caixa marrom              |
-
+| `bugfix/*` | `Resources/bugfix.png` | joaninha vermelha |
+| `hotfix/*` | `Resources/hotfix.png` | extintor de incêndio vermelho |
+| `support/*` | `Resources/support.png` | maleta branca com cruz vermelha |
 - O plugin permanece **autocontido**: as imagens viajam dentro da DLL, sem depender de arquivos externos na máquina do usuário.
 - Cada `<EmbeddedResource>` é **condicional à existência do arquivo** (`Condition="Exists(...)"`); se o PNG não existir no build, o recurso não é embutido e o nó usa o glifo desenhado de reserva — o build nunca quebra por falta da imagem.
 - Se o recurso estiver **ausente ou ilegível** em tempo de execução, o ícone cai automaticamente na reserva, preservando o comportamento anterior.
