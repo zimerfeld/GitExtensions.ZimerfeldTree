@@ -91,6 +91,8 @@ public sealed class BranchHierarchyForm : Form
     private Dictionary<string, HashSet<string>> _treeStateByRepo = [];
     /// <summary>True while we are restoring saved state — suppresses AfterExpand/AfterCollapse saves.</summary>
     private bool _restoringState;
+    /// <summary>True between a left double-click MouseDown and its NodeMouseDoubleClick — cancels the default expand/collapse toggle so double-click only does checkout.</summary>
+    private bool _suppressDoubleClickToggle;
     /// <summary>Debounce timer that delays disk writes when many nodes expand/collapse rapidly.</summary>
     private System.Windows.Forms.Timer? _saveDebounce;
     private static readonly string StateFilePath = Path.Combine(
@@ -706,6 +708,8 @@ public sealed class BranchHierarchyForm : Form
         _tree.NodeMouseDoubleClick  += Tree_NodeMouseDoubleClick;
         _tree.KeyDown               += Tree_KeyDown;
         _tree.MouseDown             += Tree_MouseDown;
+        _tree.BeforeExpand          += Tree_BeforeExpandCollapse;
+        _tree.BeforeCollapse        += Tree_BeforeExpandCollapse;
         _tree.AfterExpand           += Tree_AfterExpand;
         _tree.AfterCollapse         += Tree_AfterCollapse;
         _tree.BeforeCheck           += Tree_BeforeCheck;   // only branch/tag leaves are checkable
@@ -1743,6 +1747,9 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_NodeMouseDoubleClick(object? sender, TreeNodeMouseClickEventArgs e)
     {
+        // Fires after Tree_BeforeExpandCollapse has consumed the guard for folder nodes; clearing it
+        // here also covers leaf branches (no toggle fires) so the flag never leaks to a later toggle.
+        _suppressDoubleClickToggle = false;
         if (e.Node?.Tag is BranchInfo) DoCheckout();
     }
 
@@ -1797,11 +1804,27 @@ public sealed class BranchHierarchyForm : Form
 
     private void Tree_MouseDown(object? sender, MouseEventArgs e)
     {
+        // A left double-click does checkout (see Tree_NodeMouseDoubleClick) and must NOT toggle
+        // expand/collapse. This MouseDown fires before the toggle, so we raise the guard here and
+        // cancel the pending expand/collapse in Tree_BeforeExpandCollapse.
+        if (e.Button == MouseButtons.Left && e.Clicks == 2)
+            _suppressDoubleClickToggle = true;
+
         if (e.Button == MouseButtons.Right)
         {
             var node = _tree.GetNodeAt(e.X, e.Y);
             if (node != null) _tree.SelectedNode = node;
         }
+    }
+
+    /// <summary>
+    /// Suppresses the default expand/collapse toggle that a left double-click would otherwise
+    /// trigger. The guard is set in <see cref="Tree_MouseDown"/> and cleared in
+    /// <see cref="Tree_NodeMouseDoubleClick"/>, so single-click toggles and the +/- glyph keep working.
+    /// </summary>
+    private void Tree_BeforeExpandCollapse(object? sender, TreeViewCancelEventArgs e)
+    {
+        if (_suppressDoubleClickToggle) e.Cancel = true;
     }
 
     private void CtxMenu_Opening(object? sender, CancelEventArgs e)
