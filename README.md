@@ -1,4 +1,10 @@
-﻿# <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="ZimerfeldTree icon" width="48" height="48" align="absmiddle" /> GitExtensions.ZimerfeldTree
+﻿**Version:** 1.0.296  
+**Updated:** 2026-06-11
+
+**Versão:** 1.0.296  
+**Atualizado em:** 2026-06-11
+
+# <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="ZimerfeldTree icon" width="48" height="48" align="absmiddle" /> GitExtensions.ZimerfeldTree
 
 <p align="right">
   <sub>· Help keep this project always updated 💜</sub><br>

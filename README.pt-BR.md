@@ -1,4 +1,7 @@
-﻿# GitExtensions.ZimerfeldTree
+﻿**Versão:** 1.0.296  
+**Atualizado em:** 2026-06-11
+
+# GitExtensions.ZimerfeldTree
 
 <div align="right">
   <sub><b>Ajude a manter o projeto sempre atualizado&nbsp;💛</b></sub>

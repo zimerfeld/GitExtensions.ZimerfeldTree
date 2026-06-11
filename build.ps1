@@ -103,6 +103,22 @@ if (Test-Path $readmeDoc) {
     Write-Host "README.md atualizado para $newVersion"
 }
 
+# -- 4b. Atualizar cabecalho (Versao/Atualizado) no topo dos READMEs -----------
+# README.md (cabecalhos EN + PT), README.pt-BR.md e README.en-US.md tem nas primeiras
+# linhas o cabecalho de versao e data. Mantemos todos sincronizados com a versao
+# empacotada e a data do build. A alternancia cobre os rotulos PT e EN, incluindo o
+# "Updated" (sem "on") usado no README.md bilingue.
+$today = (Get-Date).ToString('yyyy-MM-dd')
+foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "$PSScriptRoot\README.en-US.md")) {
+    if (Test-Path $doc) {
+        $c = Get-Content $doc -Raw -Encoding UTF8
+        $c = $c -replace '(?m)^\*\*(Versão|Version):\*\*\s+[\d\.]+',                       "**`$1:** $newVersion"
+        $c = $c -replace '(?m)^\*\*(Atualizado em|Updated on|Updated):\*\*\s+\d{4}-\d{2}-\d{2}', "**`$1:** $today"
+        [System.IO.File]::WriteAllText($doc, $c, [System.Text.Encoding]::UTF8)
+        Write-Host "$([System.IO.Path]::GetFileName($doc)) atualizado para $newVersion ($today)"
+    }
+}
+
 # -- 5. Build ------------------------------------------------------------------
 Write-Host "Compilando..."
 $buildOutput = & dotnet build $csproj -c Release --nologo -v minimal 2>&1
