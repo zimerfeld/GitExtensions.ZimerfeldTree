@@ -199,6 +199,7 @@ ZimerfeldTree/
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
 - Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela BranchHierarchy é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
 - **Checkout + revelar a branch afetada**: após cada botão, o plugin faz `git checkout` da branch afetada e, na árvore, **expande os nós da seção LOCAL até alcançá-la** e a seleciona. Para **Start/Publish/Track/Update** a branch afetada é a própria (`<prefixo><nome>`); para **Finish** (a branch é removida) o plugin revela a branch resultante atual (ex.: `develop`), sem refazer checkout
+- O painel **Resultado** exibe a saída de cada comando `git` em fonte monoespaçada, com fundo bege (`#EFEBD8`) idêntico ao do console nativo do GitExtensions (janelas Push/Fetch)
 
 ### Janela GitFlow — branch base no Start
 
@@ -294,7 +295,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 
 - A janela Restore é posicionada ao lado de BranchHierarchy, ambas centralizadas na tela (mesmo comportamento da janela GitFlow)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é atualizada em background sem perder o foco da janela Restore
-- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada
+- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada, com fundo bege (`#EFEBD8`) idêntico ao do console nativo do GitExtensions (janelas Push/Fetch)
 - Link **About Restore** no canto superior direito descreve cada operação
 
 ### Janela Restore — comportamento geral
@@ -303,7 +304,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 - Janela **modal**, posicionada ao lado de BranchHierarchy com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
 - Contém três grupos de operações independentes: **Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**
 - Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
-- O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, scroll automático para o fim)
+- O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, fundo bege `#EFEBD8` igual ao do console nativo do GitExtensions, scroll automático para o fim)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
 - Os últimos valores usados em cada campo são **persistidos** em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` e restaurados na próxima abertura
 - Link **About Restore** no canto superior direito descreve o propósito de cada operação
