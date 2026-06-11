@@ -484,6 +484,22 @@ public sealed class GitFlowForm : Form
                 _chkBasedOn.Enabled = true;
                 break;
 
+            case "support":
+                // Support branches are anchored to a production release, so the base is one of
+                // the existing tags. Required base → checkbox checked and enabled.
+                foreach (var t in _svc.GetTags())
+                    _cboBasedOn.Items.Add(t.FullName);
+                if (_cboBasedOn.Items.Count > 0) _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Checked = true;
+                _chkBasedOn.Enabled = true;
+
+                // Cascade to the Manage panel: auto-select "support" there too, which makes
+                // ReloadManageBranches fill cboManageBranch with the existing tags.
+                int supportMng = _cboManageType.Items.IndexOf("support");
+                if (supportMng >= 0 && _cboManageType.SelectedIndex != supportMng)
+                    _cboManageType.SelectedIndex = supportMng;
+                break;
+
             default:
                 _cboBasedOn.Items.Add(develop);
                 foreach (var b in _svc.GetLocalBranches())
@@ -549,8 +565,18 @@ public sealed class GitFlowForm : Form
         // The dropdown reflects only branches that exist LOCALLY. Reloaded after every
         // git flow command (see RunFlow), so a branch deleted by finish disappears here.
         var names = new List<string>();
-        foreach (var name in _svc.GetGitFlowBranches(prefix))
-            if (!names.Contains(name)) names.Add(name);
+        if (string.Equals(_cboManageType.Text, "support", StringComparison.OrdinalIgnoreCase))
+        {
+            // Support is driven from production tags (emergency workflow), so the branch
+            // selector lists the existing tags instead of support/* branches.
+            foreach (var t in _svc.GetTags())
+                if (!names.Contains(t.FullName)) names.Add(t.FullName);
+        }
+        else
+        {
+            foreach (var name in _svc.GetGitFlowBranches(prefix))
+                if (!names.Contains(name)) names.Add(name);
+        }
 
         _cboManageBranch.Items.Clear();
         foreach (var n in names) _cboManageBranch.Items.Add(n);

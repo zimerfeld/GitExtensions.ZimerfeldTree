@@ -23,6 +23,13 @@ public sealed class RestoreForm : Form
     private Label     _lblHead  = null!;
     private LinkLabel _lnkAbout = null!;
 
+    // ── Plano de Emergência (restore/reset a branch to a tag) ──
+    private GroupBox _grpEmergency       = null!;
+    private ComboBox _cboEmergencyBranch = null!;
+    private ComboBox _cboEmergencyTag    = null!;
+    private Button   _btnEmergencyRestore = null!;
+    private Button   _btnEmergencyReset  = null!;
+
     // ── Restore File ──
     private GroupBox _grpRestoreFile = null!;
     private ComboBox _cboRestoreHash = null!;
@@ -62,7 +69,7 @@ public sealed class RestoreForm : Form
         _showControlIds = showControlIds;
 
         Text            = "ZimerfeldTree - Restore";
-        Size            = new Size(560, 720);
+        Size            = new Size(560, 824);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -71,6 +78,7 @@ public sealed class RestoreForm : Form
         Icon            = PluginIcon.ForForm();
 
         BuildHeader();
+        BuildEmergencyGroup();
         BuildRestoreFileGroup();
         BuildCherryPickGroup();
         BuildResetGroup();
@@ -109,13 +117,76 @@ public sealed class RestoreForm : Form
         Controls.AddRange([_lblHead, _lnkAbout]);
     }
 
+    private void BuildEmergencyGroup()
+    {
+        _grpEmergency = new GroupBox
+        {
+            Name   = "grpEmergency",
+            Text   = "Plano de Emergência",
+            Bounds = new Rectangle(8, 36, 536, 100),
+            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+        };
+
+        var lblBranch = new Label
+        {
+            Text      = "Branch:",
+            AutoSize  = false,
+            Bounds    = new Rectangle(12, 26, 54, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboEmergencyBranch = new ComboBox
+        {
+            Name          = "cboEmergencyBranch",
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Sorted        = true,
+            Bounds        = new Rectangle(70, 24, 210, 22)
+        };
+
+        var lblTag = new Label
+        {
+            Text      = "Tag:",
+            AutoSize  = false,
+            Bounds    = new Rectangle(296, 26, 36, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboEmergencyTag = new ComboBox
+        {
+            Name          = "cboEmergencyTag",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(334, 24, 188, 22),
+            DropDownWidth = 260
+        };
+
+        _btnEmergencyRestore = new Button
+        {
+            Name   = "btnEmergencyRestore",
+            Text   = "Restaurar para a Tag",
+            Bounds = new Rectangle(190, 62, 160, 26)
+        };
+        _btnEmergencyRestore.Click += BtnEmergencyRestore_Click;
+
+        _btnEmergencyReset = new Button
+        {
+            Name      = "btnEmergencyReset",
+            Text      = "Resetar para a Tag",
+            ForeColor = Color.DarkRed,
+            Bounds    = new Rectangle(360, 62, 160, 26)
+        };
+        _btnEmergencyReset.Click += BtnEmergencyReset_Click;
+
+        _grpEmergency.Controls.AddRange(
+            [lblBranch, _cboEmergencyBranch, lblTag, _cboEmergencyTag,
+             _btnEmergencyRestore, _btnEmergencyReset]);
+        Controls.Add(_grpEmergency);
+    }
+
     private void BuildRestoreFileGroup()
     {
         _grpRestoreFile = new GroupBox
         {
             Name   = "grpRestoreFile",
             Text   = "Restaurar Arquivo",
-            Bounds = new Rectangle(8, 36, 536, 112),
+            Bounds = new Rectangle(8, 144, 536, 112),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -166,7 +237,7 @@ public sealed class RestoreForm : Form
         {
             Name   = "grpCherryPick",
             Text   = "Cherry-Pick",
-            Bounds = new Rectangle(8, 156, 536, 58),
+            Bounds = new Rectangle(8, 264, 536, 58),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -202,7 +273,7 @@ public sealed class RestoreForm : Form
         {
             Name   = "grpReset",
             Text   = "Reset Branch",
-            Bounds = new Rectangle(8, 222, 536, 152),
+            Bounds = new Rectangle(8, 330, 536, 152),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -272,7 +343,7 @@ public sealed class RestoreForm : Form
         {
             Name   = "grpResult",
             Text   = "Resultado:",
-            Bounds = new Rectangle(8, 382, 536, 248),
+            Bounds = new Rectangle(8, 490, 536, 247),
             Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
         };
 
@@ -301,7 +372,7 @@ public sealed class RestoreForm : Form
         {
             Name         = "btnClose",
             Text         = "Fechar",
-            Bounds       = new Rectangle(235, 648, 90, 28),
+            Bounds       = new Rectangle(235, 745, 90, 28),
             Anchor       = AnchorStyles.Bottom,
             DialogResult = DialogResult.Cancel
         };
@@ -323,6 +394,12 @@ public sealed class RestoreForm : Form
             .ToList();
 
         _cboBranch.Items.AddRange(branches.Cast<object>().ToArray());
+        _cboEmergencyBranch.Items.AddRange(branches.Cast<object>().ToArray());
+
+        // Plano de Emergência: the tag combo lists every tag (newest first).
+        var tags = _svc.GetTags().Select(t => t.FullName).ToList();
+        _cboEmergencyTag.Items.AddRange(tags.Cast<object>().ToArray());
+        if (_cboEmergencyTag.Items.Count > 0) _cboEmergencyTag.SelectedIndex = 0;
 
         var refs = LoadCommitRefs();
         foreach (var r in refs)
@@ -341,6 +418,17 @@ public sealed class RestoreForm : Form
             string? develop = branches.FirstOrDefault(b => b == "develop");
             if (develop != null) _cboBranch.SelectedItem  = develop;
             else if (branches.Count > 0) _cboBranch.SelectedIndex = 0;
+        }
+
+        // Emergency branch defaults to the currently checked-out branch (the one most likely
+        // to be rolled back), falling back to main/master or index 0.
+        if (_cboEmergencyBranch.SelectedItem is null && _cboEmergencyBranch.Items.Count > 0)
+        {
+            string current = _svc.GetCurrentBranch();
+            int idx = _cboEmergencyBranch.Items.IndexOf(current);
+            if (idx < 0) idx = _cboEmergencyBranch.Items.IndexOf("main");
+            if (idx < 0) idx = _cboEmergencyBranch.Items.IndexOf("master");
+            _cboEmergencyBranch.SelectedIndex = idx >= 0 ? idx : 0;
         }
     }
 
@@ -381,6 +469,8 @@ public sealed class RestoreForm : Form
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             var settings = new Dictionary<string, string>
             {
+                ["emergencyBranch"] = _cboEmergencyBranch.SelectedItem as string ?? string.Empty,
+                ["emergencyTag"]    = _cboEmergencyTag.Text.Trim(),
                 ["restoreHash"] = HashOf(_cboRestoreHash),
                 ["restoreFile"] = _txtRestoreFile.Text.Trim(),
                 ["cherryHash"]  = HashOf(_cboCherryHash),
@@ -395,6 +485,18 @@ public sealed class RestoreForm : Form
 
     private void RestoreSettings(Dictionary<string, string> saved, List<CommitRef> refs, List<string> branches)
     {
+        if (saved.TryGetValue("emergencyBranch", out var eb) && eb.Length > 0)
+        {
+            int idx = _cboEmergencyBranch.Items.IndexOf(eb);
+            if (idx >= 0) _cboEmergencyBranch.SelectedIndex = idx;
+        }
+        if (saved.TryGetValue("emergencyTag", out var et) && et.Length > 0)
+        {
+            int idx = _cboEmergencyTag.Items.IndexOf(et);
+            if (idx >= 0) _cboEmergencyTag.SelectedIndex = idx;
+            else          _cboEmergencyTag.Text = et;
+        }
+
         if (saved.TryGetValue("restoreHash", out var rh) && rh.Length > 0)
         {
             var match = refs.FirstOrDefault(r => r.Hash == rh || r.Hash.StartsWith(rh));
@@ -542,12 +644,94 @@ public sealed class RestoreForm : Form
             RunGit($"checkout {current}", append: true);
     }
 
+    // ── Plano de Emergência ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Restores the selected branch's working tree to the state of the chosen tag without
+    /// rewriting history: switches to the branch and runs <c>git checkout &lt;tag&gt; -- .</c>,
+    /// leaving the differences staged so the user can review and commit them.
+    /// </summary>
+    private void BtnEmergencyRestore_Click(object? sender, EventArgs e)
+    {
+        if (_cboEmergencyBranch.SelectedItem is not string branch || branch.Length == 0)
+        {
+            MessageBox.Show("Selecione a branch a restaurar.",
+                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        string tag = _cboEmergencyTag.Text.Trim();
+        if (tag.Length == 0)
+        {
+            MessageBox.Show("Selecione a tag de referência.",
+                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        string safeTag    = Clean(tag);
+        string current    = _svc.GetCurrentBranch();
+        bool   needSwitch = !string.Equals(current, branch, StringComparison.OrdinalIgnoreCase);
+
+        if (needSwitch && !RunGit($"checkout {branch}")) return;
+
+        // git checkout <tag> -- .  → stages the tag's content over the branch; history untouched.
+        bool ok = RunGit($"checkout {safeTag} -- .", append: needSwitch);
+        if (ok) RevealInTree(branch);
+    }
+
+    /// <summary>
+    /// Hard-resets the selected branch to the chosen tag (moves the branch pointer and discards
+    /// local changes). Irreversible — guarded by a confirmation prompt.
+    /// </summary>
+    private void BtnEmergencyReset_Click(object? sender, EventArgs e)
+    {
+        if (_cboEmergencyBranch.SelectedItem is not string branch || branch.Length == 0)
+        {
+            MessageBox.Show("Selecione a branch a resetar.",
+                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        string tag = _cboEmergencyTag.Text.Trim();
+        if (tag.Length == 0)
+        {
+            MessageBox.Show("Selecione a tag de referência.",
+                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        var dr = MessageBox.Show(
+            $"ATENÇÃO: git reset --hard moverá a branch '{branch}' para a tag '{tag}' e " +
+            "DESCARTARÁ todos os commits e mudanças posteriores.\n\n" +
+            "Esta ação é IRREVERSÍVEL. Deseja continuar?",
+            "Confirmar Reset para a Tag", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (dr != DialogResult.Yes) return;
+
+        string safeTag    = Clean(tag);
+        string current    = _svc.GetCurrentBranch();
+        bool   needSwitch = !string.Equals(current, branch, StringComparison.OrdinalIgnoreCase);
+
+        if (needSwitch && !RunGit($"checkout {branch}")) return;
+
+        bool ok = RunGit($"reset --hard {safeTag}", append: needSwitch);
+        if (ok) RevealInTree(branch);
+
+        if (needSwitch)
+            RunGit($"checkout {current}", append: true);
+    }
+
     // ── About ────────────────────────────────────────────────────────────────
 
     private void ShowAbout()
     {
         MessageBox.Show(
             "Botões:\n\n" +
+            "  Plano de Emergência\n" +
+            "    Restaura ou reseta uma branch para o estado de uma tag (release).\n" +
+            "    Restaurar para a Tag — git checkout <tag> -- .\n" +
+            "      Traz o conteúdo da tag para a branch como mudanças staged; histórico intacto.\n" +
+            "    Resetar para a Tag — git reset --hard <tag>\n" +
+            "      Move o ponteiro da branch para a tag e DESCARTA commits/mudanças posteriores.\n" +
+            "      Ação IRREVERSÍVEL, pede confirmação.\n\n" +
             "  Restaurar Arquivo\n" +
             "    Recupera um arquivo específico do estado de um commit antigo.\n" +
             "    Equivale a: git checkout <hash> -- <arquivo>\n" +
