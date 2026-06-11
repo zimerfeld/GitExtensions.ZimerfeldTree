@@ -530,6 +530,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name          = "cboRepo",
             DropDownStyle = ComboBoxStyle.DropDownList,
+            Sorted        = true,
             Dock          = DockStyle.Fill,
             Margin        = new Padding(0, 0, 0, 2)
         };

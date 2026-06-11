@@ -199,6 +199,7 @@ public sealed class GitFlowForm : Form
             Name          = "cboBasedOn",
             Bounds        = new Rectangle(202, 82, 348, 24),
             DropDownStyle = ComboBoxStyle.DropDownList,
+            Sorted        = true,
             Enabled       = false,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
@@ -256,6 +257,7 @@ public sealed class GitFlowForm : Form
             Name          = "cboManageBranch",
             Bounds        = new Rectangle(172, 52, 478, 24),
             DropDownStyle = ComboBoxStyle.DropDown,
+            Sorted        = true,
             Anchor        = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
         };
 
@@ -471,7 +473,7 @@ public sealed class GitFlowForm : Form
                 _cboBasedOn.Items.Add(develop);
                 foreach (var f in FullNamesWithPrefix(_svc.GetGitFlowPrefix("feature")))
                     _cboBasedOn.Items.Add(f);
-                _cboBasedOn.SelectedIndex = 0;
+                _cboBasedOn.SelectedItem = develop;
                 _chkBasedOn.Enabled = true;
                 break;
 
@@ -487,7 +489,7 @@ public sealed class GitFlowForm : Form
                 foreach (var b in _svc.GetLocalBranches())
                     if (!_cboBasedOn.Items.Contains(b.FullName))
                         _cboBasedOn.Items.Add(b.FullName);
-                if (_cboBasedOn.Items.Count > 0) _cboBasedOn.SelectedIndex = 0;
+                _cboBasedOn.SelectedItem = develop;
                 _chkBasedOn.Enabled = true;
                 break;
         }

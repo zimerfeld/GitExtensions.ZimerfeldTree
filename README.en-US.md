@@ -1,4 +1,4 @@
-﻿**Version:** 1.0.296  
+﻿**Version:** 1.0.298  
 **Updated on:** 2026-06-11
 
 # GitExtensions.ZimerfeldTree

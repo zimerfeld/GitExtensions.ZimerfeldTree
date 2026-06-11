@@ -217,6 +217,7 @@ public sealed class RestoreForm : Form
         {
             Name          = "cboBranch",
             DropDownStyle = ComboBoxStyle.DropDownList,
+            Sorted        = true,
             Bounds        = new Rectangle(70, 24, 210, 22)
         };
 
