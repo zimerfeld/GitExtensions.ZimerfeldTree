@@ -151,6 +151,9 @@ public sealed class GitFlowForm : Form
             if (string.Equals(_cboStartType.Text, "release", StringComparison.OrdinalIgnoreCase)
                 && _txtStartName.Text.Trim().Length == 0)
                 _txtStartName.Text = DateTime.Now.ToString("yyyyMMddHHmm");
+
+            // Drive the "based on" combo + checkbox from the selected type (see ApplyStartTypeRule).
+            ApplyStartTypeRule();
         };
 
         // Row 2 — expected name (prefix label + text input + Start button)
@@ -431,24 +434,79 @@ public sealed class GitFlowForm : Form
 
     // ── Data ────────────────────────────────────────────────────────────────
 
-    private void RefreshBasedOn()
+    /// <summary>
+    /// Populates the "based on" combo and sets the "based on" checkbox enabled/checked state
+    /// according to the selected Start type, per the ZimerfeldGitFlow rule:
+    ///   • hotfix  → base = main,            checkbox disabled (base is fixed)
+    ///   • release → base = develop,         checkbox disabled (base is fixed)
+    ///   • feature → "develop" + feature/*,  checkbox enabled (user may rebase)
+    ///   • bugfix  → release/* only,         checkbox enabled (user picks a release)
+    ///   • other   → develop + all locals,   checkbox enabled (generic fallback)
+    /// The combo is usable only when the checkbox is both enabled and checked.
+    /// </summary>
+    private void ApplyStartTypeRule()
     {
-        string current = _cboBasedOn.Text;
+        string develop = _svc.GetGitFlowBranchName("develop");
+        string main    = _svc.GetGitFlowBranchName("main");
+
         _cboBasedOn.Items.Clear();
-        _cboBasedOn.Items.Add("develop");
-        foreach (var b in _svc.GetLocalBranches())
-            if (!_cboBasedOn.Items.Contains(b.FullName))
-                _cboBasedOn.Items.Add(b.FullName);
-        int idx = _cboBasedOn.Items.IndexOf(current);
-        _cboBasedOn.SelectedIndex = idx >= 0 ? idx : 0;
-        _cboBasedOn.Enabled = _chkBasedOn.Checked;
+
+        switch (_cboStartType.Text.ToLowerInvariant())
+        {
+            case "hotfix":
+                _cboBasedOn.Items.Add(main);
+                _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Checked = false;
+                _chkBasedOn.Enabled = false;
+                break;
+
+            case "release":
+                _cboBasedOn.Items.Add(develop);
+                _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Checked = false;
+                _chkBasedOn.Enabled = false;
+                break;
+
+            case "feature":
+                _cboBasedOn.Items.Add(develop);
+                foreach (var f in FullNamesWithPrefix(_svc.GetGitFlowPrefix("feature")))
+                    _cboBasedOn.Items.Add(f);
+                _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Enabled = true;
+                break;
+
+            case "bugfix":
+                foreach (var r in FullNamesWithPrefix(_svc.GetGitFlowPrefix("release")))
+                    _cboBasedOn.Items.Add(r);
+                if (_cboBasedOn.Items.Count > 0) _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Enabled = true;
+                break;
+
+            default:
+                _cboBasedOn.Items.Add(develop);
+                foreach (var b in _svc.GetLocalBranches())
+                    if (!_cboBasedOn.Items.Contains(b.FullName))
+                        _cboBasedOn.Items.Add(b.FullName);
+                if (_cboBasedOn.Items.Count > 0) _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Enabled = true;
+                break;
+        }
+
+        _cboBasedOn.Enabled = _chkBasedOn.Enabled && _chkBasedOn.Checked;
     }
+
+    /// <summary>Full names of local branches that begin with <paramref name="prefix"/> (e.g. "feature/").</summary>
+    private IEnumerable<string> FullNamesWithPrefix(string prefix) =>
+        _svc.GetLocalBranches()
+            .Select(b => b.FullName)
+            .Where(n => n.StartsWith(prefix, StringComparison.Ordinal));
 
     private void InitData()
     {
         _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
 
-        RefreshBasedOn();
+        // _cboStartType.SelectedIndex = 0 below fires SelectedIndexChanged → ApplyStartTypeRule,
+        // which populates the "based on" combo for the initial type.
 
         // Detect git-flow type of the currently checked-out branch so the Manage
         // panel opens already pointing at it (matching what the user is on).
@@ -565,7 +623,9 @@ public sealed class GitFlowForm : Form
             }
             // checkout -b already switched — reveal without a second checkout.
             RevealInTree(fullBranch, checkout: false);
-            RefreshBasedOn();
+            // Refresh the "based on" combo so a newly created feature/release branch
+            // appears in the filtered list the next time it is used as a base.
+            ApplyStartTypeRule();
         }
         else if (!IsDisposed) Activate();
     }
