@@ -419,7 +419,7 @@ public sealed class BranchHierarchyForm : Form
         SuspendLayout();
 
         Text            = "ZimerfeldTree - BranchHierarchy";
-        Size            = new Size(620, 760);   // widened to fit the extra btnExcluir without cropping Restore
+        Size            = new Size(640, 760);   // wide enough for the full Pull…Restore button row without cropping
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.Sizable;
         MaximizeBox     = true;
@@ -681,7 +681,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnGitFlowDedicated",
             Text   = "GitFlow",
-            Width  = 120,
+            Width  = 100,   // narrower so btnRestore is not cropped at the right edge
             Height = 24
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();

@@ -1,12 +1,12 @@
-# GitExtensions.ZimerfeldTree
+﻿# GitExtensions.ZimerfeldTree
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.288**
+**Versão atual: 1.0.289**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.288 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.289 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
