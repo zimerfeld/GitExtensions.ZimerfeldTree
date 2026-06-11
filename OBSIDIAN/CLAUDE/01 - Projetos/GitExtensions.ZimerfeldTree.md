@@ -210,7 +210,7 @@ tools\install.ps1      # instala o plugin
 tools\uninstall.ps1    # remove
 tools\update-dll.ps1   # atualiza só a DLL
 ```
-O `build.ps1`: (1) lê e incrementa `<version>` no nuspec; (2) sincroniza `<Version>` no csproj; (3) atualiza `README.md` e `FUNCIONALIDADES.md`; (4) builda em Release; (5) se Admin, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`; (6) roda `nuget pack`.
+O `build.ps1`: (1) lê e incrementa `<version>` no nuspec; (2) sincroniza `<Version>` no csproj; (3) atualiza `README.md`; (4) builda em Release; (5) se Admin, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`; (6) roda `nuget pack`.
 
 Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
 

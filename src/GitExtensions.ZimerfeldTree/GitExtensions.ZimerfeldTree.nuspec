@@ -16,7 +16,7 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-    <version>1.0.290</version>
+    <version>1.0.291</version>
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -99,6 +99,8 @@ Features:
     <file src="..\..\LICENSE.txt" target="" />
     <!-- README displayed on nuget.org / local NuGet feeds -->
     <file src="..\..\README.md" target="" />
+    <file src="..\..\README.pt-BR.md" target="" />
+    <file src="..\..\README.en-US.md" target="" />
     <!-- Package icon shown on nuget.org (must match <icon> above) -->
     <file src="Resources\icon-128.png" target="icon.png" />
   </files>

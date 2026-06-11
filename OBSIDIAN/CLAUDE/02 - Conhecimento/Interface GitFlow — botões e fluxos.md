@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-07 (fechamento sem NotifyRepoChanged; refresh pós-close só para tag de release)
+atualizado: 2026-06-11 (regra "based on" dirigida pelo Type no Start — combo filtrado + checkbox habilitado/desabilitado por tipo)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, gitflow]
 fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 ---
@@ -15,7 +15,7 @@ fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 
 ## 🧭 Layout
 - **Header** — `HEAD: <ref simbólico>` + link **"About GitFlow"**.
-- **Start branch** (grupo) — `Type` (combo), `Expected name` (label de prefixo + caixa de texto) + botão **Start**, checkbox **based on:** + combo de base (default `develop`).
+- **Start branch** (grupo) — `Type` (combo), `Expected name` (label de prefixo + caixa de texto) + botão **Start**, checkbox **based on:** + combo de base. O conteúdo do combo e o estado do checkbox são **dirigidos pelo Type** (ver [[#Regra "based on" por tipo (Start)]]).
 - **Manage existing branches** (grupo) — `Type` (combo), `Branch` (combo de branches locais com o prefixo), botões **Publish / Track / Update / Finish**, checkboxes **Keep branch after finish** (`-k`, marcado por padrão) e **No fetch (--no-fetch)**.
 - **Resultado dos comandos git** — caixa multilinha somente-leitura (fonte Consolas); limpa ao iniciar cada ação e faz scroll automático para o fim conforme os subcomandos são executados.
 - **Fechar**.
@@ -24,7 +24,7 @@ Tipos suportados (`GitFlowTypes`): `feature`, `bugfix`, `release`, `hotfix`, `su
 
 ## 🚀 Ao abrir (`Load` → `InitData` + `ApplySettings`)
 1. Preenche `HEAD:` (`git rev-parse --symbolic-full-name HEAD`).
-2. Combo "based on": `develop` + todas as branches locais.
+2. Combo "based on": preenchido por `ApplyStartTypeRule()` conforme o `Type` inicial (`feature` → `develop` + `feature/*`). Ver [[#Regra "based on" por tipo (Start)]].
 3. **Detecta o tipo git-flow da branch atual** e abre o painel Manage já apontando para ela.
 4. `Type` (Start) começa em `feature`; `Type` (Manage) na branch detectada.
 5. Carrega checkboxes salvos de `%APPDATA%\GitExtensions\ZimerfeldTree.gitflowsettings.json`.
@@ -46,6 +46,23 @@ Toda ação passa por aqui:
 ### Combo Type — Start
 1. `SelectedIndexChanged`: atualiza o label de prefixo (`git config gitflow.prefix.<tipo>`).
 2. Se o tipo for **release** e o nome estiver vazio → preenche automaticamente com a convenção **`yyyyMMddHHmm`** (ex.: `202606011230`). Não sobrescreve entrada manual.
+3. Chama `ApplyStartTypeRule()` — ver abaixo.
+
+### Regra "based on" por tipo (Start)
+`ApplyStartTypeRule()` (disparado pelo `SelectedIndexChanged` do `cboStartType` e re-aplicado após um Start bem-sucedido) repopula `cboBasedOn` e define o estado de `chkBasedOn` conforme o tipo:
+
+| `cboStartType` | `cboBasedOn` | `chkBasedOn` |
+| --- | --- | --- |
+| **hotfix**  | `main` (base fixa)                                | **desabilitado** |
+| **release** | `develop` (base fixa)                             | **desabilitado** |
+| **feature** | `develop` (1º item) + branches `feature/*` locais | **habilitado** |
+| **bugfix**  | apenas branches `release/*` locais                | **habilitado** |
+| *outros (support)* | `develop` + todas as branches locais       | **habilitado** |
+
+- O combo só fica **utilizável** quando o checkbox está **habilitado E marcado** (`_cboBasedOn.Enabled = _chkBasedOn.Enabled && _chkBasedOn.Checked`).
+- hotfix/release: o checkbox é desmarcado e desabilitado → base fixa; o combo só exibe `main`/`develop`. O fallback de `DoStart` (sem "based on") já resolve para o mesmo `main`/`develop`, mantendo coerência.
+- feature/bugfix: marque o checkbox para escolher a base no combo filtrado (feature filha de feature, bugfix sobre release).
+- Nomes de branch no combo são **completos** (ex.: `feature/x`, `release/2026`).
 
 ### Botão Start (`_btnStart`) → `DoStart`
 1. Lê tipo e nome; se nome vazio → `MessageBox` e aborta.
