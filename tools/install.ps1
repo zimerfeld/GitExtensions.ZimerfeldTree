@@ -73,6 +73,28 @@ if (-not $isAdmin) {
     exit 1
 }
 
+# -- Close GitExtensions if running (it locks the plugin DLL) -----------------
+
+$geProcesses = Get-Process -Name "GitExtensions" -ErrorAction SilentlyContinue
+if ($geProcesses) {
+    Write-Host "GitExtensions esta aberto. Fechando antes de instalar o plugin..." -ForegroundColor Yellow
+    foreach ($p in $geProcesses) { $p.CloseMainWindow() | Out-Null }
+    try {
+        $geProcesses | Wait-Process -Timeout 10 -ErrorAction Stop
+    }
+    catch {
+        Write-Warning "GitExtensions nao fechou em 10s. Encerrando a forca..."
+        Get-Process -Name "GitExtensions" -ErrorAction SilentlyContinue |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+    Start-Sleep -Milliseconds 500
+    if (Get-Process -Name "GitExtensions" -ErrorAction SilentlyContinue) {
+        Write-Error "Nao foi possivel encerrar o GitExtensions. Feche-o manualmente e repita."
+        exit 1
+    }
+    Write-Host "GitExtensions encerrado." -ForegroundColor Green
+}
+
 # -- Copy DLL -----------------------------------------------------------------
 
 $dest = Join-Path $pluginsDir $dllName

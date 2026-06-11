@@ -433,6 +433,8 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 
 ![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotInstall.png)
 
+> O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
+
 ### Opção B — Manual
 
 Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
@@ -454,6 +456,8 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 
 ![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUninstall.png)
 
+> O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
+
 Como alternativa, delete manualmente o arquivo:
 
 ```
@@ -474,6 +478,8 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 ```
 
 ![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUpdate.png)
+
+> O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
 Reinicie o GitExtensions para aplicar a nova DLL.
 
