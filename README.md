@@ -4,9 +4,9 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBranchHierarchy.png)
 
-**Versão atual: 1.0.282**
+**Versão atual: 1.0.283**
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.282 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.283 "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
