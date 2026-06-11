@@ -72,6 +72,24 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - O **menu de contexto** acompanha: com **2+** checkboxes marcados, mostra apenas **Excluir (N)** e **Atualizar** (o item GitFlow foi removido do menu de contexto).
 - Após excluir, a árvore é reconstruída e os checkboxes são limpos.
 
+O fluxo completo de exclusão em lote:
+
+**1. Antes — itens marcados** (botão mostra `Excluir (8)`):
+
+![Antes da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBeforeDelete.png)
+
+**2. Confirmação única** listando todos os itens, com a opção **Excluir Remotamente?**:
+
+![Confirmar exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotConfirmDelete.png)
+
+**3. Durante a exclusão** — overlay de progresso com a lista de passos e o botão **Abortar Operação**:
+
+![Durante a exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotDuringDelete.png)
+
+**4. Depois** — a árvore é reconstruída já sem os itens excluídos e com os contadores atualizados:
+
+![Depois da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotAfterDelete.png)
+
 #### Proteção de branches principais e "Modo Developer"
 
 - As branches **main / master / develop** (locais e remotas) são **protegidas**: por padrão **não podem ser marcadas** para exclusão (nem excluídas pelo nó selecionado).
@@ -410,6 +428,8 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\install.ps1
 ```
 
+![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotInstall.png)
+
 ### Opção B — Manual
 
 Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
@@ -429,7 +449,24 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\uninstall.ps1
 ```
 
+![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUninstall.png)
+
 A remoção da DLL não afeta nenhuma outra parte do GitExtensions.
+
+---
+
+## Atualização da DLL
+
+Para atualizar apenas a DLL já instalada (sem reinstalar), execute o PowerShell **como Administrador**:
+
+```powershell
+cd C:\GitExtensions\ZimerfeldTree\tools
+.\update-dll.ps1
+```
+
+![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotUpdate.png)
+
+Reinicie o GitExtensions para aplicar a nova DLL.
 
 ---
 
@@ -525,6 +562,14 @@ O script:
 3. Compila em modo Release (`net9.0-windows`)
 4. Se for Administrador, copia o DLL para `C:\Program Files\GitExtensions\Plugins\`
 5. Empacota o `.nupkg` em `C:\NUGET\ZimerfeldTree\`
+
+Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
+
+![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotBuild.png)
+
+Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
+
+![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/develop/ScreenshotNoBuild.png)
 
 ---
 

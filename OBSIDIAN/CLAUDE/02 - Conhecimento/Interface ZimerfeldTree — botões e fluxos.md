@@ -131,6 +131,24 @@ Valores dos campos são persistidos em `%APPDATA%\GitExtensions\ZimerfeldRestore
    - 1 → fluxo individual. 0 → nada.
 3. **Proteção:** main/master/develop são removidas dos alvos se `Modo Developer` desligado (`IsProtectedBranch`); se sobrar nada, exibe aviso "Branch protegida".
 
+**Fluxo de exclusão em lote (passo a passo):**
+
+1. Itens marcados — o botão mostra `Excluir (8)`:
+
+![[ScreenshotBeforeDelete.png]]
+
+2. Confirmação única listando os itens, com a opção **Excluir Remotamente?**:
+
+![[ScreenshotConfirmDelete.png]]
+
+3. Overlay de progresso durante a exclusão (lista de passos + botão **Abortar Operação**):
+
+![[ScreenshotDuringDelete.png]]
+
+4. Árvore reconstruída já sem os itens e com contadores atualizados:
+
+![[ScreenshotAfterDelete.png]]
+
 ### Checkbox "Modo Developer" (`_chkDeveloperMode`)
 1. Ao lado de `Show Debug` no rodapé. Estado persistido em `ZimerfeldTree.uisettings.json` (`developerMode`) via `SaveUiSettings()`, carregado por `LoadDeveloperMode()`.
 2. `Tree_BeforeCheck` bloqueia **marcar** (não desmarcar) main/master/develop quando desligado.
