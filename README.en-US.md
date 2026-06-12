@@ -1,25 +1,19 @@
-﻿**Version:** 1.0.298  
-**Updated on:** 2026-06-11
+﻿# GitExtensions.ZimerfeldTree
 
-# GitExtensions.ZimerfeldTree
+![Icone](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png)
 
-<div align="right">
-  <sub><b>Help keep this project always up to date&nbsp;💛</b></sub>
-  <br/>
-  <a href="https://github.com/sponsors/zimerfeld">
-    <img src="https://img.shields.io/badge/%E2%9D%A4%20Sponsor-zimerfeld-EA4AAA?logo=githubsponsors&logoColor=white&style=for-the-badge" alt="Sponsor zimerfeld on GitHub" height="32" />
-  </a>
-</div>
+- Help keep this project always updated 💜
 
-[Português](README.pt-BR.md) | [English](README.en-US.md)
+![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)
+[GitHub Sponsor](https://github.com/sponsors/zimerfeld)
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
 
-**Current version: 1.0.290**
+[English](README.en-US.md) | [Português](README.pt-BR.md)
 
-[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/1.0.290 "More information about GitExtensions.ZimerfeldTree package")
+[...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree "More information about GitExtensions.ZimerfeldTree package")
 
 ---
 
@@ -157,20 +151,20 @@ The **Developer Mode** checkbox controls protection for main branches:
 
 Each item has an embedded 16 x 16 icon generated from `Resources/ctx-*.png`:
 
-| Icon | Item | Available for |
-| --- | --- | --- |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16"> | Commit (N) | Always - opens the GitExtensions Commit window; `N` is the number of pending changes |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16"> | Checkout | Local, remote, tag |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | New branch from here... | Local, tag |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16"> | Merge into current branch | Local |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16"> | Rebase onto current branch | Local |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16"> | Rename... | Local |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16"> | Delete... | Local, remote, tag |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16"> | GitFlow... | Branch (local/remote/tag) |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16"> | Restore... | When current branch is not `develop` |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16"> | Expand all | Always |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16"> | Collapse all | Always |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16"> | Refresh | Always |
+| Icon                                                                                                                                                           | Item                       | Available for                                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)                 | Always - opens the GitExtensions Commit window; `N` is the number of pending changes |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                   | Local, remote, tag                                                                   |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | New branch from here...    | Local, tag                                                                           |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16">      | Merge into current branch  | Local                                                                                |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16">     | Rebase onto current branch | Local                                                                                |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16">     | Rename...                  | Local                                                                                |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16">     | Delete...                  | Local, remote, tag                                                                   |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16">    | GitFlow...                 | Branch (local/remote/tag)                                                            |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16">    | Restore...                 | When current branch is not `develop`                                                 |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16">     | Expand all                 | Always                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Collapse all               | Always                                                                               |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Refresh                    | Always                                                                               |
 
 The **Commit** item recalculates the pending working tree count every time the menu opens. It opens the native Commit window in the already running GitExtensions process when possible, so Commit Template plugins are already loaded. If the repository shown in BranchHierarchy differs from the active GitExtensions repository, it opens through a new process as a fallback.
 
@@ -178,16 +172,16 @@ The **Commit** item recalculates the pending working tree count every time the m
 
 The **GitFlow Initialize** button applies the default GitFlow configuration keys to the current repository:
 
-| Key | Default value |
-| --- | --- |
-| `gitflow.branch.main` | `main` |
-| `gitflow.branch.develop` | `develop` |
-| `gitflow.prefix.feature` | `feature/` |
-| `gitflow.prefix.bugfix` | `bugfix/` |
-| `gitflow.prefix.release` | `release/` |
-| `gitflow.prefix.hotfix` | `hotfix/` |
-| `gitflow.prefix.support` | `support/` |
-| `gitflow.prefix.versiontag` | _(empty)_ |
+| Key                         | Default value |
+| --------------------------- | ------------- |
+| `gitflow.branch.main`       | `main`        |
+| `gitflow.branch.develop`    | `develop`     |
+| `gitflow.prefix.feature`    | `feature/`    |
+| `gitflow.prefix.bugfix`     | `bugfix/`     |
+| `gitflow.prefix.release`    | `release/`    |
+| `gitflow.prefix.hotfix`     | `hotfix/`     |
+| `gitflow.prefix.support`    | `support/`    |
+| `gitflow.prefix.versiontag` | _(empty)_     |
 
 This is equivalent to running `git config <key> <value>` for each row.
 
@@ -235,12 +229,12 @@ The **Start branch** panel includes a **based on:** option:
 
 The plugin executes native git commands directly and does **not** require the `git-flow` binary.
 
-| Action | Behavior |
-| --- | --- |
-| Publish | Pushes the selected local branch and sets upstream tracking |
-| Track | Creates a local tracking branch from the selected remote branch |
-| Update | Pulls updates for the selected branch |
-| Finish | Merges the selected branch into the configured target and removes it |
+| Action  | Behavior                                                             |
+| ------- | -------------------------------------------------------------------- |
+| Publish | Pushes the selected local branch and sets upstream tracking          |
+| Track   | Creates a local tracking branch from the selected remote branch      |
+| Update  | Pulls updates for the selected branch                                |
+| Finish  | Merges the selected branch into the configured target and removes it |
 
 Operational behavior:
 
@@ -305,35 +299,35 @@ The Tree of Life icon is the embedded 16 x 16 PNG [`Resources/ico.png`](src/GitE
 
 Each tree node receives a 16 x 16 icon. GitFlow types have dedicated icons:
 
-| Icon | Node type | Description |
-| --- | --- | --- |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/master.png" width="16" height="16"> | `master` / `main` | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop` | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | `feature` folder | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16"> | `feature/*` children | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/bugfix.png" width="16" height="16"> | `bugfix/*` | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*` | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/hotfix.png" width="16" height="16"> | `hotfix/*` | Embedded custom image |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/support.png" width="16" height="16"> | `support/*` | Embedded custom image |
+| Icon                                                                                                                                                    | Node type            | Description           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- | --------------------- |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/master.png" width="16" height="16">  | `master` / `main`    | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/develop.png" width="16" height="16"> | `develop`            | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/feature.png" width="16" height="16"> | `feature` folder     | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/folha.png" width="16" height="16">   | `feature/*` children | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/bugfix.png" width="16" height="16">  | `bugfix/*`           | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/release.png" width="16" height="16"> | `release/*`          | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/hotfix.png" width="16" height="16">  | `hotfix/*`           | Embedded custom image |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/support.png" width="16" height="16"> | `support/*`          | Embedded custom image |
 
 #### Custom icons
 
-| Type | Resource | Visual |
-| --- | --- | --- |
-| **LOCAL** section | `Resources/local.png` | steel-blue monitor |
-| **REMOTES** section | `Resources/remotes.png` | dark-blue cloud |
-| **TAGS** section | `Resources/tags.png` | purple tag/ribbon |
-| remote group (`origin`) | `Resources/origin.png` | blue cloud |
-| remote branch | `Resources/remote-branch.png` | green fork |
-| tag | `Resources/tag.png` | teal tag |
-| `master` / `main` | `Resources/master.png` | golden shield |
-| `develop` | `Resources/develop.png` | crossed wrench and hammer |
-| `feature` folder | `Resources/feature.png` | branch sprout |
-| `feature/*` | `Resources/folha.png` | green leaf |
-| `release/*` | `Resources/release.png` | package box |
-| `bugfix/*` | `Resources/bugfix.png` | red bug |
-| `hotfix/*` | `Resources/hotfix.png` | red fire extinguisher |
-| `support/*` | `Resources/support.png` | first-aid kit |
+| Type                    | Resource                      | Visual                    |
+| ----------------------- | ----------------------------- | ------------------------- |
+| **LOCAL** section       | `Resources/local.png`         | steel-blue monitor        |
+| **REMOTES** section     | `Resources/remotes.png`       | dark-blue cloud           |
+| **TAGS** section        | `Resources/tags.png`          | purple tag/ribbon         |
+| remote group (`origin`) | `Resources/origin.png`        | blue cloud                |
+| remote branch           | `Resources/remote-branch.png` | green fork                |
+| tag                     | `Resources/tag.png`           | teal tag                  |
+| `master` / `main`       | `Resources/master.png`        | golden shield             |
+| `develop`               | `Resources/develop.png`       | crossed wrench and hammer |
+| `feature` folder        | `Resources/feature.png`       | branch sprout             |
+| `feature/*`             | `Resources/folha.png`         | green leaf                |
+| `release/*`             | `Resources/release.png`       | package box               |
+| `bugfix/*`              | `Resources/bugfix.png`        | red bug                   |
+| `hotfix/*`              | `Resources/hotfix.png`        | red fire extinguisher     |
+| `support/*`             | `Resources/support.png`       | first-aid kit             |
 
 The plugin remains self-contained: images are embedded in the DLL and do not depend on external files on the user's machine.
 
@@ -354,21 +348,21 @@ The plugin remains self-contained: images are embedded in the DLL and do not dep
 
 ### Required for use
 
-| Dependency | Version / path | Purpose |
-| --- | --- | --- |
-| **Windows** | Windows desktop | WinForms plugin host |
-| **Git** | Available in PATH or GitExtensions configuration | Repository operations |
-| **GitExtensions** | Compatible .NET 9 build | Host application that loads the plugin |
-| **ZimerfeldTree plugin** | Installed DLL | The plugin itself |
+| Dependency               | Version / path                                   | Purpose                                |
+| ------------------------ | ------------------------------------------------ | -------------------------------------- |
+| **Windows**              | Windows desktop                                  | WinForms plugin host                   |
+| **Git**                  | Available in PATH or GitExtensions configuration | Repository operations                  |
+| **GitExtensions**        | Compatible .NET 9 build                          | Host application that loads the plugin |
+| **ZimerfeldTree plugin** | Installed DLL                                    | The plugin itself                      |
 
 > **Attention:** GitExtensions 3.x (`.NET Framework 4.8`) is incompatible; the plugin requires `net9.0-windows`.
 
 ### Conditional - build/development only
 
-| Dependency | Purpose |
-| --- | --- |
-| **.NET SDK** | Build the project |
-| **NuGet CLI** | Generate `.nupkg` packages |
+| Dependency     | Purpose                       |
+| -------------- | ----------------------------- |
+| **.NET SDK**   | Build the project             |
+| **NuGet CLI**  | Generate `.nupkg` packages    |
 | **PowerShell** | Run build and install scripts |
 
 ## Installation
