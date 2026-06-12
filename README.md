@@ -1,18 +1,18 @@
-﻿**Version:** 1.0.298  
-**Updated:** 2026-06-11
+﻿# GitExtensions.ZimerfeldTree
 
-**Versão:** 1.0.298  
-**Atualizado em:** 2026-06-11
+![Icone](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png)
 
-# <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="ZimerfeldTree icon" width="48" height="48" align="absmiddle" /> GitExtensions.ZimerfeldTree
+- Help keep this project always updated 💜
+- Ajude a manter este projeto sempre atualizado 💜
 
-<p align="right">
-  <sub>· Help keep this project always updated 💜</sub><br>
-  <sub>· Ajude a manter este projeto sempre atualizado 💜</sub><br>
-  <a href="https://github.com/sponsors/zimerfeld">
-    <img src="https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor @zimerfeld on GitHub Sponsors">
-  </a>
-</p>
+![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)
+[GitHub Sponsor](https://github.com/sponsors/zimerfeld)
+
+**Version:** 1.0.299  
+**Updated:** 2026-06-12
+
+**Versão:** 1.0.299  
+**Atualizado em:** 2026-06-12
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
