@@ -13,7 +13,14 @@ public sealed class GitFlowForm : Form
     private readonly BranchHierarchyService _svc;
     private readonly bool _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
-    private readonly Translator _t = I18n.Load("ZimerfeldGitFlow");
+
+    // Loaded for the active language; reassigned by ApplyLanguage when the user switches languages
+    // via the bottom-panel dropdown (so the open window re-localizes live, like ZimerfeldTree).
+    private Translator _t = I18n.Load("ZimerfeldGitFlow");
+
+    // (control, dictionary-key) pairs reapplied by ApplyLanguage so every label/button re-localizes
+    // in place when the Language dropdown changes.
+    private readonly List<KeyValuePair<Control, string>> _localized = new();
 
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -53,8 +60,12 @@ public sealed class GitFlowForm : Form
     private GroupBox _grpResult = null!;
     private TextBox  _txtResult = null!;
 
-    // ── Bottom close button ──
-    private Button _btnClose = null!;
+    // ── Bottom bar ──
+    private Button   _btnClose     = null!;
+    private CheckBox _chkShowDebug = null!;
+    private Label    _lblLanguage  = null!;
+    private ComboBox _cboLanguage  = null!;
+    private bool     _suppressLangEvent;
 
     /// <summary>Set after a successful "release" finish; BranchHierarchyForm reads this to focus the new tag.</summary>
     public string? LastFinishedReleaseTag { get; private set; }
@@ -73,7 +84,9 @@ public sealed class GitFlowForm : Form
         _showControlIds = showControlIds;
 
         Text            = _t["title"];
-        Size            = new Size(688, 824 + SponsorBanner.PanelHeight);
+        // Width 720 (client 704 → content 688) gives the Finish-aligned Keep/No-fetch checkboxes room
+        // for the longer Portuguese labels without clipping at the group's right border.
+        Size            = new Size(720, 824 + SponsorBanner.PanelHeight);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -100,7 +113,7 @@ public sealed class GitFlowForm : Form
 
         Controls.Add(_content);              // Fill — between banner and bottom bar
         Controls.Add(_bottomPanel);          // Bottom
-        Controls.Add(SponsorBanner.Create()); // Top — GitHub Sponsors banner
+        Controls.Add(SponsorBanner.Create(_lnkAbout)); // Top — Sponsors banner hosts lnkAbout
 
         CancelButton = _btnClose;
 
@@ -109,7 +122,7 @@ public sealed class GitFlowForm : Form
         {
             InitData();
             ApplySettings();
-            if (_showControlIds) ApplyControlTooltips();
+            ApplyOrClearTooltips(_chkShowDebug.Checked);
         };
     }
 
@@ -119,16 +132,15 @@ public sealed class GitFlowForm : Form
     {
         _headerPanel = new Panel { Name = "headerPanel", Dock = DockStyle.Top, Height = 26 };
 
+        // lnkAbout is hosted by the sponsor banner (aligned with picSponsor), not the header panel.
         _lnkAbout = new LinkLabel
         {
-            Name      = "lnkAbout",
-            Text      = _t["aboutLink"],
-            AutoSize  = true,
-            Dock      = DockStyle.Right,
-            TextAlign = ContentAlignment.MiddleRight,
-            Padding   = new Padding(8, 4, 0, 0)
+            Name     = "lnkAbout",
+            Text     = _t["aboutLink"],
+            AutoSize = true
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAbout();
+        _localized.Add(new(_lnkAbout, "aboutLink"));
 
         _lblHead = new Label
         {
@@ -137,8 +149,7 @@ public sealed class GitFlowForm : Form
             Dock      = DockStyle.Fill
         };
 
-        _headerPanel.Controls.Add(_lblHead);   // Fill (added first, backmost)
-        _headerPanel.Controls.Add(_lnkAbout);  // Right
+        _headerPanel.Controls.Add(_lblHead);   // Fill
     }
 
     private void BuildStartGroup()
@@ -150,9 +161,9 @@ public sealed class GitFlowForm : Form
             Text   = _t["startGroup"],
             Dock   = DockStyle.Top,
             Height = 120,
-            // Final docked width (content 672 client − 16 padding). Set BEFORE its right-anchored
+            // Final docked width (content 704 client − 16 padding). Set BEFORE its right-anchored
             // children are added so their anchor margins are computed against the real width.
-            Width  = 656
+            Width  = 688
         };
 
         // Row 1 — type selector (col label x=12, col input x=108)
@@ -235,6 +246,12 @@ public sealed class GitFlowForm : Form
         _grpStart.Controls.AddRange(
             [lblType, _cboStartType, lblName, _lblStartPrefix, _txtStartName, _btnStart,
              _chkBasedOn, _cboBasedOn]);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(_grpStart, "startGroup"), new(lblType, "typeLabel"), new(lblName, "expectedName"),
+            new(_btnStart, "startBtn"),   new(_chkBasedOn, "basedOn"),
+        });
     }
 
     private void BuildManageGroup()
@@ -245,7 +262,7 @@ public sealed class GitFlowForm : Form
             Text   = _t["manageGroup"],
             Dock   = DockStyle.Top,
             Height = 192,
-            Width  = 656   // see grpStart: real width before right-anchored children are added
+            Width  = 688   // see grpStart: real width before right-anchored children are added
         };
 
         // Row 1 — type selector (aligned with grpStart: label x=12, input x=108)
@@ -303,21 +320,23 @@ public sealed class GitFlowForm : Form
         _btnFinish = new Button { Name = "btnFinish", Text = _t["finishBtn"],  Bounds = new Rectangle(486, 84, 140, 26) };
         _btnFinish.Click += (_, _) => DoFinish();
 
-        // ── Checkboxes stacked below the Finish button ─────────────────────────
+        // ── Checkboxes stacked below the Finish button, left edge aligned with btnFinish (x=486) ──
         _chkKeep = new CheckBox
         {
-            Name    = "chkKeep",
-            Text    = _t["keepBranch"],
-            Bounds  = new Rectangle(360, 114, 290, 20),
-            Checked = true  // default: keep branch; overridden by saved settings on Load
+            Name     = "chkKeep",
+            Text     = _t["keepBranch"],
+            AutoSize = true,
+            Location = new Point(486, 114),
+            Checked  = true  // default: keep branch; overridden by saved settings on Load
         };
         _chkKeep.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
 
         _chkNoFetch = new CheckBox
         {
-            Name   = "chkNoFetch",
-            Text   = _t["noFetch"],
-            Bounds = new Rectangle(360, 136, 290, 20)
+            Name     = "chkNoFetch",
+            Text     = _t["noFetch"],
+            AutoSize = true,
+            Location = new Point(486, 136)
         };
         _chkNoFetch.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
 
@@ -328,6 +347,13 @@ public sealed class GitFlowForm : Form
             lblType, _cboManageType, lblBranch, _lblManagePrefix, _cboManageBranch,
             _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, _chkNoFetch
         ]);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(_grpManage, "manageGroup"), new(lblType, "typeLabel"),   new(lblBranch, "branchLabel"),
+            new(_btnPublish, "publishBtn"), new(_btnTrack, "trackBtn"),  new(_btnUpdate, "updateBtn"),
+            new(_btnFinish, "finishBtn"),   new(_chkKeep, "keepBranch"), new(_chkNoFetch, "noFetch"),
+        });
     }
 
     private void BuildResultGroup()
@@ -354,6 +380,7 @@ public sealed class GitFlowForm : Form
             Font       = new Font("Consolas", 9f)
         };
         _grpResult.Controls.Add(_txtResult);
+        _localized.Add(new(_grpResult, "resultGroup"));
     }
 
     private void BuildCloseButton()
@@ -368,12 +395,104 @@ public sealed class GitFlowForm : Form
         };
         _btnClose.Click += (_, _) => Close();
 
-        // Docked bottom bar with the close button centered horizontally (mirrors ZimerfeldTree).
+        // Show Debug toggles the TYPE/ID tooltips live; defaults to the owner's Show-Debug state.
+        _chkShowDebug = new CheckBox
+        {
+            Name     = "chkShowDebug",
+            Text     = _t["showDebug"],
+            AutoSize = true,
+            Checked  = _showControlIds
+        };
+        _chkShowDebug.CheckedChanged += (_, _) => ApplyOrClearTooltips(_chkShowDebug.Checked);
+
+        // Language selector (right-aligned). Items + selection populated by PopulateLanguageCombo so
+        // they stay localized; index order matches AppLanguage (0=Automatic, 1=English, 2=Portuguese).
+        _lblLanguage = new Label
+        {
+            Name      = "lblLanguage",
+            Text      = _t["language"],
+            AutoSize  = true,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+        _cboLanguage = new ComboBox
+        {
+            Name          = "cboLanguage",
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width         = 120
+        };
+        _cboLanguage.SelectedIndexChanged += OnLanguageChanged;
+        PopulateLanguageCombo();
+
+        // Docked bottom bar: close button centered, Show Debug pinned left, Language at the right edge
+        // (mirrors ZimerfeldTree).
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 40 };
         _bottomPanel.Controls.Add(_btnClose);
-        _bottomPanel.Layout += (_, _) => _btnClose.Location = new Point(
-            (_bottomPanel.Width  - _btnClose.Width)  / 2,
-            (_bottomPanel.Height - _btnClose.Height) / 2);
+        _bottomPanel.Controls.Add(_chkShowDebug);
+        _bottomPanel.Controls.Add(_lblLanguage);
+        _bottomPanel.Controls.Add(_cboLanguage);
+        _bottomPanel.Layout += (_, _) =>
+        {
+            _btnClose.Location = new Point(
+                (_bottomPanel.Width  - _btnClose.Width)  / 2,
+                (_bottomPanel.Height - _btnClose.Height) / 2);
+            _chkShowDebug.Location = new Point(
+                8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+            _cboLanguage.Location = new Point(
+                _bottomPanel.Width - _cboLanguage.Width - 8,
+                (_bottomPanel.Height - _cboLanguage.Height) / 2);
+            _lblLanguage.Location = new Point(
+                _cboLanguage.Left - _lblLanguage.Width - 6,
+                (_bottomPanel.Height - _lblLanguage.Height) / 2);
+        };
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(_btnClose, "closeBtn"), new(_chkShowDebug, "showDebug"), new(_lblLanguage, "language"),
+        });
+    }
+
+    // ── Language selection ────────────────────────────────────────────────────
+
+    /// <summary>Persists the dropdown choice and re-localizes this window in place.</summary>
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        if (_suppressLangEvent) return;
+        var lang = _cboLanguage.SelectedIndex switch
+        {
+            1 => AppLanguage.English,
+            2 => AppLanguage.Portuguese,
+            _ => AppLanguage.Automatic,
+        };
+        I18n.SetLanguage(lang);
+        ApplyLanguage();
+    }
+
+    /// <summary>Reloads the active-language dictionary and reapplies every registered text in place.</summary>
+    private void ApplyLanguage()
+    {
+        _t = I18n.Load("ZimerfeldGitFlow");
+        Text = _t["title"];
+        foreach (var (c, key) in _localized) c.Text = _t[key];
+        _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
+        PopulateLanguageCombo();
+    }
+
+    /// <summary>Repopulates the language dropdown with localized item labels, preserving selection.</summary>
+    private void PopulateLanguageCombo()
+    {
+        _suppressLangEvent = true;
+        int sel = _cboLanguage.SelectedIndex >= 0 ? _cboLanguage.SelectedIndex : (int)I18n.Current;
+        _cboLanguage.Items.Clear();
+        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"]]);
+        _cboLanguage.SelectedIndex = sel;
+        _suppressLangEvent = false;
+    }
+
+    /// <summary>Shows the debug TYPE/ID tooltips when enabled, or clears them when disabled.</summary>
+    private void ApplyOrClearTooltips(bool show)
+    {
+        if (show) ApplyControlTooltips();
+        else      _mainTooltip.RemoveAll();
     }
 
     // ── Tab order ───────────────────────────────────────────────────────────
