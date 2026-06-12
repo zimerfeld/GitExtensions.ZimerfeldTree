@@ -75,7 +75,15 @@ public sealed class BranchHierarchyForm : Form
     private Button   _btnClose    = null!;
     private CheckBox _chkShowDebug = null!;
     private CheckBox _chkDeveloperMode = null!;
+    private Label    _lblLanguage  = null!;
+    private ComboBox _cboLanguage  = null!;
+    private bool     _suppressLangEvent;
     private LinkLabel _lnkAbout   = null!;
+
+    // ── Localization ────────────────────────────────────────────────────────────
+    // Loaded for the active language; reassigned by ApplyLanguage when the user switches
+    // languages via the bottom-panel dropdown (so the open window re-localizes live).
+    private Translator _t = I18n.Load("ZimerfeldTree");
 
     // ── Loading overlay ───────────────────────────────────────────────────────
     private Panel       _loadingOverlay   = null!;
@@ -233,9 +241,9 @@ public sealed class BranchHierarchyForm : Form
         {
             _progressBar.Value        = 0;
             _stepsList.Items.Clear();
-            _stepsList.Items.Add("• Iniciando...");
+            _stepsList.Items.Add($"• {_t["progStarting"]}");
             _btnCancelRefresh.Enabled = true;
-            _btnCancelRefresh.Text    = "Abortar Operação";
+            _btnCancelRefresh.Text    = _t["abortOperation"];
             _loadingOverlay.Location  = new Point(
                 (ClientSize.Width  - _loadingOverlay.Width)  / 2,
                 (ClientSize.Height - _loadingOverlay.Height) / 2);
@@ -280,8 +288,8 @@ public sealed class BranchHierarchyForm : Form
                     _loadingOverlay.Visible = false;
                     SetFormEnabled(true);
                 }
-                MessageBox.Show($"Erro ao carregar dados do repositório:\n{ex.Message}",
-                    "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(_t.F("errLoadRepo", ex.Message),
+                    _t["appTitle"], MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             return;
         }
@@ -323,22 +331,22 @@ public sealed class BranchHierarchyForm : Form
     /// </summary>
     private RepoData FetchRepoData(IProgress<(int pct, string msg)>? ip, CancellationToken token)
     {
-        ip?.Report((10, "Carregando branches locais..."));
+        ip?.Report((10, _t["progLocal"]));
         var local = _svc.GetLocalBranches();
         token.ThrowIfCancellationRequested();
-        ip?.Report((30, "Carregando branches remotas..."));
+        ip?.Report((30, _t["progRemote"]));
         var remote = _svc.GetRemoteBranches();
         token.ThrowIfCancellationRequested();
-        ip?.Report((50, "Carregando tags..."));
+        ip?.Report((50, _t["progTags"]));
         var tags = _svc.GetTags();
         token.ThrowIfCancellationRequested();
-        ip?.Report((65, "Calculando hierarquia local..."));
+        ip?.Report((65, _t["progLocalHierarchy"]));
         var lMap = _svc.BuildParentMap(local);
         token.ThrowIfCancellationRequested();
-        ip?.Report((80, "Calculando hierarquia remota..."));
+        ip?.Report((80, _t["progRemoteHierarchy"]));
         var rMap = _svc.BuildRemoteParentMap(remote);
         token.ThrowIfCancellationRequested();
-        ip?.Report((92, "Obtendo informações de sincronização..."));
+        ip?.Report((92, _t["progSync"]));
         var tracking = _svc.GetBranchTrackingInfo();
         foreach (var b in local)
             if (tracking.TryGetValue(b.FullName, out var ti))
@@ -348,9 +356,9 @@ public sealed class BranchHierarchyForm : Form
                 b.BehindCount = ti.behind;
             }
         token.ThrowIfCancellationRequested();
-        ip?.Report((96, "Verificando alterações pendentes..."));
+        ip?.Report((96, _t["progPending"]));
         int pending = _svc.GetPendingChangesCount();
-        ip?.Report((100, "Concluído."));
+        ip?.Report((100, _t["progDone"]));
         return new RepoData(local, remote, tags, lMap, rMap, pending);
     }
 
@@ -407,8 +415,8 @@ public sealed class BranchHierarchyForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Erro ao carregar dados do repositório:\n{ex.Message}",
-                "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(_t.F("errLoadRepo", ex.Message),
+                _t["appTitle"], MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -418,8 +426,9 @@ public sealed class BranchHierarchyForm : Form
     {
         SuspendLayout();
 
-        Text            = "ZimerfeldTree - BranchHierarchy";
-        Size            = new Size(608, 760);   // client 592: button row ends flush at btnRestore's right edge (= right-docked btnGitFlow)
+        Text            = _t["title"];
+        // Height includes the sponsor banner (PanelHeight) docked above the working-directory panel.
+        Size            = new Size(608, 760 + SponsorBanner.PanelHeight);   // client 592: button row ends flush at btnRestore's right edge (= right-docked btnGitFlow)
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;   // não redimensionável pelo usuário
         MaximizeBox     = false;                          // maximizar redimensionaria a janela
@@ -440,7 +449,7 @@ public sealed class BranchHierarchyForm : Form
         BuildBottomPanel();
         BuildLoadingOverlay();
         SetTabOrder();
-        UpdateCommitActionTexts();
+        ApplyLanguage();   // sets every localizable text from the active-language dictionary
 
         // Layout order (Dock fills from bottom and top inward, Fill takes the remainder).
         // Added last = topmost for DockStyle.Top; visual order top→bottom:
@@ -450,7 +459,8 @@ public sealed class BranchHierarchyForm : Form
         Controls.Add(_warnPanel);           // Top
         Controls.Add(_filterPanel);         // Top
         Controls.Add(_gitFlowInitPanel);    // Top — GitFlow Initialize button (above filter)
-        Controls.Add(_topPanel);            // Top (topmost)
+        Controls.Add(_topPanel);            // Top
+        Controls.Add(SponsorBanner.Create()); // Top (topmost) — GitHub Sponsors banner
         Controls.Add(_status);         // Bottom
         Controls.Add(_bottomPanel);    // Bottom (above status)
         Controls.Add(_lnkAbout);       // Floats top-right over _topPanel
@@ -520,7 +530,7 @@ public sealed class BranchHierarchyForm : Form
         _lblWD = new Label
         {
             Name     = "lblWD",
-            Text     = "Working Directory:",
+            Text     = _t["workingDirectory"],
             AutoSize = true,
             Font     = new Font(Font, FontStyle.Bold),
             Margin   = new Padding(0, 0, 0, 2)
@@ -556,10 +566,11 @@ public sealed class BranchHierarchyForm : Form
         _lnkAbout = new LinkLabel
         {
             Name     = "lnkAbout",
-            Text     = "About Tree",
+            Text     = _t["aboutTree"],
             AutoSize = true,
             Anchor   = AnchorStyles.Top | AnchorStyles.Right,
-            Location = new Point(ClientSize.Width - 100, 2)
+            // Sits over the working-directory panel, which the sponsor banner pushes down by PanelHeight.
+            Location = new Point(ClientSize.Width - 100, 2 + SponsorBanner.PanelHeight)
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAboutTree();
     }
@@ -572,7 +583,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name            = "txtFilter",
             Dock            = DockStyle.Fill,
-            PlaceholderText = "Filtrar branches..."
+            PlaceholderText = _t["filterPlaceholder"]
         };
         _txtFilter.TextChanged += (_, _) => ApplyFilter(_txtFilter.Text.Trim());
 
@@ -617,7 +628,7 @@ public sealed class BranchHierarchyForm : Form
             Dock  = DockStyle.Right,
             Width = 160,
             Height = 24,
-            Text  = "Organizar como GitFlow"
+            Text  = _t["organizeAsGitFlow"]
         };
         _btnGitFlow.Click += BtnGitFlow_Click;
         ApplyButtonIcon(_btnGitFlow, "ctx-gitflow.png");
@@ -641,7 +652,7 @@ public sealed class BranchHierarchyForm : Form
             Name   = "btnGitFlowInit",
             Width  = 160,
             Height = 24,
-            Text   = "GitFlow Initialize"
+            Text   = _t["gitFlowInitialize"]
         };
         _btnGitFlowInit.Click += (_, _) => DoGitFlowInit();
         ApplyButtonIcon(_btnGitFlowInit, "ctx-gitflow.png");
@@ -664,24 +675,24 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildGitFlowButtonPanel()
     {
-        _btnPull = new Button { Name = "btnPull", Text = "Pull", Width = 80, Height = 24 };
+        _btnPull = new Button { Name = "btnPull", Text = _t["pull"], Width = 80, Height = 24 };
         _btnPull.Click += (_, _) => DoPull();
 
-        _btnPush = new Button { Name = "btnPush", Text = "Push", Width = 80, Height = 24 };
+        _btnPush = new Button { Name = "btnPush", Text = _t["push"], Width = 80, Height = 24 };
         _btnPush.Click += (_, _) => DoPush();
 
-        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = "Commit", Width = 100, Height = 24 };
+        _btnCommitDedicated = new Button { Name = "btnCommitDedicated", Text = _t["commit"], Width = 100, Height = 24 };
         _btnCommitDedicated.Click += (_, _) => DoCommit();
 
         // Deletes the checked branch/tag leaves (or the selected node when none are checked),
         // mirroring the context-menu "Excluir". Its text tracks the number of checked checkboxes.
-        _btnExcluir = new Button { Name = "btnExcluir", Text = "Excluir", Width = 100, Height = 24 };
+        _btnExcluir = new Button { Name = "btnExcluir", Text = _t["delete"], Width = 100, Height = 24 };
         _btnExcluir.Click += (_, _) => DoDelete();
 
         _btnGitFlowDedicated = new Button
         {
             Name   = "btnGitFlowDedicated",
-            Text   = "GitFlow",
+            Text   = _t["gitFlow"],
             Width  = 100,   // narrower so btnRestore is not cropped at the right edge
             Height = 24
         };
@@ -690,7 +701,7 @@ public sealed class BranchHierarchyForm : Form
         _btnRestore = new Button
         {
             Name   = "btnRestore",
-            Text   = "Restore",
+            Text   = _t["restore"],
             Width  = 100,   // matches btnGitFlowDedicated; right edge aligns with the right-docked btnGitFlow
             Height = 24
         };
@@ -782,18 +793,18 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildContextMenu()
     {
-        _miCommit    = new ToolStripMenuItem("Commit");
-        _miCheckout  = new ToolStripMenuItem("Checkout");
-        _miNewBranch = new ToolStripMenuItem("Nova branch daqui…");
-        _miMerge     = new ToolStripMenuItem("Mesclar na branch atual");
-        _miRebase    = new ToolStripMenuItem("Rebase na branch atual");
-        _miRename    = new ToolStripMenuItem("Renomear…");
-        _miDelete    = new ToolStripMenuItem("Excluir…");
-        _miGitFlow      = new ToolStripMenuItem("GitFlow…");
-        _miVoltarVersao = new ToolStripMenuItem("Restore…");
-        _miExpand    = new ToolStripMenuItem("Expandir tudo");
-        _miCollapse  = new ToolStripMenuItem("Recolher tudo");
-        _miRefresh   = new ToolStripMenuItem("Atualizar");
+        _miCommit    = new ToolStripMenuItem(_t["commit"]);
+        _miCheckout  = new ToolStripMenuItem(_t["ctxCheckout"]);
+        _miNewBranch = new ToolStripMenuItem(_t["ctxNewBranch"]);
+        _miMerge     = new ToolStripMenuItem(_t["ctxMerge"]);
+        _miRebase    = new ToolStripMenuItem(_t["ctxRebase"]);
+        _miRename    = new ToolStripMenuItem(_t["ctxRename"]);
+        _miDelete    = new ToolStripMenuItem(_t["ctxDelete"]);
+        _miGitFlow      = new ToolStripMenuItem(_t["ctxGitFlow"]);
+        _miVoltarVersao = new ToolStripMenuItem(_t["ctxRestore"]);
+        _miExpand    = new ToolStripMenuItem(_t["ctxExpand"]);
+        _miCollapse  = new ToolStripMenuItem(_t["ctxCollapse"]);
+        _miRefresh   = new ToolStripMenuItem(_t["ctxRefresh"]);
 
         _miCommit   .Image = LoadMenuIcon("ctx-commit.png");
         _miCheckout .Image = LoadMenuIcon("ctx-checkout.png");
@@ -846,7 +857,7 @@ public sealed class BranchHierarchyForm : Form
         _status    = new StatusStrip { SizingGrip = false, Renderer = new NoGripRenderer() };
         _statusLbl = new ToolStripStatusLabel
         {
-            Text      = "Local: 0  |  Remoto: 0  |  Tags: 0",
+            Text      = _t.F("statusCounts", 0, 0, 0),
             Spring    = true,
             TextAlign = ContentAlignment.MiddleLeft
         };
@@ -864,7 +875,7 @@ public sealed class BranchHierarchyForm : Form
         _btnClose = new Button
         {
             Name         = "btnClose",
-            Text         = "Fechar",
+            Text         = _t["close"],
             Width        = 80,
             Height       = 26,
             DialogResult = DialogResult.Cancel
@@ -874,14 +885,14 @@ public sealed class BranchHierarchyForm : Form
         _chkShowDebug = new CheckBox
         {
             Name     = "chkShowDebug",
-            Text     = "Show Debug",
+            Text     = _t["showDebug"],
             AutoSize = true,
             Checked  = LoadShowControlIds()
         };
         _chkDeveloperMode = new CheckBox
         {
             Name     = "chkDeveloperMode",
-            Text     = "Modo Developer",
+            Text     = _t["modoDeveloper"],
             AutoSize = true,
             Checked  = LoadDeveloperMode()
         };
@@ -899,12 +910,33 @@ public sealed class BranchHierarchyForm : Form
             if (!_chkDeveloperMode.Checked) UncheckProtectedBranches();
         };
 
+        // Language selector (right-aligned). Items + selection are populated by ApplyLanguage so
+        // they stay localized; index order matches the AppLanguage enum (0=Automatic, 1=English,
+        // 2=Portuguese). Changing it persists the choice and re-localizes this window live.
+        _lblLanguage = new Label
+        {
+            Name      = "lblLanguage",
+            Text      = _t["language"],
+            AutoSize  = true,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+        _cboLanguage = new ComboBox
+        {
+            Name          = "cboLanguage",
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width         = 120
+        };
+        _cboLanguage.SelectedIndexChanged += OnLanguageChanged;
+
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 36 };
         _bottomPanel.Controls.Add(_btnClose);
         _bottomPanel.Controls.Add(_chkShowDebug);
         _bottomPanel.Controls.Add(_chkDeveloperMode);
+        _bottomPanel.Controls.Add(_lblLanguage);
+        _bottomPanel.Controls.Add(_cboLanguage);
 
-        // Centre Fechar; pin chkShowDebug to the left, Modo Developer just to its right.
+        // Centre Fechar; pin chkShowDebug to the left, Modo Developer just to its right; pin the
+        // Language label + dropdown to the right edge.
         _bottomPanel.Layout += (_, _) =>
         {
             int cy = (_bottomPanel.Height - _btnClose.Height) / 2;
@@ -914,7 +946,114 @@ public sealed class BranchHierarchyForm : Form
                 8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
             _chkDeveloperMode.Location = new Point(
                 _chkShowDebug.Right + 12, (_bottomPanel.Height - _chkDeveloperMode.Height) / 2);
+            _cboLanguage.Location = new Point(
+                _bottomPanel.Width - _cboLanguage.Width - 8,
+                (_bottomPanel.Height - _cboLanguage.Height) / 2);
+            _lblLanguage.Location = new Point(
+                _cboLanguage.Left - _lblLanguage.Width - 6,
+                (_bottomPanel.Height - _lblLanguage.Height) / 2);
         };
+    }
+
+    // ── Language selection ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Persists the dropdown choice and re-localizes this window in place. The two modal child
+    /// windows (GitFlow / Restore) read the choice when they next open, so no live push is needed.
+    /// </summary>
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        if (_suppressLangEvent) return;
+        var lang = _cboLanguage.SelectedIndex switch
+        {
+            1 => AppLanguage.English,
+            2 => AppLanguage.Portuguese,
+            _ => AppLanguage.Automatic,
+        };
+        I18n.SetLanguage(lang);
+        ApplyLanguage();
+    }
+
+    /// <summary>
+    /// Reloads the active-language dictionary and reapplies every localizable text on this window.
+    /// Called once during construction and again whenever the Language dropdown changes. Avoids the
+    /// expensive git-config probe (UpdateGitFlowInitButton) so it is safe to run before first paint.
+    /// </summary>
+    private void ApplyLanguage()
+    {
+        _t = I18n.Load("ZimerfeldTree");
+
+        // Window + top panel
+        Text                       = _t["title"];
+        _lblWD.Text                = _t["workingDirectory"];
+        _lnkAbout.Text             = _t["aboutTree"];
+        _txtFilter.PlaceholderText = _t["filterPlaceholder"];
+
+        // Action buttons (static labels; the count-bearing ones are refreshed below)
+        _btnGitFlowInit.Text      = _t["gitFlowInitialize"];
+        _btnGitFlowDedicated.Text = _t["gitFlow"];
+        _btnRestore.Text          = _t["restore"];
+
+        // Bottom panel
+        _btnClose.Text          = _t["close"];
+        _chkShowDebug.Text      = _t["showDebug"];
+        _chkDeveloperMode.Text  = _t["modoDeveloper"];
+        _lblLanguage.Text       = _t["language"];
+
+        // Context menu (the Commit/Delete items carry counts and are set on menu open)
+        _miCheckout.Text     = _t["ctxCheckout"];
+        _miNewBranch.Text    = _t["ctxNewBranch"];
+        _miMerge.Text        = _t["ctxMerge"];
+        _miRebase.Text       = _t["ctxRebase"];
+        _miRename.Text       = _t["ctxRename"];
+        _miDelete.Text       = _t["ctxDelete"];
+        _miGitFlow.Text      = _t["ctxGitFlow"];
+        _miVoltarVersao.Text = _t["ctxRestore"];
+        _miExpand.Text       = _t["ctxExpand"];
+        _miCollapse.Text     = _t["ctxCollapse"];
+        _miRefresh.Text      = _t["ctxRefresh"];
+
+        // Loading overlay (do not stomp the live abort-button text mid-refresh)
+        _loadingTitle.Text = _t["loadingTitle"];
+        if (!_isRefreshing) _btnCancelRefresh.Text = _t["abortOperation"];
+
+        // Re-localize the GitFlow warning text + toggle button WITHOUT the expensive git-config
+        // probe. GetGitFlowViolations reads only cached branch data (no subprocess); the warn panel
+        // is hidden before the first data load, so this block is skipped during construction.
+        if (_warnPanel.Visible)
+        {
+            var violations = GetGitFlowViolations();
+            if (_gitFlowForced)
+                _warnLabel.Text = violations.Count > 0
+                    ? _t.F("gitFlowOutOrganizing", violations.Count)
+                    : _t["gitFlowForcedView"];
+            else
+                _warnLabel.Text = _t.F("warnPrefix", violations.Count == 1
+                    ? violations[0]
+                    : _t.F("gitFlowViolationsCount", violations.Count));
+        }
+        _btnGitFlow.Text = _gitFlowForced ? _t["restoreRealHierarchy"] : _t["organizeAsGitFlow"];
+
+        // Dynamic, count-bearing texts (cheap: cached counts + one git ref/pending probe, matching
+        // the original construction-time call to UpdateCommitActionTexts).
+        UpdateStatus();
+        UpdateBranchLabel();
+        UpdateCommitActionTexts();
+        UpdatePullPushButtons();
+        UpdateDeleteButtonText();
+
+        PopulateLanguageCombo();
+    }
+
+    /// <summary>Repopulates the language dropdown with localized item labels, preserving selection.</summary>
+    private void PopulateLanguageCombo()
+    {
+        _suppressLangEvent = true;
+        int sel = _cboLanguage.SelectedIndex >= 0 ? _cboLanguage.SelectedIndex : (int)I18n.Current;
+        _cboLanguage.Items.Clear();
+        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"]]);
+        _cboLanguage.SelectedIndex = sel;
+        _suppressLangEvent = false;
     }
 
     private void BuildLoadingOverlay()
@@ -922,7 +1061,7 @@ public sealed class BranchHierarchyForm : Form
         _loadingTitle = new Label
         {
             Name      = "loadingTitle",
-            Text      = "Carregando dados do repositório",
+            Text      = _t["loadingTitle"],
             AutoSize  = false,
             TextAlign = ContentAlignment.MiddleCenter,
             Bounds    = new Rectangle(10, 10, 340, 20),
@@ -953,13 +1092,13 @@ public sealed class BranchHierarchyForm : Form
         _btnCancelRefresh = new Button
         {
             Name   = "btnCancelRefresh",
-            Text   = "Abortar Operação",
+            Text   = _t["abortOperation"],
             Bounds = new Rectangle(110, 212, 140, 26)
         };
         _btnCancelRefresh.Click += (_, _) =>
         {
             _btnCancelRefresh.Enabled = false;
-            _btnCancelRefresh.Text    = "Abortando…";
+            _btnCancelRefresh.Text    = _t["aborting"];
             _refreshCts?.Cancel();
         };
 
@@ -1002,19 +1141,19 @@ public sealed class BranchHierarchyForm : Form
         if (_gitFlowForced)
         {
             _warnLabel.Text     = violations.Count > 0
-                ? $"Hierarquia fora do GitFlow ({violations.Count}) — exibindo organização GitFlow."
-                : "Exibindo hierarquia GitFlow forçada.";
+                ? _t.F("gitFlowOutOrganizing", violations.Count)
+                : _t["gitFlowForcedView"];
             _warnLabel.ForeColor = Color.DarkBlue;
-            _btnGitFlow.Text    = "Restaurar hierarquia real";
+            _btnGitFlow.Text    = _t["restoreRealHierarchy"];
         }
         else
         {
             string msg = violations.Count == 1
                 ? violations[0]
-                : $"Hierarquia fora do GitFlow ({violations.Count} violações).";
-            _warnLabel.Text     = $"⚠ {msg}";
+                : _t.F("gitFlowViolationsCount", violations.Count);
+            _warnLabel.Text     = _t.F("warnPrefix", msg);
             _warnLabel.ForeColor = Color.DarkRed;
-            _btnGitFlow.Text    = "Organizar como GitFlow";
+            _btnGitFlow.Text    = _t["organizeAsGitFlow"];
         }
 
         UpdateGitFlowInitButton();
@@ -1029,13 +1168,13 @@ public sealed class BranchHierarchyForm : Form
         string? develop = _localBranches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
 
         if (master != null && _localParentMap.TryGetValue(master, out var mp) && mp != null)
-            violations.Add($"LOCAL '{master}' deveria ser raiz, mas tem pai '{mp}'.");
+            violations.Add(_t.F("violLocalMasterRoot", master, mp));
 
         if (develop != null)
         {
             _localParentMap.TryGetValue(develop, out var dp);
             if (dp != master)
-                violations.Add($"LOCAL 'develop' deveria ser filho de '{master ?? "master/main"}', está em '{dp ?? "(raiz)"}'.");
+                violations.Add(_t.F("violLocalDevelopChild", master ?? _t["labelMasterMain"], dp ?? _t["labelRoot"]));
         }
 
         foreach (var b in _localBranches)
@@ -1043,7 +1182,7 @@ public sealed class BranchHierarchyForm : Form
             if (!b.FullName.StartsWith("feature/")) continue;
             _localParentMap.TryGetValue(b.FullName, out var fp);
             if (fp != develop)
-                violations.Add($"LOCAL '{b.FullName}' deveria ser filho de 'develop'.");
+                violations.Add(_t.F("violLocalFeature", b.FullName));
         }
 
         // ── Remotes (por grupo) ───────────────────────────────────────────────
@@ -1055,13 +1194,13 @@ public sealed class BranchHierarchyForm : Form
             string? rdevelop = branches.FirstOrDefault(b => b.DisplayName == "develop")?.FullName;
 
             if (rmaster != null && _remoteParentMap.TryGetValue(rmaster, out var rmp) && rmp != null)
-                violations.Add($"REMOTE '{r}/master' deveria ser raiz, mas tem pai '{rmp}'.");
+                violations.Add(_t.F("violRemoteMasterRoot", r, rmp));
 
             if (rdevelop != null)
             {
                 _remoteParentMap.TryGetValue(rdevelop, out var rdp);
                 if (rdp != rmaster)
-                    violations.Add($"REMOTE '{r}/develop' deveria ser filho de '{r}/{master ?? "master/main"}', está em '{rdp ?? "(raiz)"}'.");
+                    violations.Add(_t.F("violRemoteDevelopChild", r, r, master ?? _t["labelMasterMain"], rdp ?? _t["labelRoot"]));
             }
 
             foreach (var b in branches)
@@ -1069,7 +1208,7 @@ public sealed class BranchHierarchyForm : Form
                 if (!b.DisplayName.StartsWith("feature/")) continue;
                 _remoteParentMap.TryGetValue(b.FullName, out var rfp);
                 if (rfp != rdevelop)
-                    violations.Add($"REMOTE '{b.FullName}' deveria ser filho de '{r}/develop'.");
+                    violations.Add(_t.F("violRemoteFeature", b.FullName, r));
             }
         }
 
@@ -1163,11 +1302,11 @@ public sealed class BranchHierarchyForm : Form
     private void BuildLocalSection(string filter, Dictionary<string, string?> localMap)
     {
         var list = Filter(_localBranches, filter);
-        _localRoot.Text = $"LOCAL ({list.Count})";
+        _localRoot.Text = _t.F("sectionLocal", list.Count);
         _localRoot.Nodes.Clear();
 
         if (list.Count == 0)
-        { _localRoot.Nodes.Add(EmptyNode("(nenhuma branch local encontrada)")); return; }
+        { _localRoot.Nodes.Add(EmptyNode(_t["emptyLocal"])); return; }
 
         foreach (var n in BuildAncestryTree(list, localMap, b => b.FullName))
             _localRoot.Nodes.Add(n);
@@ -1176,11 +1315,11 @@ public sealed class BranchHierarchyForm : Form
     private void BuildRemotesSection(string filter, Dictionary<string, string?> remoteMap)
     {
         var list = Filter(_remoteBranches, filter);
-        _remotesRoot.Text = $"REMOTES ({list.Count})";
+        _remotesRoot.Text = _t.F("sectionRemotes", list.Count);
         _remotesRoot.Nodes.Clear();
 
         if (list.Count == 0)
-        { _remotesRoot.Nodes.Add(EmptyNode("(nenhuma branch remota encontrada)")); return; }
+        { _remotesRoot.Nodes.Add(EmptyNode(_t["emptyRemote"])); return; }
 
         foreach (var n in BuildAncestryTree(list, remoteMap, b => b.FullName))
             _remotesRoot.Nodes.Add(n);
@@ -1189,11 +1328,11 @@ public sealed class BranchHierarchyForm : Form
     private void BuildTagsSection(string filter)
     {
         var list = Filter(_tags, filter);
-        _tagsRoot.Text = $"TAGS ({list.Count})";
+        _tagsRoot.Text = _t.F("sectionTags", list.Count);
         _tagsRoot.Nodes.Clear();
 
         if (list.Count == 0)
-        { _tagsRoot.Nodes.Add(EmptyNode("(nenhuma tag encontrada)")); return; }
+        { _tagsRoot.Nodes.Add(EmptyNode(_t["emptyTags"])); return; }
 
         var noChildren = new Dictionary<string, List<BranchInfo>>(StringComparer.Ordinal);
         foreach (var n in PathGroup(list, noChildren, t => t.FullName))
@@ -1630,10 +1769,10 @@ public sealed class BranchHierarchyForm : Form
 
     private void UpdateStatus()
         => _statusLbl.Text =
-            $"Local: {_localBranches.Count}  |  Remoto: {_remoteBranches.Count}  |  Tags: {_tags.Count}";
+            _t.F("statusCounts", _localBranches.Count, _remoteBranches.Count, _tags.Count);
 
     private void UpdateBranchLabel()
-        => _lblBranch.Text = $"Branch: {_svc.GetCurrentBranch()}";
+        => _lblBranch.Text = _t.F("branchLabel", _svc.GetCurrentBranch());
 
     private void UpdateCommitActionTexts()
         => UpdateCommitActionTexts(_svc.GetPendingChangesCount());
@@ -1641,7 +1780,7 @@ public sealed class BranchHierarchyForm : Form
     private void UpdateCommitActionTexts(int pendingChangesCount)
     {
         int pending = Math.Max(0, pendingChangesCount);
-        _miCommit.Text = $"Commit ({pending})";
+        _miCommit.Text = _t.F("commitCount", pending);
         _btnCommitDedicated.Text = _miCommit.Text;
     }
 
@@ -1652,8 +1791,8 @@ public sealed class BranchHierarchyForm : Form
 
         int behind = current.BehindCount;
         int ahead  = current.AheadCount;
-        _btnPull.Text = $"↓ Pull ({behind})";
-        _btnPush.Text = $"↑ Push ({ahead})";
+        _btnPull.Text = _t.F("pullCount", behind);
+        _btnPush.Text = _t.F("pushCount", ahead);
     }
 
     private BranchInfo? SelectedBranch()
@@ -1829,7 +1968,7 @@ public sealed class BranchHierarchyForm : Form
     private void UpdateDeleteButtonText()
     {
         int n = CheckedBranchNodes().Count;
-        _btnExcluir.Text = n >= 1 ? $"Excluir ({n})" : "Excluir";
+        _btnExcluir.Text = n >= 1 ? _t.F("deleteCount", n) : _t["delete"];
     }
 
     private void Tree_KeyDown(object? sender, KeyEventArgs e)
@@ -1870,11 +2009,11 @@ public sealed class BranchHierarchyForm : Form
         {
             foreach (ToolStripItem it in _ctxMenu.Items)
                 it.Visible = it == _miDelete || it == _miRefresh;
-            _miDelete.Text = $"Excluir ({checkedNodes.Count})…";
+            _miDelete.Text = _t.F("ctxDeleteCount", checkedNodes.Count);
             return;   // no separators shown — just the two commands
         }
 
-        _miDelete.Text = "Excluir…";
+        _miDelete.Text = _t["ctxDelete"];
 
         var info     = SelectedBranch();
         bool branch  = info != null;
@@ -1993,7 +2132,7 @@ public sealed class BranchHierarchyForm : Form
                     ? info.FullName[(info.FullName.IndexOf('/') + 1)..]
                     : info.FullName;
 
-                using var dlg = new CheckoutBranchExistsDialog(localName, info.FullName);
+                using var dlg = new CheckoutBranchExistsDialog(localName, info.FullName, _t);
                 if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
                 result = dlg.Choice switch
@@ -2001,7 +2140,7 @@ public sealed class BranchHierarchyForm : Form
                     CheckoutExistsChoice.ResetLocal   => _svc.Checkout(localName),
                     CheckoutExistsChoice.CreateCustom => _svc.CheckoutRemoteAsLocal(info.FullName, dlg.CustomBranchName),
                     CheckoutExistsChoice.Detached     => _svc.CheckoutDetached(info.FullName),
-                    _                                 => (false, "Opção inválida.")
+                    _                                 => (false, _t["invalidOption"])
                 };
             }
         }
@@ -2018,9 +2157,9 @@ public sealed class BranchHierarchyForm : Form
         else if (!string.IsNullOrEmpty(result.err))
         {
             if (result.err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
-                MessageBox.Show(result.err, "Checkout falhou", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(result.err, _t["checkoutFailedTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             else
-                MessageBox.Show(result.err, "Checkout falhou", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(result.err, _t["checkoutFailedTitle"], MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -2029,8 +2168,8 @@ public sealed class BranchHierarchyForm : Form
         var info = SelectedBranch();
         if (info is null) return;
 
-        using var dlg = new InputDialog("Nova branch",
-            $"Nome da nova branch a partir de '{info.FullName}':");
+        using var dlg = new InputDialog(_t["newBranchTitle"],
+            _t.F("newBranchPrompt", info.FullName), okText: _t["okBtn"], cancelText: _t["cancelBtn"]);
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
         var (ok, err) = _svc.CreateAndCheckoutBranch(dlg.Value.Trim(), info.FullName);
@@ -2039,7 +2178,7 @@ public sealed class BranchHierarchyForm : Form
             RefreshTree();
             NotifyRepoChanged();
         }
-        else ShowError("Erro ao criar branch", err);
+        else ShowError(_t["errCreateBranchTitle"], err);
     }
 
     // ── GitFlow init helpers ─────────────────────────────────────────────────
@@ -2197,12 +2336,12 @@ public sealed class BranchHierarchyForm : Form
         if (errors.Length == 0)
         {
             _svc.Checkout(developBranch);
-            MessageBox.Show("GitFlow inicializado com sucesso.", "GitFlow Initialize",
+            MessageBox.Show(_t["gitFlowInitOk"], _t["gitFlowInitTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
         {
-            MessageBox.Show($"Alguns comandos falharam:\n{errors}", "GitFlow Initialize",
+            MessageBox.Show(_t.F("gitFlowInitErrors", errors), _t["gitFlowInitTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
 
@@ -2358,11 +2497,11 @@ public sealed class BranchHierarchyForm : Form
         var info = SelectedBranch();
         if (info?.Type != BranchType.Local) return;
 
-        if (Confirm($"Mesclar '{info.FullName}' na branch atual '{_svc.GetCurrentBranch()}'?", "Confirmar Merge"))
+        if (Confirm(_t.F("confirmMerge", info.FullName, _svc.GetCurrentBranch()), _t["confirmMergeTitle"]))
         {
             var (ok, err) = _svc.MergeBranch(info.FullName);
             if (ok) RefreshTree();
-            else ShowError("Erro no merge", err);
+            else ShowError(_t["errMergeTitle"], err);
         }
         RestoreFocus();
     }
@@ -2372,12 +2511,12 @@ public sealed class BranchHierarchyForm : Form
         var info = SelectedBranch();
         if (info?.Type != BranchType.Local) return;
 
-        if (Confirm($"Rebase em cima de '{info.FullName}' (branch atual: '{_svc.GetCurrentBranch()}')?",
-                "Confirmar Rebase"))
+        if (Confirm(_t.F("confirmRebase", info.FullName, _svc.GetCurrentBranch()),
+                _t["confirmRebaseTitle"]))
         {
             var (ok, err) = _svc.RebaseBranch(info.FullName);
             if (ok) RefreshTree();
-            else ShowError("Erro no rebase", err);
+            else ShowError(_t["errRebaseTitle"], err);
         }
         RestoreFocus();
     }
@@ -2387,13 +2526,13 @@ public sealed class BranchHierarchyForm : Form
         var info = SelectedBranch();
         if (info?.Type != BranchType.Local) return;
 
-        using var dlg = new InputDialog("Renomear branch",
-            $"Novo nome para '{info.FullName}':", info.FullName);
+        using var dlg = new InputDialog(_t["renameTitle"],
+            _t.F("renamePrompt", info.FullName), info.FullName, _t["okBtn"], _t["cancelBtn"]);
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
         var (ok, err) = _svc.RenameBranch(info.FullName, dlg.Value.Trim());
         if (ok) RefreshTree();
-        else ShowError("Erro ao renomear", err);
+        else ShowError(_t["errRenameTitle"], err);
         RestoreFocus();
     }
 
@@ -2413,8 +2552,8 @@ public sealed class BranchHierarchyForm : Form
             if (targets.Count == 0)
             {
                 MessageBox.Show(
-                    "As branches main/master/develop são protegidas. Ative o \"Modo Developer\" para excluí-las.",
-                    "Branch protegida", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    _t["protectedBranchMsg"],
+                    _t["protectedBranchTitle"], MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
         }
@@ -2437,7 +2576,7 @@ public sealed class BranchHierarchyForm : Form
     {
         using var dlg = new Form
         {
-            Text            = "Confirmar exclusão",
+            Text            = _t["confirmDeleteTitle"],
             FormBorderStyle = FormBorderStyle.FixedDialog,
             StartPosition   = FormStartPosition.CenterParent,
             MinimizeBox     = false,
@@ -2449,7 +2588,7 @@ public sealed class BranchHierarchyForm : Form
 
         var lblPrompt = new Label
         {
-            Text      = "Deseja realmente excluir os itens selecionados ?",
+            Text      = _t["confirmDeletePrompt"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 12, 416, 20),
             Font      = new Font(Font, FontStyle.Bold)
@@ -2463,11 +2602,11 @@ public sealed class BranchHierarchyForm : Form
             TabStop        = false
         };
         foreach (var t in targets)
-            list.Items.Add($"• {t.FullName}  ({DescribeType(t)})");
+            list.Items.Add(_t.F("deleteListItem", t.FullName, DescribeType(t)));
 
         var chkRemote = new CheckBox
         {
-            Text     = "Excluir Remotamente ?",
+            Text     = _t["deleteRemoteQuestion"],
             Checked  = false,
             AutoSize = true,
             Location = new Point(12, 250)
@@ -2475,13 +2614,13 @@ public sealed class BranchHierarchyForm : Form
 
         var btnOk = new Button
         {
-            Text         = "Excluir",
+            Text         = _t["deleteConfirmBtn"],
             DialogResult = DialogResult.OK,
             Bounds       = new Rectangle(252, 298, 84, 30)
         };
         var btnCancel = new Button
         {
-            Text         = "Cancelar",
+            Text         = _t["cancelBtn"],
             DialogResult = DialogResult.Cancel,
             Bounds       = new Rectangle(344, 298, 84, 30)
         };
@@ -2495,11 +2634,11 @@ public sealed class BranchHierarchyForm : Form
     }
 
     /// <summary>Human-readable kind of a target, used in confirmation and progress messages.</summary>
-    private static string DescribeType(BranchInfo info) => info.Type switch
+    private string DescribeType(BranchInfo info) => info.Type switch
     {
-        BranchType.Tag    => "tag",
-        BranchType.Remote => "branch remota",
-        _                 => "branch local",
+        BranchType.Tag    => _t["typeTag"],
+        BranchType.Remote => _t["typeRemote"],
+        _                 => _t["typeLocal"],
     };
 
     /// <summary>
@@ -2522,10 +2661,10 @@ public sealed class BranchHierarchyForm : Form
         // button stays enabled so the user can stop the pass and revert what was already deleted.
         _progressBar.Value = 0;
         _stepsList.Items.Clear();
-        _stepsList.Items.Add("• Iniciando exclusão...");
+        _stepsList.Items.Add($"• {_t["startingDelete"]}");
         _btnCancelRefresh.Enabled = true;
-        _btnCancelRefresh.Text    = "Abortar Operação";
-        _loadingTitle.Text        = "Excluindo itens selecionados";
+        _btnCancelRefresh.Text    = _t["abortOperation"];
+        _loadingTitle.Text        = _t["deletingTitle"];
         _loadingOverlay.Location  = new Point(
             (ClientSize.Width  - _loadingOverlay.Width)  / 2,
             (ClientSize.Height - _loadingOverlay.Height) / 2);
@@ -2557,7 +2696,7 @@ public sealed class BranchHierarchyForm : Form
                     if (token.IsCancellationRequested) { aborted = true; break; }
 
                     var info = targets[i];
-                    prog.Report((i * 100 / total, $"Excluindo {DescribeType(info)} '{info.FullName}'..."));
+                    prog.Report((i * 100 / total, _t.F("deletingItem", DescribeType(info), info.FullName)));
 
                     string sha = CaptureSha(info);                       // before deletion, to allow undo
                     var (ok, err, remoteDeleted) = DeleteSingle(info, deleteRemote);
@@ -2565,7 +2704,7 @@ public sealed class BranchHierarchyForm : Form
                     else    errors.Add($"{info.FullName}: {err.Trim()}");
 
                     prog.Report(((i + 1) * 100 / total,
-                        ok ? $"Excluído: {info.FullName}" : $"Falha: {info.FullName}"));
+                        ok ? _t.F("deletedItem", info.FullName) : _t.F("failedItem", info.FullName)));
                 }
             });
 
@@ -2574,9 +2713,9 @@ public sealed class BranchHierarchyForm : Form
             if (aborted)
             {
                 _btnCancelRefresh.Enabled = false;
-                _loadingTitle.Text        = "Revertendo alterações";
+                _loadingTitle.Text        = _t["revertingTitle"];
                 _progressBar.Value        = 0;
-                _stepsList.Items.Add("• Operação abortada — revertendo exclusões...");
+                _stepsList.Items.Add($"• {_t["abortReverting"]}");
 
                 if (deleted.Count > 0)
                 {
@@ -2586,11 +2725,11 @@ public sealed class BranchHierarchyForm : Form
                         for (int i = 0; i < toRevert.Count; i++)
                         {
                             var d = toRevert[i];
-                            prog.Report((i * 100 / toRevert.Count, $"Restaurando '{d.info.FullName}'..."));
+                            prog.Report((i * 100 / toRevert.Count, _t.F("restoringItem", d.info.FullName)));
                             var (rok, rerr) = RestoreSingle(d.info, d.sha, d.remoteDeleted);
-                            if (!rok) errors.Add($"restauração de {d.info.FullName}: {rerr.Trim()}");
+                            if (!rok) errors.Add(_t.F("restoreErrorEntry", d.info.FullName, rerr.Trim()));
                             prog.Report(((i + 1) * 100 / toRevert.Count,
-                                rok ? $"Restaurado: {d.info.FullName}" : $"Falha ao restaurar: {d.info.FullName}"));
+                                rok ? _t.F("restoredItem", d.info.FullName) : _t.F("failedRestoreItem", d.info.FullName)));
                         }
                     });
                 }
@@ -2602,7 +2741,7 @@ public sealed class BranchHierarchyForm : Form
 
             // Reload the tree within the same overlay so the result is reflected immediately. Use a
             // fresh (non-cancelled) token — the original token may have been cancelled by the abort.
-            prog.Report((100, "Atualizando árvore..."));
+            prog.Report((100, _t["updatingTree"]));
             var data = await Task.Run(() => FetchRepoData(null, CancellationToken.None), CancellationToken.None);
             if (!IsDisposed)
             {
@@ -2614,22 +2753,22 @@ public sealed class BranchHierarchyForm : Form
         catch (Exception ex)
         {
             if (!IsDisposed)
-                MessageBox.Show($"Erro durante a exclusão:\n{ex.Message}",
-                    "ZimerfeldTree", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(_t.F("errDuringDelete", ex.Message),
+                    _t["appTitle"], MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
             if (!IsDisposed)
             {
                 _loadingOverlay.Visible = false;
-                _loadingTitle.Text      = "Carregando dados do repositório";   // restore default title
+                _loadingTitle.Text      = _t["loadingTitle"];   // restore default title
                 SetFormEnabled(true);
             }
             _isRefreshing = false;
         }
 
         if (!IsDisposed && errors.Count > 0)
-            ShowError(aborted ? "Operação abortada — avisos" : "Erro ao excluir",
+            ShowError(aborted ? _t["abortedWarningsTitle"] : _t["errDeleteTitle"],
                       string.Join("\n", errors));
         RestoreFocus();
     }
@@ -2678,9 +2817,9 @@ public sealed class BranchHierarchyForm : Form
                 if (!ok && err.Contains("not fully merged", StringComparison.OrdinalIgnoreCase))
                 {
                     bool force = Invoke(() => Confirm(
-                        $"A branch '{info.FullName}' não está totalmente mesclada. Forçar exclusão?",
-                        "Excluir forçado"));
-                    if (!force) return (false, "exclusão cancelada (branch não mesclada)", false);
+                        _t.F("forceDeleteConfirm", info.FullName),
+                        _t["forceDeleteTitle"]));
+                    if (!force) return (false, _t["deleteCancelledUnmerged"], false);
                     (ok, err) = _svc.DeleteBranchForce(info.FullName);
                 }
                 if (!ok) return (false, err, false);
@@ -2703,7 +2842,7 @@ public sealed class BranchHierarchyForm : Form
     private (bool ok, string err) RestoreSingle(BranchInfo info, string sha, bool remoteDeleted)
     {
         if (string.IsNullOrEmpty(sha))
-            return (false, "SHA original não capturado — não foi possível restaurar");
+            return (false, _t["shaNotCaptured"]);
 
         switch (info.Type)
         {
@@ -2771,51 +2910,8 @@ public sealed class BranchHierarchyForm : Form
 
     private void ShowAboutTree()
     {
-        MessageBox.Show(
-            "Botões:\n\n" +
-            "  ↺ (Atualizar)\n" +
-            "    Recarrega a árvore de branches lendo o repositório git atual.\n\n" +
-            "  Organizar como GitFlow / Restaurar hierarquia geral\n" +
-            "    Reorganiza a árvore seguindo a hierarquia GitFlow\n" +
-            "    (main, develop, feature/*, release/*, hotfix/*, support/*).\n" +
-            "    Ou exibe conforme estado real.\n\n" +
-            "  GitFlow Initialize\n" +
-            "    Inicializa o GitFlow no repositório atual (git flow init).\n" +
-            "    Visível apenas no modo de depuração.\n\n" +
-            "  Pull / Pull (↓N)\n" +
-            "    Puxa commits do remoto para a branch atual (git pull).\n" +
-            "    O número entre parênteses indica commits a receber.\n\n" +
-            "  Push / Push (↑N)\n" +
-            "    Envia commits locais para o remoto (git push).\n" +
-            "    O número entre parênteses indica commits a enviar.\n\n" +
-            "  Commit / Commit (N)\n" +
-            "    Abre o diálogo de commit do GitExtensions.\n" +
-            "    O número entre parênteses indica arquivos com mudanças pendentes.\n\n" +
-            "  GitFlow\n" +
-            "    Abre a janela GitFlow para a branch atual:\n" +
-            "    Publish, Track, Update e Finish.\n\n" +
-            "  Restore\n" +
-            "    Abre a janela de restauração: restaurar arquivo de commit,\n" +
-            "    cherry-pick e reset de branch.\n\n" +
-            "Menu de contexto (clique com botão direito em uma branch):\n\n" +
-            "  Checkout           — Faz checkout da branch selecionada.\n" +
-            "  Nova branch daqui… — Cria nova branch a partir desta.\n" +
-            "  Mesclar            — git merge da branch selecionada na atual.\n" +
-            "  Rebase             — git rebase da atual na selecionada.\n" +
-            "  Renomear…          — Renomeia a branch.\n" +
-            "  Excluir…           — Exclui a branch.\n" +
-            "  GitFlow…           — Abre janela GitFlow para esta branch.\n\n" +
-            "Caixas de seleção (rodapé da janela):\n\n" +
-            "  Show Debug\n" +
-            "    Liga/desliga tooltips de depuração: ao passar o mouse sobre\n" +
-            "    qualquer controle da janela, exibe o TYPE (tipo) e o ID (Name)\n" +
-            "    do controle. Útil para inspecionar a interface.\n\n" +
-            "  Modo Developer\n" +
-            "    Permite marcar as branches main e develop para exclusão.\n" +
-            "    Por padrão essas branches são protegidas e ficam bloqueadas\n" +
-            "    (não podem ser marcadas nem excluídas). Ao desativar o modo,\n" +
-            "    qualquer main/develop marcada é desmarcada automaticamente.",
-            "About Tree", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show(_t["aboutTreeBody"], _t["aboutTreeTitle"],
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -2850,9 +2946,9 @@ internal sealed class CheckoutBranchExistsDialog : Form
     public CheckoutExistsChoice Choice { get; private set; }
     public string CustomBranchName => _customName.Text.Trim();
 
-    public CheckoutBranchExistsDialog(string localName, string remoteName)
+    public CheckoutBranchExistsDialog(string localName, string remoteName, Translator t)
     {
-        Text            = "Checkout branch";
+        Text            = t["checkoutBranchTitle"];
         Size            = new Size(480, 190);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
@@ -2865,7 +2961,7 @@ internal sealed class CheckoutBranchExistsDialog : Form
 
         _rbReset = new RadioButton
         {
-            Text    = "Reset local branch with the name:",
+            Text    = t["resetLocalBranch"],
             Bounds  = new Rectangle(10, 16, 236, 22),
             Checked = true
         };
@@ -2879,7 +2975,7 @@ internal sealed class CheckoutBranchExistsDialog : Form
 
         _rbCustom = new RadioButton
         {
-            Text   = "Create local branch with custom name:",
+            Text   = t["createCustomBranch"],
             Bounds = new Rectangle(10, 48, 250, 22)
         };
         _customName = new TextBox
@@ -2891,13 +2987,13 @@ internal sealed class CheckoutBranchExistsDialog : Form
 
         _rbDetached = new RadioButton
         {
-            Text   = "Checkout the commit (in detached head)",
+            Text   = t["checkoutDetached"],
             Bounds = new Rectangle(10, 80, 450, 22)
         };
 
         var btnCheckout = new Button
         {
-            Text         = "Checkout",
+            Text         = t["checkoutBtn"],
             Bounds       = new Rectangle(376, 120, 82, 28),
             DialogResult = DialogResult.OK
         };
@@ -2926,7 +3022,8 @@ internal sealed class InputDialog : Form
 
     public string Value => _input.Text;
 
-    public InputDialog(string title, string prompt, string defaultValue = "")
+    public InputDialog(string title, string prompt, string defaultValue = "",
+        string okText = "OK", string cancelText = "Cancel")
     {
         Text            = title;
         Size            = new Size(420, 148);
@@ -2940,8 +3037,8 @@ internal sealed class InputDialog : Form
         _label = new Label  { Text = prompt, Bounds = new Rectangle(12, 12, 388, 20) };
         _input = new TextBox { Text = defaultValue, Bounds = new Rectangle(12, 36, 388, 22) };
 
-        var ok     = new Button { Text = "OK",       Bounds = new Rectangle(228, 70, 82, 28), DialogResult = DialogResult.OK };
-        var cancel = new Button { Text = "Cancelar", Bounds = new Rectangle(318, 70, 82, 28), DialogResult = DialogResult.Cancel };
+        var ok     = new Button { Text = okText,     Bounds = new Rectangle(228, 70, 82, 28), DialogResult = DialogResult.OK };
+        var cancel = new Button { Text = cancelText, Bounds = new Rectangle(318, 70, 82, 28), DialogResult = DialogResult.Cancel };
 
         Controls.AddRange([_label, _input, ok, cancel]);
         AcceptButton = ok;
