@@ -2256,12 +2256,11 @@ public sealed class BranchHierarchyForm : Form
         if (dlg.LastFinishedReleaseTag is string tag)
             _postRefreshAction = () => FocusTagNode(tag);
 
-        // Every action button already refreshed the tree live via RepoMutated, so closing the
-        // dialog needs no further refresh — except to focus a freshly finished release tag.
-        if (_postRefreshAction != null)
-            RefreshTree();
-        // No NotifyRepoChanged on close: the live RepoMutated refreshes already kept the tree
-        // current, and notifying GitExtensions would only pull its (minimized) window forward.
+        // Always refresh (showing the loading overlay) when the GitFlow dialog closes, so the tree
+        // reflects any repo state the dialog left behind; a freshly finished release tag is focused.
+        RefreshTree();
+        // No NotifyRepoChanged on close: the refresh already keeps the tree current, and notifying
+        // GitExtensions would only pull its (minimized) window forward.
     }
 
     private void DoRestore()
@@ -2303,8 +2302,9 @@ public sealed class BranchHierarchyForm : Form
             wa.Left + (wa.Width  - Width)  / 2,
             wa.Top  + (wa.Height - Height) / 2);
 
-        // Every action button already refreshed the tree live via RepoMutated, so closing the
-        // dialog needs no further refresh, and GitExtensions is not notified here either.
+        // Always refresh (showing the loading overlay) when the Restore dialog closes, so the tree
+        // reflects any repo state the dialog left behind. GitExtensions is not notified here.
+        RefreshTree();
     }
 
     private void FocusTagNode(string tagName)
