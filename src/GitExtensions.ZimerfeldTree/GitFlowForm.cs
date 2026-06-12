@@ -13,10 +13,16 @@ public sealed class GitFlowForm : Form
     private readonly BranchHierarchyService _svc;
     private readonly bool _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
+    private readonly Translator _t = I18n.Load("ZimerfeldGitFlow");
 
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "GitExtensions", "ZimerfeldTree.gitflowsettings.json");
+
+    // ── Layout shell (docked) ──
+    private Panel _headerPanel = null!;
+    private Panel _content     = null!;
+    private Panel _bottomPanel = null!;
 
     // ── Header ──
     private Label     _lblHead   = null!;
@@ -66,8 +72,8 @@ public sealed class GitFlowForm : Form
         _svc            = svc;
         _showControlIds = showControlIds;
 
-        Text            = "ZimerfeldTree - GitFlow";
-        Size            = new Size(688, 824);
+        Text            = _t["title"];
+        Size            = new Size(688, 824 + SponsorBanner.PanelHeight);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -75,11 +81,26 @@ public sealed class GitFlowForm : Form
         Font            = new Font("Segoe UI", 9f);
         Icon            = PluginIcon.ForForm();
 
+        // Docked shell: a Fill content area (8 px padding → symmetric side borders) holding the
+        // header + groups, with the sponsor banner on top and a centered close-button bar below.
+        _content = new Panel { Name = "contentPanel", Dock = DockStyle.Fill, Padding = new Padding(8, 4, 8, 4) };
+
         BuildHeader();
         BuildStartGroup();
         BuildManageGroup();
         BuildResultGroup();
         BuildCloseButton();
+
+        // Add to the content panel back-to-front so Dock resolves correctly: Fill first (backmost),
+        // then the Top-docked groups bottom-up, header last (topmost).
+        _content.Controls.Add(_grpResult);   // Fill
+        _content.Controls.Add(_grpManage);   // Top
+        _content.Controls.Add(_grpStart);    // Top
+        _content.Controls.Add(_headerPanel); // Top (just under the banner)
+
+        Controls.Add(_content);              // Fill — between banner and bottom bar
+        Controls.Add(_bottomPanel);          // Bottom
+        Controls.Add(SponsorBanner.Create()); // Top — GitHub Sponsors banner
 
         CancelButton = _btnClose;
 
@@ -96,24 +117,28 @@ public sealed class GitFlowForm : Form
 
     private void BuildHeader()
     {
-        _lblHead = new Label
-        {
-            Name      = "lblHead",
-            TextAlign = ContentAlignment.MiddleCenter,
-            Bounds    = new Rectangle(120, 10, 400, 20),
-            Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-        };
+        _headerPanel = new Panel { Name = "headerPanel", Dock = DockStyle.Top, Height = 26 };
+
         _lnkAbout = new LinkLabel
         {
             Name      = "lnkAbout",
-            Text      = "About GitFlow",
+            Text      = _t["aboutLink"],
             AutoSize  = true,
-            Anchor    = AnchorStyles.Top | AnchorStyles.Right,
-            Location  = new Point(ClientSize.Width - 110, 12)
+            Dock      = DockStyle.Right,
+            TextAlign = ContentAlignment.MiddleRight,
+            Padding   = new Padding(8, 4, 0, 0)
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAbout();
 
-        Controls.AddRange([_lblHead, _lnkAbout]);
+        _lblHead = new Label
+        {
+            Name      = "lblHead",
+            TextAlign = ContentAlignment.MiddleLeft,   // HEAD aligned to the left edge of the window
+            Dock      = DockStyle.Fill
+        };
+
+        _headerPanel.Controls.Add(_lblHead);   // Fill (added first, backmost)
+        _headerPanel.Controls.Add(_lnkAbout);  // Right
     }
 
     private void BuildStartGroup()
@@ -122,16 +147,19 @@ public sealed class GitFlowForm : Form
         _grpStart = new GroupBox
         {
             Name   = "grpStart",
-            Text   = "Start branch",
-            Bounds = new Rectangle(8, 36, 664, 120),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            Text   = _t["startGroup"],
+            Dock   = DockStyle.Top,
+            Height = 120,
+            // Final docked width (content 672 client − 16 padding). Set BEFORE its right-anchored
+            // children are added so their anchor margins are computed against the real width.
+            Width  = 656
         };
 
         // Row 1 — type selector (col label x=12, col input x=108)
         var lblType = new Label
         {
             Name      = "lblStartType",
-            Text      = "Type:",
+            Text      = _t["typeLabel"],
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 24, 90, 22)
         };
@@ -160,7 +188,7 @@ public sealed class GitFlowForm : Form
         var lblName = new Label
         {
             Name      = "lblStartName",
-            Text      = "Expected name:",
+            Text      = _t["expectedName"],
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 54, 90, 22)
         };
@@ -179,7 +207,7 @@ public sealed class GitFlowForm : Form
         _btnStart = new Button
         {
             Name   = "btnStart",
-            Text   = "Start",
+            Text   = _t["startBtn"],
             Bounds = new Rectangle(560, 52, 90, 26),
             Anchor = AnchorStyles.Top | AnchorStyles.Right
         };
@@ -189,7 +217,7 @@ public sealed class GitFlowForm : Form
         _chkBasedOn = new CheckBox
         {
             Name   = "chkBasedOn",
-            Text   = "based on:",
+            Text   = _t["basedOn"],
             Bounds = new Rectangle(108, 84, 90, 22)
         };
         _chkBasedOn.CheckedChanged += (_, _) => _cboBasedOn.Enabled = _chkBasedOn.Checked;
@@ -207,7 +235,6 @@ public sealed class GitFlowForm : Form
         _grpStart.Controls.AddRange(
             [lblType, _cboStartType, lblName, _lblStartPrefix, _txtStartName, _btnStart,
              _chkBasedOn, _cboBasedOn]);
-        Controls.Add(_grpStart);
     }
 
     private void BuildManageGroup()
@@ -215,16 +242,17 @@ public sealed class GitFlowForm : Form
         _grpManage = new GroupBox
         {
             Name   = "grpManage",
-            Text   = "Manage existing branches",
-            Bounds = new Rectangle(8, 164, 664, 192),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            Text   = _t["manageGroup"],
+            Dock   = DockStyle.Top,
+            Height = 192,
+            Width  = 656   // see grpStart: real width before right-anchored children are added
         };
 
         // Row 1 — type selector (aligned with grpStart: label x=12, input x=108)
         var lblType = new Label
         {
             Name      = "lblManageType",
-            Text      = "Type:",
+            Text      = _t["typeLabel"],
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 24, 90, 22)
         };
@@ -241,7 +269,7 @@ public sealed class GitFlowForm : Form
         var lblBranch = new Label
         {
             Name      = "lblManageBranch",
-            Text      = "Branch:",
+            Text      = _t["branchLabel"],
             TextAlign = ContentAlignment.MiddleLeft,
             Bounds    = new Rectangle(12, 54, 90, 22)
         };
@@ -263,24 +291,24 @@ public sealed class GitFlowForm : Form
 
         // ── Buttons row: 4 × 140 px, gap 18 px, left margin 12 px ──────────────
         // (12)[Publish 140](18)[Track 140](18)[Update 140](18)[Finish 140](12) = 638 ✓
-        _btnPublish = new Button { Name = "btnPublish", Text = "Publish", Bounds = new Rectangle( 12, 84, 140, 26) };
+        _btnPublish = new Button { Name = "btnPublish", Text = _t["publishBtn"], Bounds = new Rectangle( 12, 84, 140, 26) };
         _btnPublish.Click += (_, _) => DoPublish();
 
-        _btnTrack = new Button { Name = "btnTrack", Text = "Track",   Bounds = new Rectangle(170, 84, 140, 26) };
+        _btnTrack = new Button { Name = "btnTrack", Text = _t["trackBtn"],   Bounds = new Rectangle(170, 84, 140, 26) };
         _btnTrack.Click += (_, _) => DoTrack();
 
-        _btnUpdate = new Button { Name = "btnUpdate", Text = "Update",  Bounds = new Rectangle(328, 84, 140, 26) };
+        _btnUpdate = new Button { Name = "btnUpdate", Text = _t["updateBtn"],  Bounds = new Rectangle(328, 84, 140, 26) };
         _btnUpdate.Click += (_, _) => DoUpdate();
 
-        _btnFinish = new Button { Name = "btnFinish", Text = "Finish",  Bounds = new Rectangle(486, 84, 140, 26) };
+        _btnFinish = new Button { Name = "btnFinish", Text = _t["finishBtn"],  Bounds = new Rectangle(486, 84, 140, 26) };
         _btnFinish.Click += (_, _) => DoFinish();
 
         // ── Checkboxes stacked below the Finish button ─────────────────────────
         _chkKeep = new CheckBox
         {
             Name    = "chkKeep",
-            Text    = "Keep branch after finish",
-            Bounds  = new Rectangle(486, 114, 170, 20),
+            Text    = _t["keepBranch"],
+            Bounds  = new Rectangle(360, 114, 290, 20),
             Checked = true  // default: keep branch; overridden by saved settings on Load
         };
         _chkKeep.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
@@ -288,8 +316,8 @@ public sealed class GitFlowForm : Form
         _chkNoFetch = new CheckBox
         {
             Name   = "chkNoFetch",
-            Text   = "No fetch (--no-fetch)",
-            Bounds = new Rectangle(486, 136, 170, 20)
+            Text   = _t["noFetch"],
+            Bounds = new Rectangle(360, 136, 290, 20)
         };
         _chkNoFetch.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
 
@@ -300,18 +328,17 @@ public sealed class GitFlowForm : Form
             lblType, _cboManageType, lblBranch, _lblManagePrefix, _cboManageBranch,
             _btnPublish, _btnTrack, _btnUpdate, _btnFinish, _chkKeep, _chkNoFetch
         ]);
-        Controls.Add(_grpManage);
     }
 
     private void BuildResultGroup()
     {
-        // Height reduced by 48 px to leave room for the Fechar button below.
+        // Fills the remaining content area between grpManage and the close-button bar.
         _grpResult = new GroupBox
         {
-            Name   = "grpResult",
-            Text   = "Resultado dos comandos git",
-            Bounds = new Rectangle(8, 364, 664, 362),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            Name    = "grpResult",
+            Text    = _t["resultGroup"],
+            Dock    = DockStyle.Fill,
+            Padding = new Padding(10, 4, 10, 10)
         };
         _txtResult = new TextBox
         {
@@ -323,12 +350,10 @@ public sealed class GitFlowForm : Form
             // Match the GitExtensions native console output background (the beige seen in the
             // "Push to origin" / fetch windows) instead of plain white.
             BackColor  = Color.FromArgb(0xEF, 0xEB, 0xD8),
-            Bounds     = new Rectangle(10, 22, 644, 310),
-            Anchor     = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+            Dock       = DockStyle.Fill,
             Font       = new Font("Consolas", 9f)
         };
         _grpResult.Controls.Add(_txtResult);
-        Controls.Add(_grpResult);
     }
 
     private void BuildCloseButton()
@@ -336,15 +361,19 @@ public sealed class GitFlowForm : Form
         _btnClose = new Button
         {
             Name         = "btnClose",
-            Text         = "Fechar",
+            Text         = _t["closeBtn"],
             Width        = 90,
             Height       = 28,
-            Bounds       = new Rectangle(299, 736, 90, 28),
-            Anchor       = AnchorStyles.Bottom,
             DialogResult = DialogResult.Cancel
         };
         _btnClose.Click += (_, _) => Close();
-        Controls.Add(_btnClose);
+
+        // Docked bottom bar with the close button centered horizontally (mirrors ZimerfeldTree).
+        _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 40 };
+        _bottomPanel.Controls.Add(_btnClose);
+        _bottomPanel.Layout += (_, _) => _btnClose.Location = new Point(
+            (_bottomPanel.Width  - _btnClose.Width)  / 2,
+            (_bottomPanel.Height - _btnClose.Height) / 2);
     }
 
     // ── Tab order ───────────────────────────────────────────────────────────
@@ -521,7 +550,7 @@ public sealed class GitFlowForm : Form
 
     private void InitData()
     {
-        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
+        _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
 
         // _cboStartType.SelectedIndex = 0 below fires SelectedIndexChanged → ApplyStartTypeRule,
         // which populates the "based on" combo for the initial type.
@@ -594,7 +623,7 @@ public sealed class GitFlowForm : Form
         string name = Clean(_txtStartName.Text);
         if (name.Length == 0)
         {
-            MessageBox.Show("Informe o nome da branch.", "GitFlow",
+            MessageBox.Show(_t["informBranchName"], _t["gitFlowTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
@@ -614,7 +643,7 @@ public sealed class GitFlowForm : Form
         // Reject before touching git if the branch already exists locally.
         if (_svc.GetLocalBranches().Any(b => string.Equals(b.FullName, fullBranch, StringComparison.Ordinal)))
         {
-            MessageBox.Show($"A branch '{fullBranch}' já existe.", "GitFlow",
+            MessageBox.Show(_t.F("branchExists", fullBranch), _t["gitFlowTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -680,7 +709,7 @@ public sealed class GitFlowForm : Form
             RunFlow($"push \"{remote}\" --delete \"{fullBranch}\"", suppressError: true);
         else
             _txtResult.AppendText($"\r\n\r\ncommand - git push {remote} --delete {fullBranch}" +
-                                   $"\r\n\r\n(pulado: a branch remota '{fullBranch}' já não existe)");
+                                   $"\r\n\r\n{_t.F("skippedRemoteBranch", fullBranch)}");
     }
 
     private void DoPublish()
@@ -693,7 +722,7 @@ public sealed class GitFlowForm : Form
         string remote     = _svc.GetDefaultRemote();
         if (remote.Length == 0)
         {
-            MessageBox.Show("Nenhum remoto configurado.", "GitFlow",
+            MessageBox.Show(_t["noRemote"], _t["gitFlowTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -713,7 +742,7 @@ public sealed class GitFlowForm : Form
         string remote     = _svc.GetDefaultRemote();
         if (remote.Length == 0)
         {
-            MessageBox.Show("Nenhum remoto configurado.", "GitFlow",
+            MessageBox.Show(_t["noRemote"], _t["gitFlowTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
@@ -842,8 +871,8 @@ public sealed class GitFlowForm : Form
         if (remote.Length == 0)
         {
             MessageBox.Show(
-                "Release finalizada localmente, mas nenhum remoto configurado para push.",
-                "GitFlow", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _t["releaseLocalNoRemote"],
+                _t["gitFlowTitle"], MessageBoxButtons.OK, MessageBoxIcon.Information);
             RevealInTree(devBranch, checkout: false);
             return;
         }
@@ -876,7 +905,7 @@ public sealed class GitFlowForm : Form
         {
             (output, code) = _svc.RunGitFlow(args);
             string body = output.Length == 0
-                ? (code == 0 ? "(comando concluído)" : "(sem saída)")
+                ? (code == 0 ? _t["cmdDone"] : _t["noOutput"])
                 : output.Replace("\n", "\r\n");
             string block = $"command - git {args}\r\n\r\n{body}";
             if (_txtResult.TextLength > 0)
@@ -890,7 +919,7 @@ public sealed class GitFlowForm : Form
             if (!IsDisposed) Activate();
         }
 
-        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
+        _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
         ReloadManageBranches();
 
         if (code != 0 && !suppressError)
@@ -903,7 +932,7 @@ public sealed class GitFlowForm : Form
     /// Shows a MessageBox after a failed git command. When the output indicates a missing
     /// base/target branch, it adds guidance for diagnosing the problem.
     /// </summary>
-    private static void ShowFlowError(string output)
+    private void ShowFlowError(string output)
     {
         bool missingBranch =
             output.Contains("does not exist", StringComparison.OrdinalIgnoreCase) ||
@@ -911,48 +940,15 @@ public sealed class GitFlowForm : Form
             output.Contains("unknown revision", StringComparison.OrdinalIgnoreCase) ||
             output.Contains("pathspec",       StringComparison.OrdinalIgnoreCase);
 
-        string msg = missingBranch
-            ? "Git não encontrou a branch de destino (ex.: 'main' ou 'develop').\n\n" +
-              "Verifique se ela existe localmente:\n" +
-              "    git branch --list main master develop\n\n" +
-              "E a configuração do git flow:\n" +
-              "    git config gitflow.branch.main\n" +
-              "    git config gitflow.branch.develop\n\n" +
-              "Crie a branch que falta ou use GitFlow Initialize."
-            : "O comando git falhou. Veja os detalhes na janela de resultado.";
+        string msg = missingBranch ? _t["flowErrorMissingBranch"] : _t["flowErrorGeneric"];
 
-        MessageBox.Show(msg, "GitFlow — falha", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        MessageBox.Show(msg, _t["flowErrorTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
     private void ShowAbout()
     {
-        MessageBox.Show(
-            "Botões:\n\n" +
-            "  Start   — git checkout -b <prefixo><nome> <base>\n" +
-            "            (base padrão: develop para feature/bugfix/release; main para hotfix/support)\n\n" +
-            "  Publish — git push --set-upstream <remote> <branch>\n\n" +
-            "  Track   — git fetch + git checkout -b <branch> --track <remote>/<branch>\n\n" +
-            "  Update  — git checkout <branch> + git merge <remote>/<pai> (ou local se No fetch)\n" +
-            "            (pai: develop para feature/bugfix/release; main para hotfix/support)\n\n" +
-            "  Finish (feature/bugfix):\n" +
-            "            git checkout develop\n" +
-            "            git merge --no-ff <branch>\n" +
-            "            git branch -d <branch>  (se Keep não estiver marcado)\n" +
-            "            git push <remote> --delete <branch>  (se remoto existir)\n\n" +
-            "  Finish (release/hotfix):\n" +
-            "            git checkout main  →  merge --no-ff  →  tag -a <nome> -m <nome>\n" +
-            "            git checkout develop  →  merge --no-ff\n" +
-            "            git branch -d <branch>  (se Keep não estiver marcado)\n" +
-            "            git push <remote> --delete <branch>  (se remoto existir)\n" +
-            "            + push main, develop, tag (release)\n\n" +
-            "  Finish (support): git checkout main  →  merge --no-ff\n" +
-            "            git branch -d <branch>  (se Keep não estiver marcado)\n" +
-            "            git push <remote> --delete <branch>  (se remoto existir)\n\n" +
-            "Checkboxes do Finish:\n" +
-            "  Keep branch after finish — omite o git branch -d ao finalizar.\n" +
-            "  No fetch (--no-fetch)   — não sincroniza com o remoto antes de operar.\n\n" +
-            "Não requer o binário git-flow instalado — usa apenas git puro.",
-            "About GitFlow", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show(_t["aboutBody"], _t["aboutTitle"],
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     /// <summary>Removes double quotes to keep command arguments safe.</summary>

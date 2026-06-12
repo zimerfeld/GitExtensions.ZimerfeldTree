@@ -14,35 +14,37 @@ public sealed class RestoreForm : Form
     private readonly BranchHierarchyService _svc;
     private readonly bool    _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
+    private readonly Translator _t = I18n.Load("ZimerfeldRestore");
 
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "GitExtensions", "ZimerfeldRestore.settings.json");
+
+    // ── Layout shell (docked) ──
+    private Panel       _headerPanel = null!;
+    private Panel       _bottomPanel = null!;
+    private TabControl  _tabs        = null!;
 
     // ── Header ──
     private Label     _lblHead  = null!;
     private LinkLabel _lnkAbout = null!;
 
     // ── Plano de Emergência (restore/reset a branch to a tag) ──
-    private GroupBox _grpEmergency       = null!;
     private ComboBox _cboEmergencyBranch = null!;
     private ComboBox _cboEmergencyTag    = null!;
     private Button   _btnEmergencyRestore = null!;
     private Button   _btnEmergencyReset  = null!;
 
     // ── Restore File ──
-    private GroupBox _grpRestoreFile = null!;
     private ComboBox _cboRestoreHash = null!;
     private TextBox  _txtRestoreFile = null!;
     private Button   _btnRestoreFile = null!;
 
     // ── Cherry-Pick ──
-    private GroupBox _grpCherryPick = null!;
     private ComboBox _cboCherryHash = null!;
     private Button   _btnCherryPick = null!;
 
     // ── Reset Branch ──
-    private GroupBox    _grpReset    = null!;
     private ComboBox    _cboBranch   = null!;
     private ComboBox    _cboResetHash = null!;
     private RadioButton _rdMixed     = null!;
@@ -50,12 +52,13 @@ public sealed class RestoreForm : Form
     private RadioButton _rdHard      = null!;
     private Button      _btnReset    = null!;
 
-    // ── Result ──
+    // ── Result (below the tabs, mirroring ZimerfeldGitFlow) ──
     private GroupBox _grpResult = null!;
     private TextBox  _txtResult = null!;
 
-    // ── Close ──
-    private Button _btnClose = null!;
+    // ── Bottom bar ──
+    private Button   _btnClose         = null!;
+    private CheckBox _chkDeveloperMode = null!;
 
     /// <summary>
     /// Raised after a restore operation mutates the repository so the owning ZimerfeldTree window
@@ -68,8 +71,8 @@ public sealed class RestoreForm : Form
         _svc            = svc;
         _showControlIds = showControlIds;
 
-        Text            = "ZimerfeldTree - Restore";
-        Size            = new Size(560, 824);
+        Text            = _t["title"];
+        Size            = new Size(560, 824 + SponsorBanner.PanelHeight);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -77,59 +80,80 @@ public sealed class RestoreForm : Form
         Font            = new Font("Segoe UI", 9f);
         Icon            = PluginIcon.ForForm();
 
+        // Docked shell (6 px padding → symmetric borders): a short tab control on top holding the
+        // input groups, and the result group filling the space below the tabs (like ZimerfeldGitFlow),
+        // with the sponsor banner on top and a centered close-button bar below.
+        var content = new Panel { Name = "contentPanel", Dock = DockStyle.Fill, Padding = new Padding(6, 4, 6, 6) };
+        _tabs = new TabControl { Name = "tabs", Dock = DockStyle.Top, Height = 196 };
+
         BuildHeader();
-        BuildEmergencyGroup();
-        BuildRestoreFileGroup();
-        BuildCherryPickGroup();
-        BuildResetGroup();
-        BuildResultGroup();
+        BuildEmergencyTab();
+        BuildRestoreFileTab();
+        BuildCherryPickTab();
+        BuildResetTab();
+        BuildResultGroup();   // grpResult fills the area below the tabs (not a tab)
         BuildCloseButton();
+
+        // Add back-to-front so Dock resolves: Fill first (backmost), then the tabs, header last (top).
+        content.Controls.Add(_grpResult);     // Fill — result box below the tabs
+        content.Controls.Add(_tabs);          // Top
+        content.Controls.Add(_headerPanel);   // Top
+
+        Controls.Add(content);                // Fill — between banner and bottom bar
+        Controls.Add(_bottomPanel);           // Bottom
+        Controls.Add(SponsorBanner.Create()); // Top — GitHub Sponsors banner
 
         CancelButton  = _btnClose;
         Load         += (_, _) =>
         {
             InitData();
-            if (_showControlIds) ApplyControlTooltips();
+            ApplyOrClearTooltips(_chkDeveloperMode.Checked);
         };
         FormClosing  += (_, _) => SaveSettings();
+    }
+
+    /// <summary>Creates a tab page for a former group, hosting its controls at their existing coords.</summary>
+    private TabPage AddTab(string title, params Control[] controls)
+    {
+        var page = new TabPage(title) { UseVisualStyleBackColor = true, Padding = new Padding(3) };
+        page.Controls.AddRange(controls);
+        _tabs.TabPages.Add(page);
+        return page;
     }
 
     // ── Build UI ────────────────────────────────────────────────────────────
 
     private void BuildHeader()
     {
+        _headerPanel = new Panel { Name = "headerPanel", Dock = DockStyle.Top, Height = 26 };
+
+        _lnkAbout = new LinkLabel
+        {
+            Name      = "lnkAbout",
+            Text      = _t["aboutLink"],
+            AutoSize  = true,
+            Dock      = DockStyle.Right,
+            TextAlign = ContentAlignment.MiddleRight,
+            Padding   = new Padding(8, 4, 0, 0)
+        };
+        _lnkAbout.LinkClicked += (_, _) => ShowAbout();
+
         _lblHead = new Label
         {
             Name      = "lblHead",
             TextAlign = ContentAlignment.MiddleLeft,
-            Bounds    = new Rectangle(12, 10, 380, 20),
-            Anchor    = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            Dock      = DockStyle.Fill
         };
-        _lnkAbout = new LinkLabel
-        {
-            Name     = "lnkAbout",
-            Text     = "About Restore",
-            AutoSize = true,
-            Anchor   = AnchorStyles.Top | AnchorStyles.Right,
-            Location = new Point(ClientSize.Width - 116, 12)
-        };
-        _lnkAbout.LinkClicked += (_, _) => ShowAbout();
-        Controls.AddRange([_lblHead, _lnkAbout]);
+
+        _headerPanel.Controls.Add(_lblHead);   // Fill
+        _headerPanel.Controls.Add(_lnkAbout);  // Right
     }
 
-    private void BuildEmergencyGroup()
+    private void BuildEmergencyTab()
     {
-        _grpEmergency = new GroupBox
-        {
-            Name   = "grpEmergency",
-            Text   = "Plano de Emergência",
-            Bounds = new Rectangle(8, 36, 536, 100),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-        };
-
         var lblBranch = new Label
         {
-            Text      = "Branch:",
+            Text      = _t["branchLabel"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 26, 54, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -144,7 +168,7 @@ public sealed class RestoreForm : Form
 
         var lblTag = new Label
         {
-            Text      = "Tag:",
+            Text      = _t["tagLabel"],
             AutoSize  = false,
             Bounds    = new Rectangle(296, 26, 36, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -160,7 +184,7 @@ public sealed class RestoreForm : Form
         _btnEmergencyRestore = new Button
         {
             Name   = "btnEmergencyRestore",
-            Text   = "Restaurar para a Tag",
+            Text   = _t["restoreToTag"],
             Bounds = new Rectangle(190, 62, 160, 26)
         };
         _btnEmergencyRestore.Click += BtnEmergencyRestore_Click;
@@ -168,31 +192,22 @@ public sealed class RestoreForm : Form
         _btnEmergencyReset = new Button
         {
             Name      = "btnEmergencyReset",
-            Text      = "Resetar para a Tag",
+            Text      = _t["resetToTag"],
             ForeColor = Color.DarkRed,
             Bounds    = new Rectangle(360, 62, 160, 26)
         };
         _btnEmergencyReset.Click += BtnEmergencyReset_Click;
 
-        _grpEmergency.Controls.AddRange(
-            [lblBranch, _cboEmergencyBranch, lblTag, _cboEmergencyTag,
-             _btnEmergencyRestore, _btnEmergencyReset]);
-        Controls.Add(_grpEmergency);
+        AddTab(_t["emergencyGroup"],
+            lblBranch, _cboEmergencyBranch, lblTag, _cboEmergencyTag,
+            _btnEmergencyRestore, _btnEmergencyReset);
     }
 
-    private void BuildRestoreFileGroup()
+    private void BuildRestoreFileTab()
     {
-        _grpRestoreFile = new GroupBox
-        {
-            Name   = "grpRestoreFile",
-            Text   = "Restaurar Arquivo",
-            Bounds = new Rectangle(8, 144, 536, 112),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-        };
-
         var lblHash = new Label
         {
-            Text      = "Commit hash:",
+            Text      = _t["commitHash"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 26, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -207,7 +222,7 @@ public sealed class RestoreForm : Form
 
         var lblFile = new Label
         {
-            Text      = "Arquivo (caminho relativo):",
+            Text      = _t["fileRelative"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 54, 172, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -215,35 +230,26 @@ public sealed class RestoreForm : Form
         _txtRestoreFile = new TextBox
         {
             Name            = "txtRestoreFile",
-            PlaceholderText = "ex.: src/Foo/Bar.cs",
+            PlaceholderText = _t["filePlaceholder"],
             Bounds          = new Rectangle(188, 52, 218, 22)
         };
 
         _btnRestoreFile = new Button
         {
             Name   = "btnRestoreFile",
-            Text   = "Restaurar Arquivo",
+            Text   = _t["restoreFileBtn"],
             Bounds = new Rectangle(384, 82, 144, 24)
         };
         _btnRestoreFile.Click += BtnRestoreFile_Click;
 
-        _grpRestoreFile.Controls.AddRange([lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile]);
-        Controls.Add(_grpRestoreFile);
+        AddTab(_t["restoreFileGroup"], lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile);
     }
 
-    private void BuildCherryPickGroup()
+    private void BuildCherryPickTab()
     {
-        _grpCherryPick = new GroupBox
-        {
-            Name   = "grpCherryPick",
-            Text   = "Cherry-Pick",
-            Bounds = new Rectangle(8, 264, 536, 58),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-        };
-
         var lblHash = new Label
         {
-            Text      = "Commit(s):",
+            Text      = _t["commits"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 22, 76, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -258,28 +264,19 @@ public sealed class RestoreForm : Form
         _btnCherryPick = new Button
         {
             Name   = "btnCherryPick",
-            Text   = "Aplicar Cherry-Pick",
+            Text   = _t["applyCherryPick"],
             Bounds = new Rectangle(384, 20, 144, 24)
         };
         _btnCherryPick.Click += BtnCherryPick_Click;
 
-        _grpCherryPick.Controls.AddRange([lblHash, _cboCherryHash, _btnCherryPick]);
-        Controls.Add(_grpCherryPick);
+        AddTab(_t["cherryPickGroup"], lblHash, _cboCherryHash, _btnCherryPick);
     }
 
-    private void BuildResetGroup()
+    private void BuildResetTab()
     {
-        _grpReset = new GroupBox
-        {
-            Name   = "grpReset",
-            Text   = "Reset Branch",
-            Bounds = new Rectangle(8, 330, 536, 152),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
-        };
-
         var lblBranch = new Label
         {
-            Text      = "Branch:",
+            Text      = _t["branchLabel"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 26, 54, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -294,7 +291,7 @@ public sealed class RestoreForm : Form
 
         var lblHash = new Label
         {
-            Text      = "Commit hash:",
+            Text      = _t["commitHash"],
             AutoSize  = false,
             Bounds    = new Rectangle(12, 54, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -309,18 +306,18 @@ public sealed class RestoreForm : Form
 
         _rdMixed = new RadioButton
         {
-            Text    = "--mixed  (mantém mudanças como unstaged — padrão)",
+            Text    = _t["resetMixed"],
             Bounds  = new Rectangle(12, 82, 350, 20),
             Checked = true
         };
         _rdSoft = new RadioButton
         {
-            Text   = "--soft   (mantém mudanças como staged)",
+            Text   = _t["resetSoft"],
             Bounds = new Rectangle(12, 104, 310, 20)
         };
         _rdHard = new RadioButton
         {
-            Text      = "--hard   (DESCARTA TUDO — irreversível)",
+            Text      = _t["resetHard"],
             Bounds    = new Rectangle(12, 126, 310, 20),
             ForeColor = Color.DarkRed
         };
@@ -328,25 +325,23 @@ public sealed class RestoreForm : Form
         _btnReset = new Button
         {
             Name   = "btnReset",
-            Text   = "Resetar Branch",
+            Text   = _t["resetBtn"],
             Bounds = new Rectangle(384, 122, 144, 24)
         };
         _btnReset.Click += BtnReset_Click;
 
-        _grpReset.Controls.AddRange([lblBranch, _cboBranch, lblHash, _cboResetHash, _rdMixed, _rdSoft, _rdHard, _btnReset]);
-        Controls.Add(_grpReset);
+        AddTab(_t["resetGroup"], lblBranch, _cboBranch, lblHash, _cboResetHash, _rdMixed, _rdSoft, _rdHard, _btnReset);
     }
 
     private void BuildResultGroup()
     {
         _grpResult = new GroupBox
         {
-            Name   = "grpResult",
-            Text   = "Resultado:",
-            Bounds = new Rectangle(8, 490, 536, 247),
-            Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+            Name    = "grpResult",
+            Text    = _t["resultGroup"],
+            Dock    = DockStyle.Fill,
+            Padding = new Padding(10, 4, 10, 10)
         };
-
         _txtResult = new TextBox
         {
             Name       = "txtResult",
@@ -358,12 +353,9 @@ public sealed class RestoreForm : Form
             // "Push to origin" / fetch windows) instead of plain white.
             BackColor  = Color.FromArgb(0xEF, 0xEB, 0xD8),
             Font       = new Font("Consolas", 9f),
-            Bounds     = new Rectangle(10, 22, 516, 218),
-            Anchor     = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
+            Dock       = DockStyle.Fill
         };
-
         _grpResult.Controls.Add(_txtResult);
-        Controls.Add(_grpResult);
     }
 
     private void BuildCloseButton()
@@ -371,20 +363,50 @@ public sealed class RestoreForm : Form
         _btnClose = new Button
         {
             Name         = "btnClose",
-            Text         = "Fechar",
-            Bounds       = new Rectangle(235, 745, 90, 28),
-            Anchor       = AnchorStyles.Bottom,
+            Text         = _t["closeBtn"],
+            Width        = 90,
+            Height       = 28,
             DialogResult = DialogResult.Cancel
         };
         _btnClose.Click += (_, _) => Close();
-        Controls.Add(_btnClose);
+
+        // "Modo Developer" toggles the debug TYPE/ID tooltips live. Defaults to the value passed in
+        // (the owner ZimerfeldTree's Show-Debug state).
+        _chkDeveloperMode = new CheckBox
+        {
+            Name     = "chkDeveloperMode",
+            Text     = _t["developerMode"],
+            AutoSize = true,
+            Checked  = _showControlIds
+        };
+        _chkDeveloperMode.CheckedChanged += (_, _) => ApplyOrClearTooltips(_chkDeveloperMode.Checked);
+
+        // Docked bottom bar: close button centered, the Developer-mode checkbox pinned left (mirrors ZimerfeldTree).
+        _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 40 };
+        _bottomPanel.Controls.Add(_btnClose);
+        _bottomPanel.Controls.Add(_chkDeveloperMode);
+        _bottomPanel.Layout += (_, _) =>
+        {
+            _btnClose.Location = new Point(
+                (_bottomPanel.Width  - _btnClose.Width)  / 2,
+                (_bottomPanel.Height - _btnClose.Height) / 2);
+            _chkDeveloperMode.Location = new Point(
+                8, (_bottomPanel.Height - _chkDeveloperMode.Height) / 2);
+        };
+    }
+
+    /// <summary>Shows the debug TYPE/ID tooltips when enabled, or clears them when disabled.</summary>
+    private void ApplyOrClearTooltips(bool show)
+    {
+        if (show) ApplyControlTooltips();
+        else      _mainTooltip.RemoveAll();
     }
 
     // ── Initialization ───────────────────────────────────────────────────────
 
     private void InitData()
     {
-        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
+        _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
 
         var (branchOutput, _) = _svc.RunGitFlow("branch");
         var branches = branchOutput
@@ -543,7 +565,7 @@ public sealed class RestoreForm : Form
             var (output, exitCode) = _svc.RunGitFlow(args);
             code = exitCode;
             string body = output.Length == 0
-                ? (code == 0 ? "(comando concluído)" : "(sem saída)")
+                ? (code == 0 ? _t["cmdDone"] : _t["noOutput"])
                 : output.Replace("\n", "\r\n");
             string block = $"command - git {args}\r\n\r\n{body}";
             _txtResult.Text = append && _txtResult.Text.Length > 0
@@ -555,7 +577,7 @@ public sealed class RestoreForm : Form
             Cursor = Cursors.Default;
             if (!IsDisposed) Activate();
         }
-        _lblHead.Text = "HEAD:  " + _svc.GetHeadRef();
+        _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
         return code == 0;
     }
 
@@ -567,8 +589,8 @@ public sealed class RestoreForm : Form
         string file = _txtRestoreFile.Text.Trim();
         if (hash.Length == 0 || file.Length == 0)
         {
-            MessageBox.Show("Informe o commit hash e o caminho do arquivo.",
-                "Restaurar Arquivo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["informHashAndFile"],
+                _t["restoreFileTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         bool ok = RunGit($"checkout {Clean(hash)} -- \"{Clean(file)}\"");
@@ -580,8 +602,8 @@ public sealed class RestoreForm : Form
         string hash = HashOf(_cboCherryHash);
         if (hash.Length == 0)
         {
-            MessageBox.Show("Informe o commit hash ou intervalo.",
-                "Cherry-Pick", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["informHashOrRange"],
+                _t["cherryPickTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         bool ok = RunGit($"cherry-pick {hash.Replace("\"", "")}");
@@ -604,15 +626,15 @@ public sealed class RestoreForm : Form
     {
         if (_cboBranch.SelectedItem is not string branch || branch.Length == 0)
         {
-            MessageBox.Show("Selecione uma branch para resetar.",
-                "Reset", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["selectBranchReset"],
+                _t["resetTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         string hash = HashOf(_cboResetHash);
         if (hash.Length == 0)
         {
-            MessageBox.Show("Informe o commit hash de destino.",
-                "Reset", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["informHashTarget"],
+                _t["resetTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -621,9 +643,8 @@ public sealed class RestoreForm : Form
         if (_rdHard.Checked)
         {
             var dr = MessageBox.Show(
-                $"ATENÇÃO: git reset --hard descartará TODOS os arquivos não commitados em '{branch}'.\n\n" +
-                "Esta ação é IRREVERSÍVEL. Deseja continuar?",
-                "Confirmar Reset --hard", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+                _t.F("confirmHardWarn", branch),
+                _t["confirmHardTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
                 MessageBoxDefaultButton.Button2);
             if (dr != DialogResult.Yes) return;
         }
@@ -655,15 +676,15 @@ public sealed class RestoreForm : Form
     {
         if (_cboEmergencyBranch.SelectedItem is not string branch || branch.Length == 0)
         {
-            MessageBox.Show("Selecione a branch a restaurar.",
-                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["selectBranchRestore"],
+                _t["emergencyTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         string tag = _cboEmergencyTag.Text.Trim();
         if (tag.Length == 0)
         {
-            MessageBox.Show("Selecione a tag de referência.",
-                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["selectTagRef"],
+                _t["emergencyTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
@@ -686,23 +707,21 @@ public sealed class RestoreForm : Form
     {
         if (_cboEmergencyBranch.SelectedItem is not string branch || branch.Length == 0)
         {
-            MessageBox.Show("Selecione a branch a resetar.",
-                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["selectBranchResetEmerg"],
+                _t["emergencyTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         string tag = _cboEmergencyTag.Text.Trim();
         if (tag.Length == 0)
         {
-            MessageBox.Show("Selecione a tag de referência.",
-                "Plano de Emergência", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show(_t["selectTagRef"],
+                _t["emergencyTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
 
         var dr = MessageBox.Show(
-            $"ATENÇÃO: git reset --hard moverá a branch '{branch}' para a tag '{tag}' e " +
-            "DESCARTARÁ todos os commits e mudanças posteriores.\n\n" +
-            "Esta ação é IRREVERSÍVEL. Deseja continuar?",
-            "Confirmar Reset para a Tag", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            _t.F("confirmResetTagWarn", branch, tag),
+            _t["confirmResetTagTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
             MessageBoxDefaultButton.Button2);
         if (dr != DialogResult.Yes) return;
 
@@ -723,37 +742,8 @@ public sealed class RestoreForm : Form
 
     private void ShowAbout()
     {
-        MessageBox.Show(
-            "Botões:\n\n" +
-            "  Plano de Emergência\n" +
-            "    Restaura ou reseta uma branch para o estado de uma tag (release).\n" +
-            "    Restaurar para a Tag — git checkout <tag> -- .\n" +
-            "      Traz o conteúdo da tag para a branch como mudanças staged; histórico intacto.\n" +
-            "    Resetar para a Tag — git reset --hard <tag>\n" +
-            "      Move o ponteiro da branch para a tag e DESCARTA commits/mudanças posteriores.\n" +
-            "      Ação IRREVERSÍVEL, pede confirmação.\n\n" +
-            "  Restaurar Arquivo\n" +
-            "    Recupera um arquivo específico do estado de um commit antigo.\n" +
-            "    Equivale a: git checkout <hash> -- <arquivo>\n" +
-            "    As mudanças ficam staged, prontas para commit.\n\n" +
-            "  Cherry-Pick\n" +
-            "    Aplica um ou mais commits sobre a branch atual.\n" +
-            "    Equivale a: git cherry-pick <hash>\n" +
-            "    Para um intervalo use: <hash-antigo>..<hash-recente>\n\n" +
-            "  Reset Branch\n" +
-            "    Move o ponteiro da branch para um commit anterior.\n" +
-            "    --mixed  Desfaz commits, mantém mudanças como unstaged (padrão).\n" +
-            "    --soft   Desfaz commits, mantém mudanças como staged.\n" +
-            "    --hard   Desfaz commits e DESCARTA todas as mudanças locais.\n\n" +
-            "Como localizar um commit hash:\n\n" +
-            "  git log --oneline             lista todos os commits do HEAD\n" +
-            "  git log --oneline -20         últimos 20 commits\n" +
-            "  git log --oneline <branch>    commits de uma branch específica\n" +
-            "  git log --oneline A..B        commits em B que não estão em A\n" +
-            "  git log --oneline --all       commits de todas as branches\n\n" +
-            "Os dropdowns de hash exibem o HEAD de cada branch local.\n" +
-            "Você pode selecionar uma branch ou digitar qualquer hash manualmente.",
-            "About Restore", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        MessageBox.Show(_t["aboutBody"], _t["aboutTitle"],
+            MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
