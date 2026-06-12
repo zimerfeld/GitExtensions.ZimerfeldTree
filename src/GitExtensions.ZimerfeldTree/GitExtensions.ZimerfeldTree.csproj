@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.299</Version>
+    <Version>1.0.304</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -74,6 +74,20 @@
     <EmbeddedResource Include="Resources\ctx-expand.png"     Condition="Exists('Resources\ctx-expand.png')" />
     <EmbeddedResource Include="Resources\ctx-collapse.png"   Condition="Exists('Resources\ctx-collapse.png')" />
     <EmbeddedResource Include="Resources\ctx-refresh.png"    Condition="Exists('Resources\ctx-refresh.png')" />
+    <!-- GitHub Sponsors badge shown in the top banner of every window (clickable → sponsors page).
+         Raster copy of the shields.io "for-the-badge" SVG, baked to PNG since WinForms cannot
+         render SVG natively. -->
+    <EmbeddedResource Include="Resources\sponsor-badge.png"  Condition="Exists('Resources\sponsor-badge.png')" />
+    <!-- Language dictionaries (one JSON file per window per language). Loaded at runtime by
+         I18n via GetManifestResourceStream("GitExtensions.ZimerfeldTree.Resources.<file>").
+         WithCulture=false + explicit LogicalName stop MSBuild from reading the ".en-US"/".pt-BR"
+         infix as a culture (which would divert these into satellite assemblies). -->
+    <EmbeddedResource Include="Resources\ZimerfeldTree.pt-BR.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.pt-BR.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldTree.en-US.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldGitFlow.pt-BR.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.pt-BR.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldGitFlow.en-US.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldRestore.pt-BR.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.pt-BR.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldRestore.en-US.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.en-US.json" />
   </ItemGroup>
 
   <ItemGroup>
