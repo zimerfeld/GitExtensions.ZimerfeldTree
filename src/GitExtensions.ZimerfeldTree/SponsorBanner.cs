@@ -23,8 +23,14 @@ internal static class SponsorBanner
 
     private static readonly ToolTip Tip = new();
 
-    /// <summary>Creates a top-docked panel with the badge centered horizontally and click-to-open wired up.</summary>
-    public static Panel Create()
+    /// <summary>
+    /// Creates a top-docked panel with the badge centered horizontally and click-to-open wired up.
+    /// When <paramref name="aboutLink"/> is supplied it is hosted at the right edge of the banner,
+    /// vertically aligned with the sponsor badge (so every window's "About" link sits at the same
+    /// height as <c>picSponsor</c>). The caller keeps the reference (e.g. for live re-localization)
+    /// and wires its click handler before passing it in.
+    /// </summary>
+    public static Panel Create(LinkLabel? aboutLink = null)
     {
         var panel = new Panel { Name = "sponsorPanel", Dock = DockStyle.Top, Height = PanelHeight };
 
@@ -37,17 +43,37 @@ internal static class SponsorBanner
         };
         if (LoadBadge() is { } img) pic.Image = img;
 
+        // Only the badge itself opens the sponsors page — clicks on the surrounding panel do nothing.
         void Open(object? _, EventArgs __) => OpenSponsors();
-        pic.Click   += Open;
-        panel.Click += Open;   // clicking the panel margin around the badge also opens the link
+        pic.Click += Open;
         Tip.SetToolTip(pic, SponsorUrl);
 
         panel.Controls.Add(pic);
-        void Centre() => pic.Location = new Point(
-            (panel.ClientSize.Width  - pic.Width)  / 2,
-            (panel.ClientSize.Height - pic.Height) / 2);
-        panel.Resize += (_, _) => Centre();
-        Centre();
+
+        if (aboutLink is not null)
+        {
+            aboutLink.AutoSize  = true;
+            aboutLink.TextAlign = ContentAlignment.MiddleRight;
+            panel.Controls.Add(aboutLink);
+            aboutLink.BringToFront();
+        }
+
+        void Layout()
+        {
+            pic.Location = new Point(
+                (panel.ClientSize.Width  - pic.Width)  / 2,
+                (panel.ClientSize.Height - pic.Height) / 2);
+            if (aboutLink is not null)
+                // Right-aligned with an 8 px margin; AutoSize keeps the full text visible.
+                aboutLink.Location = new Point(
+                    panel.ClientSize.Width - aboutLink.Width - 8,
+                    (panel.ClientSize.Height - aboutLink.Height) / 2);
+        }
+        panel.Resize += (_, _) => Layout();
+        // Re-align when the link text changes width (e.g. after a language switch) so the whole,
+        // right-aligned text stays on screen.
+        if (aboutLink is not null) aboutLink.SizeChanged += (_, _) => Layout();
+        Layout();
 
         return panel;
     }

@@ -428,7 +428,9 @@ public sealed class BranchHierarchyForm : Form
 
         Text            = _t["title"];
         // Height includes the sponsor banner (PanelHeight) docked above the working-directory panel.
-        Size            = new Size(608, 760 + SponsorBanner.PanelHeight);   // client 592: button row ends flush at btnRestore's right edge (= right-docked btnGitFlow)
+        // Width 700 (client ~684) gives the bottom bar room for the longer Portuguese "Modo
+        // Desenvolvedor" checkbox so it does not collide with the centered Fechar button.
+        Size            = new Size(700, 760 + SponsorBanner.PanelHeight);
         StartPosition   = FormStartPosition.CenterScreen;
         FormBorderStyle = FormBorderStyle.FixedSingle;   // não redimensionável pelo usuário
         MaximizeBox     = false;                          // maximizar redimensionaria a janela
@@ -460,16 +462,10 @@ public sealed class BranchHierarchyForm : Form
         Controls.Add(_filterPanel);         // Top
         Controls.Add(_gitFlowInitPanel);    // Top — GitFlow Initialize button (above filter)
         Controls.Add(_topPanel);            // Top
-        Controls.Add(SponsorBanner.Create()); // Top (topmost) — GitHub Sponsors banner
+        Controls.Add(SponsorBanner.Create(_lnkAbout)); // Top (topmost) — Sponsors banner hosts lnkAbout
         Controls.Add(_status);         // Bottom
         Controls.Add(_bottomPanel);    // Bottom (above status)
-        Controls.Add(_lnkAbout);       // Floats top-right over _topPanel
         Controls.Add(_loadingOverlay); // Floats above everything (BringToFront when shown)
-
-        // _lnkAbout is added after _topPanel, so it sits *behind* it in the z-order and the opaque
-        // top panel hides it. Bring it to the front so it actually floats over the panel.
-        // (_loadingOverlay re-asserts its own front position via BringToFront when shown.)
-        _lnkAbout.BringToFront();
 
         CancelButton = _btnClose;
 
@@ -563,14 +559,13 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildAboutLink()
     {
+        // Hosted inside the sponsor banner (see SponsorBanner.Create) so it sits at the same height
+        // as picSponsor; the banner handles its right-edge, vertically-centered positioning.
         _lnkAbout = new LinkLabel
         {
             Name     = "lnkAbout",
             Text     = _t["aboutTree"],
-            AutoSize = true,
-            Anchor   = AnchorStyles.Top | AnchorStyles.Right,
-            // Sits over the working-directory panel, which the sponsor banner pushes down by PanelHeight.
-            Location = new Point(ClientSize.Width - 100, 2 + SponsorBanner.PanelHeight)
+            AutoSize = true
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAboutTree();
     }
@@ -592,7 +587,7 @@ public sealed class BranchHierarchyForm : Form
             Name   = "btnRefresh",
             Text   = "↺",
             Dock   = DockStyle.Right,
-            Width  = 32,
+            Width  = 64,   // wider Refresh button; txtFilter (Dock=Fill) narrows to match
             Height = 24,
             Font   = new Font(Font, FontStyle.Bold)
         };
@@ -614,18 +609,15 @@ public sealed class BranchHierarchyForm : Form
         _warnLabel = new Label
         {
             Name      = "warnLabel",
-            Dock      = DockStyle.Fill,
             Text      = string.Empty,
             ForeColor = Color.DarkRed,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding   = new Padding(4, 0, 0, 0),
             AutoSize  = false
         };
 
         _btnGitFlow = new Button
         {
             Name  = "btnGitFlow",
-            Dock  = DockStyle.Right,
             Width = 160,
             Height = 24,
             Text  = _t["organizeAsGitFlow"]
@@ -643,6 +635,16 @@ public sealed class BranchHierarchyForm : Form
         };
         _warnPanel.Controls.Add(_warnLabel);
         _warnPanel.Controls.Add(_btnGitFlow);
+
+        // btnGitFlow pinned to the right edge (vertically centered); warnLabel fills the space to its left.
+        _warnPanel.Layout += (_, _) =>
+        {
+            int h = _warnPanel.ClientSize.Height;
+            _btnGitFlow.Location = new Point(
+                _warnPanel.ClientSize.Width - 4 - _btnGitFlow.Width,
+                (h - _btnGitFlow.Height) / 2);
+            _warnLabel.Bounds = new Rectangle(4, 0, Math.Max(0, _btnGitFlow.Left - 8), h);
+        };
     }
 
     private void BuildGitFlowInitPanel()
@@ -693,7 +695,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnGitFlowDedicated",
             Text   = _t["gitFlow"],
-            Width  = 100,   // narrower so btnRestore is not cropped at the right edge
+            Width  = 100,   // placeholder — LayoutGitFlowButtons sets equal widths to fill the panel
             Height = 24
         };
         _btnGitFlowDedicated.Click += (_, _) => DoGitFlow();
@@ -702,7 +704,7 @@ public sealed class BranchHierarchyForm : Form
         {
             Name   = "btnRestore",
             Text   = _t["restore"],
-            Width  = 100,   // matches btnGitFlowDedicated; right edge aligns with the right-docked btnGitFlow
+            Width  = 100,   // placeholder — LayoutGitFlowButtons sets equal widths to fill the panel
             Height = 24
         };
         _btnRestore.Click += (_, _) => DoRestore();
@@ -2242,14 +2244,23 @@ public sealed class BranchHierarchyForm : Form
     /// </summary>
     private void LayoutGitFlowButtons()
     {
+        // Give all six buttons an equal width that fills the panel edge-to-edge with uniform gaps,
+        // so the row stays evenly spaced regardless of the window width.
+        Button[] buttons = [_btnPull, _btnPush, _btnCommitDedicated, _btnExcluir, _btnGitFlowDedicated, _btnRestore];
+        const int margin = 8, gap = 6;
+        int avail = _gitFlowButtonPanel.Width - margin * 2 - gap * (buttons.Length - 1);
+        int w = avail / buttons.Length;
         int y = (_gitFlowButtonPanel.Height - 24) / 2;
-        int x = 8;
-        _btnPull.Location = new Point(x, y); x += _btnPull.Width + 4;
-        _btnPush.Location = new Point(x, y); x += _btnPush.Width + 4;
-        _btnCommitDedicated.Location = new Point(x, y); x += _btnCommitDedicated.Width + 4;
-        _btnExcluir.Location = new Point(x, y); x += _btnExcluir.Width + 4;
-        _btnGitFlowDedicated.Location = new Point(x, y); x += _btnGitFlowDedicated.Width + 4;
-        _btnRestore.Location = new Point(x, y);
+
+        int x = margin;
+        foreach (var b in buttons)
+        {
+            b.Width    = w;
+            b.Location = new Point(x, y);
+            x += w + gap;
+        }
+        // Absorb integer-division rounding into the last button so the row ends flush at the right margin.
+        _btnRestore.Width = _gitFlowButtonPanel.Width - margin - _btnRestore.Left;
     }
 
     private static void SetTooltipsRecursive(Control parent, ToolTip tip)

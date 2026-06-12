@@ -14,7 +14,14 @@ public sealed class RestoreForm : Form
     private readonly BranchHierarchyService _svc;
     private readonly bool    _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
-    private readonly Translator _t = I18n.Load("ZimerfeldRestore");
+
+    // Loaded for the active language; reassigned by ApplyLanguage when the user switches languages
+    // via the bottom-panel dropdown (so the open window re-localizes live, like ZimerfeldTree).
+    private Translator _t = I18n.Load("ZimerfeldRestore");
+
+    // (control, dictionary-key) pairs reapplied by ApplyLanguage so every label/button/tab re-localizes
+    // in place when the Language dropdown changes.
+    private readonly List<KeyValuePair<Control, string>> _localized = new();
 
     private static readonly string SettingsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -57,8 +64,11 @@ public sealed class RestoreForm : Form
     private TextBox  _txtResult = null!;
 
     // ── Bottom bar ──
-    private Button   _btnClose         = null!;
-    private CheckBox _chkDeveloperMode = null!;
+    private Button   _btnClose     = null!;
+    private CheckBox _chkShowDebug = null!;
+    private Label    _lblLanguage  = null!;
+    private ComboBox _cboLanguage  = null!;
+    private bool     _suppressLangEvent;
 
     /// <summary>
     /// Raised after a restore operation mutates the repository so the owning ZimerfeldTree window
@@ -101,23 +111,27 @@ public sealed class RestoreForm : Form
 
         Controls.Add(content);                // Fill — between banner and bottom bar
         Controls.Add(_bottomPanel);           // Bottom
-        Controls.Add(SponsorBanner.Create()); // Top — GitHub Sponsors banner
+        Controls.Add(SponsorBanner.Create(_lnkAbout)); // Top — Sponsors banner hosts lnkAbout
 
         CancelButton  = _btnClose;
         Load         += (_, _) =>
         {
             InitData();
-            ApplyOrClearTooltips(_chkDeveloperMode.Checked);
+            ApplyOrClearTooltips(_chkShowDebug.Checked);
         };
         FormClosing  += (_, _) => SaveSettings();
     }
 
-    /// <summary>Creates a tab page for a former group, hosting its controls at their existing coords.</summary>
-    private TabPage AddTab(string title, params Control[] controls)
+    /// <summary>
+    /// Creates a tab page (title localized via <paramref name="titleKey"/>) hosting its controls at
+    /// their existing coords, and registers the page so its title re-localizes on language change.
+    /// </summary>
+    private TabPage AddTab(string titleKey, params Control[] controls)
     {
-        var page = new TabPage(title) { UseVisualStyleBackColor = true, Padding = new Padding(3) };
+        var page = new TabPage(_t[titleKey]) { UseVisualStyleBackColor = true, Padding = new Padding(3) };
         page.Controls.AddRange(controls);
         _tabs.TabPages.Add(page);
+        _localized.Add(new(page, titleKey));
         return page;
     }
 
@@ -127,16 +141,15 @@ public sealed class RestoreForm : Form
     {
         _headerPanel = new Panel { Name = "headerPanel", Dock = DockStyle.Top, Height = 26 };
 
+        // lnkAbout is hosted by the sponsor banner (aligned with picSponsor), not the header panel.
         _lnkAbout = new LinkLabel
         {
-            Name      = "lnkAbout",
-            Text      = _t["aboutLink"],
-            AutoSize  = true,
-            Dock      = DockStyle.Right,
-            TextAlign = ContentAlignment.MiddleRight,
-            Padding   = new Padding(8, 4, 0, 0)
+            Name     = "lnkAbout",
+            Text     = _t["aboutLink"],
+            AutoSize = true
         };
         _lnkAbout.LinkClicked += (_, _) => ShowAbout();
+        _localized.Add(new(_lnkAbout, "aboutLink"));
 
         _lblHead = new Label
         {
@@ -146,16 +159,16 @@ public sealed class RestoreForm : Form
         };
 
         _headerPanel.Controls.Add(_lblHead);   // Fill
-        _headerPanel.Controls.Add(_lnkAbout);  // Right
     }
 
     private void BuildEmergencyTab()
     {
+        // Row 1 — branch combo (full width, aligned to the shared input column x=110, ending at x=520).
         var lblBranch = new Label
         {
             Text      = _t["branchLabel"],
             AutoSize  = false,
-            Bounds    = new Rectangle(12, 26, 54, 18),
+            Bounds    = new Rectangle(14, 26, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _cboEmergencyBranch = new ComboBox
@@ -163,29 +176,31 @@ public sealed class RestoreForm : Form
             Name          = "cboEmergencyBranch",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Sorted        = true,
-            Bounds        = new Rectangle(70, 24, 210, 22)
+            Bounds        = new Rectangle(110, 24, 410, 22)
         };
 
+        // Row 2 — tag combo on its own line (full width, ending at x=520).
         var lblTag = new Label
         {
             Text      = _t["tagLabel"],
             AutoSize  = false,
-            Bounds    = new Rectangle(296, 26, 36, 18),
+            Bounds    = new Rectangle(14, 54, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _cboEmergencyTag = new ComboBox
         {
             Name          = "cboEmergencyTag",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(334, 24, 188, 22),
-            DropDownWidth = 260
+            Bounds        = new Rectangle(110, 52, 410, 22),
+            DropDownWidth = 380
         };
 
+        // Row 3 — action buttons as a right-aligned pair (equal 150 px width, ending at x=520).
         _btnEmergencyRestore = new Button
         {
             Name   = "btnEmergencyRestore",
             Text   = _t["restoreToTag"],
-            Bounds = new Rectangle(190, 62, 160, 26)
+            Bounds = new Rectangle(208, 84, 150, 26)
         };
         _btnEmergencyRestore.Click += BtnEmergencyRestore_Click;
 
@@ -194,29 +209,37 @@ public sealed class RestoreForm : Form
             Name      = "btnEmergencyReset",
             Text      = _t["resetToTag"],
             ForeColor = Color.DarkRed,
-            Bounds    = new Rectangle(360, 62, 160, 26)
+            Bounds    = new Rectangle(370, 84, 150, 26)
         };
         _btnEmergencyReset.Click += BtnEmergencyReset_Click;
 
-        AddTab(_t["emergencyGroup"],
+        AddTab("emergencyGroup",
             lblBranch, _cboEmergencyBranch, lblTag, _cboEmergencyTag,
             _btnEmergencyRestore, _btnEmergencyReset);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblBranch, "branchLabel"), new(lblTag, "tagLabel"),
+            new(_btnEmergencyRestore, "restoreToTag"), new(_btnEmergencyReset, "resetToTag"),
+        });
     }
 
     private void BuildRestoreFileTab()
     {
+        // Both rows share the input column x=174 (wide enough for the long "Arquivo (caminho
+        // relativo):" label) and end flush at x=520.
         var lblHash = new Label
         {
             Text      = _t["commitHash"],
             AutoSize  = false,
-            Bounds    = new Rectangle(12, 26, 90, 18),
+            Bounds    = new Rectangle(14, 26, 156, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _cboRestoreHash = new ComboBox
         {
             Name          = "cboRestoreHash",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(106, 24, 270, 22),
+            Bounds        = new Rectangle(174, 24, 346, 22),
             DropDownWidth = 380
         };
 
@@ -224,52 +247,64 @@ public sealed class RestoreForm : Form
         {
             Text      = _t["fileRelative"],
             AutoSize  = false,
-            Bounds    = new Rectangle(12, 54, 172, 18),
+            Bounds    = new Rectangle(14, 54, 156, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _txtRestoreFile = new TextBox
         {
             Name            = "txtRestoreFile",
             PlaceholderText = _t["filePlaceholder"],
-            Bounds          = new Rectangle(188, 52, 218, 22)
+            Bounds          = new Rectangle(174, 52, 346, 22)
         };
 
         _btnRestoreFile = new Button
         {
             Name   = "btnRestoreFile",
             Text   = _t["restoreFileBtn"],
-            Bounds = new Rectangle(384, 82, 144, 24)
+            Bounds = new Rectangle(370, 84, 150, 24)
         };
         _btnRestoreFile.Click += BtnRestoreFile_Click;
 
-        AddTab(_t["restoreFileGroup"], lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile);
+        AddTab("restoreFileGroup", lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHash, "commitHash"), new(lblFile, "fileRelative"), new(_btnRestoreFile, "restoreFileBtn"),
+        });
     }
 
     private void BuildCherryPickTab()
     {
+        // Label + combo on the first row, at the same height as cboEmergencyBranch (combo y=24, label y=26).
         var lblHash = new Label
         {
             Text      = _t["commits"],
             AutoSize  = false,
-            Bounds    = new Rectangle(12, 22, 76, 18),
+            Bounds    = new Rectangle(14, 26, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _cboCherryHash = new ComboBox
         {
             Name          = "cboCherryHash",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(92, 20, 286, 22),
+            Bounds        = new Rectangle(110, 24, 410, 22),   // full width, ending flush at x=520
             DropDownWidth = 380
         };
+        // Button on its own row below the combo, right-aligned to x=520.
         _btnCherryPick = new Button
         {
             Name   = "btnCherryPick",
             Text   = _t["applyCherryPick"],
-            Bounds = new Rectangle(384, 20, 144, 24)
+            Bounds = new Rectangle(370, 52, 150, 24)
         };
         _btnCherryPick.Click += BtnCherryPick_Click;
 
-        AddTab(_t["cherryPickGroup"], lblHash, _cboCherryHash, _btnCherryPick);
+        AddTab("cherryPickGroup", lblHash, _cboCherryHash, _btnCherryPick);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHash, "commits"), new(_btnCherryPick, "applyCherryPick"),
+        });
     }
 
     private void BuildResetTab()
@@ -278,7 +313,7 @@ public sealed class RestoreForm : Form
         {
             Text      = _t["branchLabel"],
             AutoSize  = false,
-            Bounds    = new Rectangle(12, 26, 54, 18),
+            Bounds    = new Rectangle(14, 26, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _cboBranch = new ComboBox
@@ -286,39 +321,41 @@ public sealed class RestoreForm : Form
             Name          = "cboBranch",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Sorted        = true,
-            Bounds        = new Rectangle(70, 24, 210, 22)
+            Bounds        = new Rectangle(110, 24, 410, 22)
         };
 
         var lblHash = new Label
         {
             Text      = _t["commitHash"],
             AutoSize  = false,
-            Bounds    = new Rectangle(12, 54, 90, 18),
+            Bounds    = new Rectangle(14, 54, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
         };
         _cboResetHash = new ComboBox
         {
             Name          = "cboResetHash",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(106, 52, 270, 22),
+            Bounds        = new Rectangle(110, 52, 410, 22),
             DropDownWidth = 380
         };
 
+        // The three reset-mode radios share the left edge (x=14); the Reset button sits to their
+        // right, right-aligned to x=520 and vertically centered against the radio block.
         _rdMixed = new RadioButton
         {
             Text    = _t["resetMixed"],
-            Bounds  = new Rectangle(12, 82, 350, 20),
+            Bounds  = new Rectangle(14, 84, 348, 20),
             Checked = true
         };
         _rdSoft = new RadioButton
         {
             Text   = _t["resetSoft"],
-            Bounds = new Rectangle(12, 104, 310, 20)
+            Bounds = new Rectangle(14, 106, 348, 20)
         };
         _rdHard = new RadioButton
         {
             Text      = _t["resetHard"],
-            Bounds    = new Rectangle(12, 126, 310, 20),
+            Bounds    = new Rectangle(14, 128, 348, 20),
             ForeColor = Color.DarkRed
         };
 
@@ -326,11 +363,18 @@ public sealed class RestoreForm : Form
         {
             Name   = "btnReset",
             Text   = _t["resetBtn"],
-            Bounds = new Rectangle(384, 122, 144, 24)
+            Bounds = new Rectangle(370, 106, 150, 24)
         };
         _btnReset.Click += BtnReset_Click;
 
-        AddTab(_t["resetGroup"], lblBranch, _cboBranch, lblHash, _cboResetHash, _rdMixed, _rdSoft, _rdHard, _btnReset);
+        AddTab("resetGroup", lblBranch, _cboBranch, lblHash, _cboResetHash, _rdMixed, _rdSoft, _rdHard, _btnReset);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblBranch, "branchLabel"), new(lblHash, "commitHash"),
+            new(_rdMixed, "resetMixed"), new(_rdSoft, "resetSoft"), new(_rdHard, "resetHard"),
+            new(_btnReset, "resetBtn"),
+        });
     }
 
     private void BuildResultGroup()
@@ -356,6 +400,7 @@ public sealed class RestoreForm : Form
             Dock       = DockStyle.Fill
         };
         _grpResult.Controls.Add(_txtResult);
+        _localized.Add(new(_grpResult, "resultGroup"));
     }
 
     private void BuildCloseButton()
@@ -370,29 +415,98 @@ public sealed class RestoreForm : Form
         };
         _btnClose.Click += (_, _) => Close();
 
-        // "Modo Developer" toggles the debug TYPE/ID tooltips live. Defaults to the value passed in
-        // (the owner ZimerfeldTree's Show-Debug state).
-        _chkDeveloperMode = new CheckBox
+        // Show Debug toggles the debug TYPE/ID tooltips live; defaults to the owner's Show-Debug state.
+        _chkShowDebug = new CheckBox
         {
-            Name     = "chkDeveloperMode",
-            Text     = _t["developerMode"],
+            Name     = "chkShowDebug",
+            Text     = _t["showDebug"],
             AutoSize = true,
             Checked  = _showControlIds
         };
-        _chkDeveloperMode.CheckedChanged += (_, _) => ApplyOrClearTooltips(_chkDeveloperMode.Checked);
+        _chkShowDebug.CheckedChanged += (_, _) => ApplyOrClearTooltips(_chkShowDebug.Checked);
 
-        // Docked bottom bar: close button centered, the Developer-mode checkbox pinned left (mirrors ZimerfeldTree).
+        // Language selector (right-aligned). Items + selection populated by PopulateLanguageCombo so
+        // they stay localized; index order matches AppLanguage (0=Automatic, 1=English, 2=Portuguese).
+        _lblLanguage = new Label
+        {
+            Name      = "lblLanguage",
+            Text      = _t["language"],
+            AutoSize  = true,
+            TextAlign = ContentAlignment.MiddleRight
+        };
+        _cboLanguage = new ComboBox
+        {
+            Name          = "cboLanguage",
+            DropDownStyle = ComboBoxStyle.DropDownList,
+            Width         = 120
+        };
+        _cboLanguage.SelectedIndexChanged += OnLanguageChanged;
+        PopulateLanguageCombo();
+
+        // Docked bottom bar: close button centered, Show Debug pinned left, Language at the right edge
+        // (mirrors ZimerfeldTree).
         _bottomPanel = new Panel { Name = "bottomPanel", Dock = DockStyle.Bottom, Height = 40 };
         _bottomPanel.Controls.Add(_btnClose);
-        _bottomPanel.Controls.Add(_chkDeveloperMode);
+        _bottomPanel.Controls.Add(_chkShowDebug);
+        _bottomPanel.Controls.Add(_lblLanguage);
+        _bottomPanel.Controls.Add(_cboLanguage);
         _bottomPanel.Layout += (_, _) =>
         {
             _btnClose.Location = new Point(
                 (_bottomPanel.Width  - _btnClose.Width)  / 2,
                 (_bottomPanel.Height - _btnClose.Height) / 2);
-            _chkDeveloperMode.Location = new Point(
-                8, (_bottomPanel.Height - _chkDeveloperMode.Height) / 2);
+            _chkShowDebug.Location = new Point(
+                8, (_bottomPanel.Height - _chkShowDebug.Height) / 2);
+            _cboLanguage.Location = new Point(
+                _bottomPanel.Width - _cboLanguage.Width - 8,
+                (_bottomPanel.Height - _cboLanguage.Height) / 2);
+            _lblLanguage.Location = new Point(
+                _cboLanguage.Left - _lblLanguage.Width - 6,
+                (_bottomPanel.Height - _lblLanguage.Height) / 2);
         };
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(_btnClose, "closeBtn"), new(_chkShowDebug, "showDebug"), new(_lblLanguage, "language"),
+        });
+    }
+
+    // ── Language selection ────────────────────────────────────────────────────
+
+    /// <summary>Persists the dropdown choice and re-localizes this window in place.</summary>
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        if (_suppressLangEvent) return;
+        var lang = _cboLanguage.SelectedIndex switch
+        {
+            1 => AppLanguage.English,
+            2 => AppLanguage.Portuguese,
+            _ => AppLanguage.Automatic,
+        };
+        I18n.SetLanguage(lang);
+        ApplyLanguage();
+    }
+
+    /// <summary>Reloads the active-language dictionary and reapplies every registered text in place.</summary>
+    private void ApplyLanguage()
+    {
+        _t = I18n.Load("ZimerfeldRestore");
+        Text = _t["title"];
+        foreach (var (c, key) in _localized) c.Text = _t[key];
+        _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
+        _txtRestoreFile.PlaceholderText = _t["filePlaceholder"];
+        PopulateLanguageCombo();
+    }
+
+    /// <summary>Repopulates the language dropdown with localized item labels, preserving selection.</summary>
+    private void PopulateLanguageCombo()
+    {
+        _suppressLangEvent = true;
+        int sel = _cboLanguage.SelectedIndex >= 0 ? _cboLanguage.SelectedIndex : (int)I18n.Current;
+        _cboLanguage.Items.Clear();
+        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"]]);
+        _cboLanguage.SelectedIndex = sel;
+        _suppressLangEvent = false;
     }
 
     /// <summary>Shows the debug TYPE/ID tooltips when enabled, or clears them when disabled.</summary>
