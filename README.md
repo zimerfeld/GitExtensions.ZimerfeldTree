@@ -5,8 +5,7 @@
 - Help keep this project always updated 💜
 - Ajude a manter este projeto sempre atualizado 💜
 
-![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)
-[GitHub Sponsor](https://github.com/sponsors/zimerfeld)
+[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld)
 
 **Version:** 1.0.313  
 **Updated:** 2026-06-13
