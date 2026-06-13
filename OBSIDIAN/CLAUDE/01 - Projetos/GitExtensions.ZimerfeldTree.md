@@ -14,6 +14,9 @@ repo: C:\GitExtensions\ZimerfeldTree
 > [!info] Esta nota espelha o `README.md` do repositório
 > O conteúdo do README (funcionalidades, dependências, instalação, estrutura e limitações) vive aqui no cofre. Os **fluxos detalhados de cada janela** estão em [[Interface ZimerfeldTree — botões e fluxos]], [[Interface GitFlow — botões e fluxos]] e [[Interface Restore — botões e fluxos]].
 
+## 💜 Apoie o projeto
+Ajude a manter este projeto sempre atualizado: **[GitHub Sponsors → zimerfeld](https://github.com/sponsors/zimerfeld)**
+
 ## 🎯 Objetivo
 Plugin para **[GitExtensions](https://gitextensions.github.io/)** que exibe as branches do repositório **hierarquicamente** em árvore (mostrando branches filhas), em vez da lista plana padrão. Tem ícone próprio "Árvore da Vida" desenhado/embutido (GDI+ / `Resources/ico.png`).
 
