@@ -1,0 +1,79 @@
+<svg viewBox="0 0 720 474" width="720" height="474" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif" role="img">
+<title>Regras de start e finish do git-flow por tipo de branch</title>
+<desc>Para cada tipo (feature, bugfix, release, hotfix, support): a base usada no start, o branch criado e o destino do merge no finish.</desc>
+<defs>
+<marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#73726c"/></marker>
+</defs>
+<rect x="0" y="0" width="720" height="474" fill="#ffffff"/>
+
+<g font-size="11" fill="#444441">
+<rect x="16" y="14" width="12" height="12" rx="3" fill="#FCEBEB" stroke="#A32D2D"/><text x="33" y="24">main</text>
+<rect x="86" y="14" width="12" height="12" rx="3" fill="#E6F1FB" stroke="#185FA5"/><text x="103" y="24">develop</text>
+<rect x="176" y="14" width="12" height="12" rx="3" fill="#FAEEDA" stroke="#854F0B"/><text x="193" y="24">tag</text>
+<rect x="226" y="14" width="12" height="12" rx="3" fill="#EAF3DE" stroke="#3B6D11"/><text x="243" y="24">release/*</text>
+<rect x="316" y="14" width="12" height="12" rx="3" fill="#EEEDFE" stroke="#534AB7"/><text x="333" y="24">branch criado</text>
+</g>
+
+<g font-size="12" font-weight="500" fill="#2C2C2A" text-anchor="middle">
+<text x="71" y="62">tipo</text>
+<text x="220" y="62">start — base</text>
+<text x="405" y="62">branch</text>
+<text x="590" y="62">finish — destino</text>
+</g>
+<line x1="16" y1="70" x2="665" y2="70" stroke="#D3D1C7"/>
+
+<g>
+<rect x="16" y="107" width="110" height="32" rx="16" fill="#F1EFE8" stroke="#B4B2A9"/><text x="71" y="127" text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">feature</text>
+<path d="M128,123 L148,123" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="150" y="101" width="140" height="44" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="220" y="119" text-anchor="middle" font-size="13" font-weight="500" fill="#042C53">develop</text><text x="220" y="135" text-anchor="middle" font-size="11" fill="#185FA5">ou feature/* — opcional</text>
+<path d="M290,123 L328,123" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="330" y="101" width="150" height="44" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="405" y="119" text-anchor="middle" font-size="13" font-weight="500" fill="#26215C">feature/nome</text><text x="405" y="135" text-anchor="middle" font-size="11" fill="#534AB7">checkout -b</text>
+<path d="M480,123 L513,123" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="515" y="101" width="150" height="44" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="590" y="119" text-anchor="middle" font-size="13" font-weight="500" fill="#042C53">develop / parent</text><text x="590" y="135" text-anchor="middle" font-size="11" fill="#185FA5">merge --no-ff</text>
+</g>
+
+<g>
+<rect x="16" y="181" width="110" height="32" rx="16" fill="#F1EFE8" stroke="#B4B2A9"/><text x="71" y="201" text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">bugfix</text>
+<path d="M128,197 L148,197" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="150" y="175" width="140" height="44" rx="4" fill="#EAF3DE" stroke="#3B6D11"/><text x="220" y="193" text-anchor="middle" font-size="13" font-weight="500" fill="#173404">release/*</text><text x="220" y="209" text-anchor="middle" font-size="11" fill="#3B6D11">escolher (obrigatório)</text>
+<path d="M290,197 L328,197" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="330" y="175" width="150" height="44" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="405" y="193" text-anchor="middle" font-size="13" font-weight="500" fill="#26215C">bugfix/nome</text><text x="405" y="209" text-anchor="middle" font-size="11" fill="#534AB7">checkout -b</text>
+<path d="M480,197 L513,197" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="515" y="175" width="150" height="44" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="590" y="193" text-anchor="middle" font-size="13" font-weight="500" fill="#042C53">develop / parent</text><text x="590" y="209" text-anchor="middle" font-size="11" fill="#185FA5">merge --no-ff</text>
+</g>
+
+<g>
+<rect x="16" y="261" width="110" height="32" rx="16" fill="#F1EFE8" stroke="#B4B2A9"/><text x="71" y="281" text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">release</text>
+<path d="M128,277 L148,277" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="150" y="255" width="140" height="44" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="220" y="273" text-anchor="middle" font-size="13" font-weight="500" fill="#042C53">develop</text><text x="220" y="289" text-anchor="middle" font-size="11" fill="#185FA5">fixo</text>
+<path d="M290,277 L328,277" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="330" y="255" width="150" height="44" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="405" y="273" text-anchor="middle" font-size="13" font-weight="500" fill="#26215C">release/nome</text><text x="405" y="289" text-anchor="middle" font-size="11" fill="#534AB7">checkout -b</text>
+<path d="M480,277 L500,277 L500,259 L513,259" fill="none" stroke="#888780" marker-end="url(#arr)"/>
+<path d="M500,277 L500,295 L513,295" fill="none" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="515" y="246" width="150" height="28" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="525" y="263" font-size="12" font-weight="500" fill="#501313">main</text><text x="657" y="263" text-anchor="end" font-size="10.5" fill="#A32D2D">merge --no-ff + tag</text>
+<rect x="515" y="280" width="150" height="28" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="525" y="297" font-size="12" font-weight="500" fill="#042C53">develop</text><text x="657" y="297" text-anchor="end" font-size="10.5" fill="#185FA5">merge --no-ff</text>
+</g>
+
+<g>
+<rect x="16" y="341" width="110" height="32" rx="16" fill="#F1EFE8" stroke="#B4B2A9"/><text x="71" y="361" text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">hotfix</text>
+<path d="M128,357 L148,357" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="150" y="335" width="140" height="44" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="220" y="353" text-anchor="middle" font-size="13" font-weight="500" fill="#501313">main</text><text x="220" y="369" text-anchor="middle" font-size="11" fill="#A32D2D">fixo</text>
+<path d="M290,357 L328,357" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="330" y="335" width="150" height="44" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="405" y="353" text-anchor="middle" font-size="13" font-weight="500" fill="#26215C">hotfix/nome</text><text x="405" y="369" text-anchor="middle" font-size="11" fill="#534AB7">checkout -b</text>
+<path d="M480,357 L500,357 L500,339 L513,339" fill="none" stroke="#888780" marker-end="url(#arr)"/>
+<path d="M500,357 L500,375 L513,375" fill="none" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="515" y="326" width="150" height="28" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="525" y="343" font-size="12" font-weight="500" fill="#501313">main</text><text x="657" y="343" text-anchor="end" font-size="10.5" fill="#A32D2D">merge --no-ff + tag</text>
+<rect x="515" y="360" width="150" height="28" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="525" y="377" font-size="12" font-weight="500" fill="#042C53">develop</text><text x="657" y="377" text-anchor="end" font-size="10.5" fill="#185FA5">merge --no-ff</text>
+</g>
+
+<g>
+<rect x="16" y="421" width="110" height="32" rx="16" fill="#F1EFE8" stroke="#B4B2A9"/><text x="71" y="441" text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">support</text>
+<path d="M128,437 L148,437" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="150" y="415" width="140" height="44" rx="4" fill="#FAEEDA" stroke="#854F0B"/><text x="220" y="433" text-anchor="middle" font-size="13" font-weight="500" fill="#412402">tag (produção)</text><text x="220" y="449" text-anchor="middle" font-size="11" fill="#854F0B">escolher (obrigatório)</text>
+<path d="M290,437 L328,437" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="330" y="415" width="150" height="44" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="405" y="433" text-anchor="middle" font-size="13" font-weight="500" fill="#26215C">support/nome</text><text x="405" y="449" text-anchor="middle" font-size="11" fill="#534AB7">checkout -b</text>
+<path d="M480,437 L513,437" stroke="#888780" marker-end="url(#arr)"/>
+<rect x="515" y="415" width="150" height="44" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="590" y="433" text-anchor="middle" font-size="13" font-weight="500" fill="#501313">main</text><text x="590" y="449" text-anchor="middle" font-size="11" fill="#A32D2D">merge --no-ff (sem tag)</text>
+</g>
+
+</svg>

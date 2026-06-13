@@ -96,8 +96,8 @@ C:\GitExtensions\ZimerfeldTree\
 
 > Detalhes controle-a-controle: [[Interface ZimerfeldTree — botões e fluxos]] · [[Interface GitFlow — botões e fluxos]] · [[Interface Restore — botões e fluxos]].
 
-![[ScreenshotGitFlow.png]]
-![[ScreenshotRestore.png]]
+![[ScreenShots/ScreenshotGitFlow.png]]
+![[ScreenShots/ScreenshotRestore.png]]
 
 ## 🔄 Comandos GitFlow → git puro
 
@@ -214,25 +214,25 @@ O `build.ps1`: (1) lê e incrementa `<version>` no nuspec; (2) sincroniza `<Vers
 
 Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
 
-![[ScreenshotBuild.png]]
+![[ScreenShots/ScreenshotBuild.png]]
 
 Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
 
-![[ScreenshotNoBuild.png]]
+![[ScreenShots/ScreenshotNoBuild.png]]
 
 **Instalação manual:** copiar `GitExtensions.Plugins.ZimerfeldTree.dll` para `C:\Program Files\GitExtensions\Plugins\` e reiniciar o GitExtensions.
 
 `tools\install.ps1` (como Admin):
 
-![[ScreenshotInstall.png]]
+![[ScreenShots/ScreenshotInstall.png]]
 
 **Desinstalação:** deletar essa DLL (não afeta o GitExtensions). Via `tools\uninstall.ps1`:
 
-![[ScreenshotUninstall.png]]
+![[ScreenShots/ScreenshotUninstall.png]]
 
 **Atualizar só a DLL:** `tools\update-dll.ps1` (como Admin) — copia a DLL recém-buildada para `Plugins\` sem reinstalar:
 
-![[ScreenshotUpdate.png]]
+![[ScreenShots/ScreenshotUpdate.png]]
 
 ## ⛔ Limitações de hierarquia de branches
 - **Agrupamento é por nome (`/`), não por parentesco de commits** para o eixo de pastas — `master` e `develop` aparecem como irmãos; para aninhar por nome use `/`.

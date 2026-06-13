@@ -11,7 +11,7 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 > [!abstract] Resumo
 > Janela **modal** (`RestoreForm`) que dirige operações de restauração de histórico git: restaurar arquivo de commit, cherry-pick e reset de branch. Acessível via botão **Restore** (antes "Voltar Versão") da [[Interface ZimerfeldTree — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
-![[ScreenshotRestore.png]]
+![[ScreenShots/ScreenshotRestore.png]]
 
 ## 🧭 Layout
 - **Header** — `HEAD: <ref simbólico>` + link **"About Restore"** (canto superior direito).

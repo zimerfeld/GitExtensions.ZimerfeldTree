@@ -11,10 +11,10 @@
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
 <<<<<<< HEAD
-    <Version>1.0.244</Version>
+    <Version>1.0.305</Version>
 =======
-    <Version>1.0.240</Version>
->>>>>>> d084903674607b3b5992922a26197ba758a0851d
+    <Version>1.0.311</Version>
+>>>>>>> 6aba1aee19b63d7d2fb25f5976aa98655fd234a7
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -57,6 +57,9 @@
     <EmbeddedResource Include="Resources\feature.png" Condition="Exists('Resources\feature.png')" />
     <EmbeddedResource Include="Resources\folha.png" Condition="Exists('Resources\folha.png')" />
     <EmbeddedResource Include="Resources\release.png" Condition="Exists('Resources\release.png')" />
+    <EmbeddedResource Include="Resources\bugfix.png"  Condition="Exists('Resources\bugfix.png')" />
+    <EmbeddedResource Include="Resources\hotfix.png"  Condition="Exists('Resources\hotfix.png')" />
+    <EmbeddedResource Include="Resources\support.png" Condition="Exists('Resources\support.png')" />
     <EmbeddedResource Include="Resources\local.png"   Condition="Exists('Resources\local.png')" />
     <EmbeddedResource Include="Resources\remotes.png" Condition="Exists('Resources\remotes.png')" />
     <EmbeddedResource Include="Resources\tags.png"    Condition="Exists('Resources\tags.png')" />
@@ -71,23 +74,57 @@
     <EmbeddedResource Include="Resources\ctx-rename.png"     Condition="Exists('Resources\ctx-rename.png')" />
     <EmbeddedResource Include="Resources\ctx-delete.png"     Condition="Exists('Resources\ctx-delete.png')" />
     <EmbeddedResource Include="Resources\ctx-gitflow.png"    Condition="Exists('Resources\ctx-gitflow.png')" />
+    <EmbeddedResource Include="Resources\ctx-restore.png"    Condition="Exists('Resources\ctx-restore.png')" />
     <EmbeddedResource Include="Resources\ctx-expand.png"     Condition="Exists('Resources\ctx-expand.png')" />
     <EmbeddedResource Include="Resources\ctx-collapse.png"   Condition="Exists('Resources\ctx-collapse.png')" />
     <EmbeddedResource Include="Resources\ctx-refresh.png"    Condition="Exists('Resources\ctx-refresh.png')" />
+    <!-- GitHub Sponsors badge shown in the top banner of every window (clickable → sponsors page).
+         Raster copy of the shields.io "for-the-badge" SVG, baked to PNG since WinForms cannot
+         render SVG natively. -->
+    <EmbeddedResource Include="Resources\sponsor-badge.png"  Condition="Exists('Resources\sponsor-badge.png')" />
+    <!-- Language dictionaries (one JSON file per window per language). Loaded at runtime by
+         I18n via GetManifestResourceStream("GitExtensions.ZimerfeldTree.Resources.<file>").
+         WithCulture=false + explicit LogicalName stop MSBuild from reading the ".en-US"/".pt-BR"
+         infix as a culture (which would divert these into satellite assemblies). -->
+    <EmbeddedResource Include="Resources\ZimerfeldTree.pt-BR.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.pt-BR.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldTree.en-US.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldGitFlow.pt-BR.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.pt-BR.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldGitFlow.en-US.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldRestore.pt-BR.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.pt-BR.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldRestore.en-US.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.en-US.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Reference GitExtensions DLLs directly — they must NOT be copied to output -->
+    <!--
+      GitExtensions.Extensibility (NuGet) provides the MSBuild targets that:
+        • resolve $(GitExtensionsPath) (default: ..\..\gitextensions.shared, relative to the
+          project) — that folder already holds the GitExtensions 6.0.5 binaries, so the
+          prebuild "download GitExtensions" step is skipped (it only runs if
+          $(GitExtensionsPath)\GitExtensions.exe is missing);
+        • auto-deploy the built plugin to $(GitExtensionsPath)\UserPlugins\<project> on build.
+      The package ships no reference assembly, so the host DLLs are referenced below via
+      $(GitExtensionsPath) instead of a hardcoded C:\Program Files\GitExtensions path.
+      Note: this does NOT add a package dependency to the .nupkg under `nuget pack <nuspec>`
+      (the <dependency> marker stays in the .nuspec); it would auto-generate under `dotnet pack`.
+    -->
+    <PackageReference Include="GitExtensions.Extensibility" Version="0.4.0.111" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Only used on a fresh clone that lacks gitextensions.shared: which GitExtensions
+         release the prebuild step would download from GitHub. -->
+    <GitExtensionsReferenceVersion>v6.0.5</GitExtensionsReferenceVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Host DLLs from the GitExtensions binaries ($(GitExtensionsPath)) — compile-time
+         only (Private=false), never copied to output or shipped in the package. -->
     <Reference Include="GitExtensions.Extensibility">
-      <HintPath>C:\Program Files\GitExtensions\GitExtensions.Extensibility.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="GitUIPluginInterfaces">
-      <HintPath>C:\Program Files\GitExtensions\GitUIPluginInterfaces.dll</HintPath>
+      <HintPath>$(GitExtensionsPath)\GitExtensions.Extensibility.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="System.ComponentModel.Composition">
-      <HintPath>C:\Program Files\GitExtensions\System.ComponentModel.Composition.dll</HintPath>
+      <HintPath>$(GitExtensionsPath)\System.ComponentModel.Composition.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

@@ -17,10 +17,10 @@
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
 <<<<<<< HEAD
-    <version>1.0.244</version>
+    <version>1.0.305</version>
 =======
-    <version>1.0.240</version>
->>>>>>> d084903674607b3b5992922a26197ba758a0851d
+    <version>1.0.311</version>
+>>>>>>> 6aba1aee19b63d7d2fb25f5976aa98655fd234a7
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -52,6 +52,9 @@ Features:
     <!-- ── Project metadata ──────────────────────────────────────────── -->
     <projectUrl>https://github.com/zimerfeld/ZimerfeldTree</projectUrl>
     <readme>README.md</readme>
+    <!-- Embedded package icon shown on nuget.org (128x128 PNG recommended).
+         iconUrl is deprecated and no longer displayed by nuget.org. -->
+    <icon>icon.png</icon>
     <tags>gitextensions plugin branch tree hierarchy git</tags>
     <copyright>Copyright © 2026 Zimerfeld</copyright>
     <language>pt-BR</language>
@@ -59,11 +62,16 @@ Features:
     <releaseNotes>
 1.0.18 — Initial public release.
     </releaseNotes>
-    <!-- Compatibility metadata used by the GitExtensions Plugin Manager -->
+    <!-- ── GitExtensions plugin marker ───────────────────────────────────
+         The GitExtensions Plugin Manager filters the nuget.org feed to packages
+         that DEPEND on GitExtensions.Extensibility — without this the package is
+         published but never appears in the in-app Plugin Manager.
+         The version is the MINIMUM GitExtensions (Extensibility) required. No 6.x
+         Extensibility is published on nuget, so 1.0.0.129 (the highest published
+         version <= the installed GitExtensions 6.0.5) keeps it compatible with 6.x.
+         Raise this only if the Plugin Manager shows the package as "Not compatible". -->
     <dependencies>
-      <group targetFramework="net9.0">
-        <dependency id="GitExtensions.Extensibility" version="[7.0.0, 7.1.0)" />
-      </group>
+      <dependency id="GitExtensions.Extensibility" version="1.0.0.129" />
     </dependencies>
   </metadata>
   <!-- ── Package contents ───────────────────────────────────────────────── -->
@@ -78,7 +86,15 @@ Features:
     They also work standalone: cd tools && .\install.ps1
   -->
   <files>
-    <!-- Compiled plugin DLL (copied to tools\ by build.ps1 before packing) -->
+    <!-- Plugin DLL in lib\ ROOT (no framework subfolder) — REQUIRED, and intentional.
+         The GitExtensions Plugin Manager only extracts a lib group whose target framework
+         is in its moniker list: { net5.0..net10.0, any, netstandard2.0 } (see
+         gitextensions.pluginmanager Plugin.cs FrameworkMonikers). A DLL in lib\ root is the
+         "any" group → matched. A lib\net9.0-windows\ subfolder is NOT in that list → the DLL
+         would NOT be extracted and the plugin would fail to install. So the NU5101 pack
+         warning ("place under a framework-specific folder") MUST be ignored here. -->
+    <file src="..\..\tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll" target="lib\" />
+    <!-- Same DLL under tools\ for the legacy Package Manager Console install (install.ps1) -->
     <file src="..\..\tools\net9.0-windows\GitExtensions.Plugins.ZimerfeldTree.dll" target="tools\net9.0-windows\" />
     <!-- Package Manager Console automation scripts -->
     <file src="..\..\tools\install.ps1" target="tools\" />
@@ -87,5 +103,9 @@ Features:
     <file src="..\..\LICENSE.txt" target="" />
     <!-- README displayed on nuget.org / local NuGet feeds -->
     <file src="..\..\README.md" target="" />
+    <file src="..\..\README.pt-BR.md" target="" />
+    <file src="..\..\README.en-US.md" target="" />
+    <!-- Package icon shown on nuget.org (must match <icon> above) -->
+    <file src="Resources\icon-128.png" target="icon.png" />
   </files>
 </package>

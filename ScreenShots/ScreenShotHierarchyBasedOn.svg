@@ -1,0 +1,86 @@
+<svg viewBox="0 0 780 452" width="780" height="452" xmlns="http://www.w3.org/2000/svg" role="img" font-family="Segoe UI, system-ui, sans-serif">
+<title>Como o based-on override e o commit vazio posicionam os nós na árvore</title>
+<desc>Três casos do Start: base develop/main com commit vazio, base feature custom com override JSON, e sem based-on.</desc>
+<defs>
+<marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#73726c"/></marker>
+</defs>
+<rect x="0" y="0" width="780" height="452" fill="#ffffff"/>
+
+<text x="16" y="22" font-size="13" fill="#5F5E5A">git guarda apenas o commit-tip de cada branch, não a origem — daí os truques abaixo para aninhar o novo nó.</text>
+
+<g>
+<rect x="16" y="38" width="236" height="30" rx="6" fill="#EEEDFE" stroke="#534AB7"/><text x="134" y="58" text-anchor="middle" font-size="13" font-weight="500" fill="#26215C">commit vazio</text>
+<text x="134" y="86" text-anchor="middle" font-size="12" fill="#444441">base = develop / main · based-on [x]</text>
+
+<line x1="48" y1="150" x2="170" y2="150" stroke="#888780" stroke-width="2"/>
+<circle cx="48" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<circle cx="109" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<circle cx="170" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<line x1="170" y1="150" x2="210" y2="118" stroke="#534AB7" stroke-width="2"/>
+<circle cx="210" cy="118" r="7" fill="#CECBF6" stroke="#534AB7" stroke-dasharray="3 2"/>
+<text x="40" y="174" font-size="11" fill="#185FA5">develop (tip D)</text>
+<text x="226" y="114" font-size="11" fill="#534AB7">feature/x</text>
+<text x="226" y="128" font-size="10.5" fill="#888780">E = commit vazio</text>
+
+<rect x="16" y="196" width="236" height="34" rx="4" fill="#F1EFE8" stroke="#B4B2A9"/><text x="134" y="211" text-anchor="middle" font-size="11.5" fill="#2C2C2A">git commit --allow-empty</text><text x="134" y="225" text-anchor="middle" font-size="10.5" fill="#5F5E5A">tip diverge, ancestralidade real</text>
+</g>
+
+<g>
+<rect x="272" y="38" width="236" height="30" rx="6" fill="#FAEEDA" stroke="#854F0B"/><text x="390" y="58" text-anchor="middle" font-size="13" font-weight="500" fill="#412402">based-on override</text>
+<text x="390" y="86" text-anchor="middle" font-size="12" fill="#444441">base = feature/* (custom) · based-on [x]</text>
+
+<line x1="320" y1="150" x2="442" y2="150" stroke="#888780" stroke-width="2"/>
+<circle cx="320" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<circle cx="381" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<circle cx="442" cy="150" r="9" fill="#CECBF6" stroke="#534AB7"/>
+<text x="300" y="174" font-size="11" fill="#534AB7">feature/a (tip A)</text>
+<text x="458" y="146" font-size="11" fill="#534AB7">feature/b</text>
+<text x="458" y="160" font-size="10.5" fill="#888780">mesmo commit A</text>
+
+<rect x="272" y="196" width="236" height="34" rx="4" fill="#FAEEDA" stroke="#854F0B"/><text x="390" y="211" text-anchor="middle" font-size="11.5" fill="#412402">.git/zimerfeld-basedon.json</text><text x="390" y="225" text-anchor="middle" font-size="10.5" fill="#854F0B">link visual, sem commit, história limpa</text>
+</g>
+
+<g>
+<rect x="528" y="38" width="236" height="30" rx="6" fill="#E6F1FB" stroke="#185FA5"/><text x="646" y="58" text-anchor="middle" font-size="13" font-weight="500" fill="#042C53">regra GitFlow / path</text>
+<text x="646" y="86" text-anchor="middle" font-size="12" fill="#444441">sem based-on [ ]</text>
+
+<line x1="576" y1="150" x2="698" y2="150" stroke="#888780" stroke-width="2"/>
+<circle cx="576" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<circle cx="637" cy="150" r="7" fill="#D3D1C7" stroke="#5F5E5A"/>
+<circle cx="698" cy="150" r="9" fill="#CECBF6" stroke="#534AB7"/>
+<text x="556" y="174" font-size="11" fill="#185FA5">develop (tip D)</text>
+<text x="690" y="134" font-size="11" fill="#534AB7">feature/y</text>
+
+<rect x="528" y="196" width="236" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="646" y="211" text-anchor="middle" font-size="11.5" fill="#042C53">checkout -b (sem truque)</text><text x="646" y="225" text-anchor="middle" font-size="10.5" fill="#185FA5">aninha por regra GitFlow + prefixo</text>
+</g>
+
+<line x1="134" y1="240" x2="134" y2="272" stroke="#888780" marker-end="url(#ah)"/>
+<line x1="390" y1="240" x2="390" y2="272" stroke="#888780" marker-end="url(#ah)"/>
+<line x1="646" y1="240" x2="646" y2="272" stroke="#888780" marker-end="url(#ah)"/>
+<text x="390" y="262" text-anchor="middle" font-size="11" fill="#5F5E5A" font-style="italic">árvore exibida na ZimerfeldTree</text>
+
+<g font-size="12.5">
+<rect x="16" y="284" width="236" height="92" rx="6" fill="#ffffff" stroke="#D3D1C7"/>
+<text x="36" y="312" fill="#185FA5">&#9656; develop</text>
+<line x1="44" y1="320" x2="44" y2="344" stroke="#B4B2A9"/><line x1="44" y1="344" x2="60" y2="344" stroke="#B4B2A9"/>
+<text x="66" y="348" fill="#26215C">feature/x</text>
+</g>
+<g font-size="12.5">
+<rect x="272" y="284" width="236" height="92" rx="6" fill="#ffffff" stroke="#D3D1C7"/>
+<text x="292" y="312" fill="#534AB7">&#9656; feature/a</text>
+<line x1="300" y1="320" x2="300" y2="344" stroke="#B4B2A9"/><line x1="300" y1="344" x2="316" y2="344" stroke="#B4B2A9"/>
+<text x="322" y="348" fill="#26215C">feature/b</text>
+</g>
+<g font-size="12.5">
+<rect x="528" y="284" width="236" height="92" rx="6" fill="#ffffff" stroke="#D3D1C7"/>
+<text x="548" y="308" fill="#185FA5">&#9656; develop</text>
+<line x1="556" y1="314" x2="556" y2="334" stroke="#B4B2A9"/><line x1="556" y1="334" x2="572" y2="334" stroke="#B4B2A9"/>
+<text x="578" y="338" fill="#5F5E5A">&#9656; feature</text>
+<line x1="586" y1="344" x2="586" y2="362" stroke="#B4B2A9"/><line x1="586" y1="362" x2="602" y2="362" stroke="#B4B2A9"/>
+<text x="608" y="366" fill="#26215C">y</text>
+</g>
+
+<line x1="16" y1="402" x2="764" y2="402" stroke="#D3D1C7"/>
+<text x="16" y="424" font-size="12" fill="#5F5E5A">No Finish, RebaseBasedOnOnFinish remove o link do branch finalizado e re-aponta os filhos para o branch destino,</text>
+<text x="16" y="442" font-size="12" fill="#5F5E5A">mantendo a árvore conectada. O override vive só em .git (por-repo, não versionado); BreakCycles evita A->B + B->A.</text>
+</svg>

@@ -1,0 +1,84 @@
+<svg viewBox="0 0 760 476" width="760" height="476" xmlns="http://www.w3.org/2000/svg" role="img" font-family="Segoe UI, system-ui, sans-serif">
+<title>Fluxo completo de comandos git do Start ao Finish, por tipo de branch</title>
+<desc>Sequência de comandos git para feature, bugfix, release, hotfix e support, do Start ao Finish com remote.</desc>
+<defs>
+<marker id="d" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 z" fill="#888780"/></marker>
+</defs>
+<rect x="0" y="0" width="760" height="476" fill="#ffffff"/>
+
+<g font-size="11" fill="#444441">
+<rect x="8" y="10" width="11" height="11" rx="3" fill="#EEEDFE" stroke="#534AB7"/><text x="24" y="20">Start</text>
+<rect x="66" y="10" width="11" height="11" rx="3" fill="#FCEBEB" stroke="#A32D2D"/><text x="82" y="20">main</text>
+<rect x="124" y="10" width="11" height="11" rx="3" fill="#E6F1FB" stroke="#185FA5"/><text x="140" y="20">develop</text>
+<rect x="202" y="10" width="11" height="11" rx="3" fill="#FAEEDA" stroke="#854F0B"/><text x="218" y="20">tag</text>
+<rect x="248" y="10" width="11" height="11" rx="3" fill="#EAF3DE" stroke="#3B6D11"/><text x="264" y="20">push</text>
+<rect x="300" y="10" width="11" height="11" rx="3" fill="#FAECE7" stroke="#993C1D"/><text x="316" y="20">apagar</text>
+<rect x="360" y="10" width="11" height="11" rx="3" fill="#F1EFE8" stroke="#B4B2A9"/><text x="376" y="20">fetch / opcional</text>
+</g>
+
+<g text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">
+<rect x="8" y="32" width="140" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9"/><text x="78" y="49">feature</text>
+<rect x="159" y="32" width="140" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9"/><text x="229" y="49">bugfix</text>
+<rect x="310" y="32" width="140" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9"/><text x="380" y="49">release</text>
+<rect x="461" y="32" width="140" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9"/><text x="531" y="49">hotfix</text>
+<rect x="612" y="32" width="140" height="26" rx="6" fill="#F1EFE8" stroke="#B4B2A9"/><text x="682" y="49">support</text>
+</g>
+
+<g text-anchor="middle">
+<line x1="78" y1="106" x2="78" y2="114" stroke="#888780" marker-end="url(#d)"/>
+<line x1="78" y1="148" x2="78" y2="156" stroke="#888780" marker-end="url(#d)"/>
+<line x1="78" y1="190" x2="78" y2="198" stroke="#888780" marker-end="url(#d)"/>
+<line x1="78" y1="232" x2="78" y2="240" stroke="#888780" marker-end="url(#d)"/>
+<rect x="8" y="72" width="140" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="78" y="87" font-size="10.5" font-weight="500" fill="#26215C">checkout -b</text><text x="78" y="100" font-size="9.5" fill="#534AB7">feature/x &lt;- develop</text>
+<rect x="8" y="114" width="140" height="34" rx="4" fill="#F1EFE8" stroke="#B4B2A9"/><text x="78" y="129" font-size="10.5" font-weight="500" fill="#2C2C2A">(opc) publish / update</text><text x="78" y="142" font-size="9.5" fill="#5F5E5A">push -u · merge develop</text>
+<rect x="8" y="156" width="140" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="78" y="171" font-size="10.5" font-weight="500" fill="#042C53">checkout + merge --no-ff</text><text x="78" y="184" font-size="9.5" fill="#185FA5">para develop | parent</text>
+<rect x="8" y="198" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="78" y="213" font-size="10.5" font-weight="500" fill="#4A1B0C">branch -d</text><text x="78" y="226" font-size="9.5" fill="#993C1D">feature/x</text>
+<rect x="8" y="240" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="78" y="255" font-size="10.5" font-weight="500" fill="#4A1B0C">push --delete</text><text x="78" y="268" font-size="9.5" fill="#993C1D">origin feature/x</text>
+
+<line x1="229" y1="106" x2="229" y2="114" stroke="#888780" marker-end="url(#d)"/>
+<line x1="229" y1="148" x2="229" y2="156" stroke="#888780" marker-end="url(#d)"/>
+<line x1="229" y1="190" x2="229" y2="198" stroke="#888780" marker-end="url(#d)"/>
+<rect x="159" y="72" width="140" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="229" y="87" font-size="10.5" font-weight="500" fill="#26215C">checkout -b</text><text x="229" y="100" font-size="9.5" fill="#534AB7">bugfix/x &lt;- release/*</text>
+<rect x="159" y="114" width="140" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="229" y="129" font-size="10.5" font-weight="500" fill="#042C53">checkout + merge --no-ff</text><text x="229" y="142" font-size="9.5" fill="#185FA5">para develop | parent</text>
+<rect x="159" y="156" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="229" y="171" font-size="10.5" font-weight="500" fill="#4A1B0C">branch -d</text><text x="229" y="184" font-size="9.5" fill="#993C1D">bugfix/x</text>
+<rect x="159" y="198" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="229" y="213" font-size="10.5" font-weight="500" fill="#4A1B0C">push --delete</text><text x="229" y="226" font-size="9.5" fill="#993C1D">origin bugfix/x</text>
+
+<line x1="380" y1="106" x2="380" y2="114" stroke="#888780" marker-end="url(#d)"/>
+<line x1="380" y1="148" x2="380" y2="156" stroke="#888780" marker-end="url(#d)"/>
+<line x1="380" y1="190" x2="380" y2="198" stroke="#888780" marker-end="url(#d)"/>
+<line x1="380" y1="232" x2="380" y2="240" stroke="#888780" marker-end="url(#d)"/>
+<line x1="380" y1="274" x2="380" y2="282" stroke="#888780" marker-end="url(#d)"/>
+<line x1="380" y1="316" x2="380" y2="324" stroke="#888780" marker-end="url(#d)"/>
+<line x1="380" y1="358" x2="380" y2="366" stroke="#888780" marker-end="url(#d)"/>
+<rect x="310" y="72" width="140" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="380" y="87" font-size="10.5" font-weight="500" fill="#26215C">checkout -b</text><text x="380" y="100" font-size="9.5" fill="#534AB7">release/2026 &lt;- develop</text>
+<rect x="310" y="114" width="140" height="34" rx="4" fill="#F1EFE8" stroke="#B4B2A9"/><text x="380" y="129" font-size="10.5" font-weight="500" fill="#2C2C2A">fetch origin</text><text x="380" y="142" font-size="9.5" fill="#5F5E5A">se não "No fetch"</text>
+<rect x="310" y="156" width="140" height="34" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="380" y="171" font-size="10.5" font-weight="500" fill="#501313">checkout main</text><text x="380" y="184" font-size="9.5" fill="#A32D2D">merge --no-ff release</text>
+<rect x="310" y="198" width="140" height="34" rx="4" fill="#FAEEDA" stroke="#854F0B"/><text x="380" y="213" font-size="10.5" font-weight="500" fill="#412402">tag -a 2026</text><text x="380" y="226" font-size="9.5" fill="#854F0B">-m "2026"</text>
+<rect x="310" y="240" width="140" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="380" y="255" font-size="10.5" font-weight="500" fill="#042C53">checkout develop</text><text x="380" y="268" font-size="9.5" fill="#185FA5">merge --no-ff release</text>
+<rect x="310" y="282" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="380" y="297" font-size="10.5" font-weight="500" fill="#4A1B0C">branch -d · push --delete</text><text x="380" y="310" font-size="9.5" fill="#993C1D">release/2026 (se não Keep)</text>
+<rect x="310" y="324" width="140" height="34" rx="4" fill="#EAF3DE" stroke="#3B6D11"/><text x="380" y="339" font-size="10.5" font-weight="500" fill="#173404">push origin</text><text x="380" y="352" font-size="9.5" fill="#3B6D11">main · develop · tag</text>
+<rect x="310" y="366" width="140" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="380" y="381" font-size="10.5" font-weight="500" fill="#042C53">checkout develop</text><text x="380" y="394" font-size="9.5" fill="#185FA5">árvore foca a tag</text>
+
+<line x1="531" y1="106" x2="531" y2="114" stroke="#888780" marker-end="url(#d)"/>
+<line x1="531" y1="148" x2="531" y2="156" stroke="#888780" marker-end="url(#d)"/>
+<line x1="531" y1="190" x2="531" y2="198" stroke="#888780" marker-end="url(#d)"/>
+<line x1="531" y1="232" x2="531" y2="240" stroke="#888780" marker-end="url(#d)"/>
+<line x1="531" y1="274" x2="531" y2="282" stroke="#888780" marker-end="url(#d)"/>
+<rect x="461" y="72" width="140" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="531" y="87" font-size="10.5" font-weight="500" fill="#26215C">checkout -b</text><text x="531" y="100" font-size="9.5" fill="#534AB7">hotfix/x &lt;- main</text>
+<rect x="461" y="114" width="140" height="34" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="531" y="129" font-size="10.5" font-weight="500" fill="#501313">checkout main</text><text x="531" y="142" font-size="9.5" fill="#A32D2D">merge --no-ff hotfix</text>
+<rect x="461" y="156" width="140" height="34" rx="4" fill="#FAEEDA" stroke="#854F0B"/><text x="531" y="171" font-size="10.5" font-weight="500" fill="#412402">tag -a x</text><text x="531" y="184" font-size="9.5" fill="#854F0B">-m "x"</text>
+<rect x="461" y="198" width="140" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="531" y="213" font-size="10.5" font-weight="500" fill="#042C53">checkout develop</text><text x="531" y="226" font-size="9.5" fill="#185FA5">merge --no-ff hotfix</text>
+<rect x="461" y="240" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="531" y="255" font-size="10.5" font-weight="500" fill="#4A1B0C">branch -d</text><text x="531" y="268" font-size="9.5" fill="#993C1D">hotfix/x</text>
+<rect x="461" y="282" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="531" y="297" font-size="10.5" font-weight="500" fill="#4A1B0C">push --delete</text><text x="531" y="310" font-size="9.5" fill="#993C1D">origin hotfix/x</text>
+
+<line x1="682" y1="106" x2="682" y2="114" stroke="#888780" marker-end="url(#d)"/>
+<line x1="682" y1="148" x2="682" y2="156" stroke="#888780" marker-end="url(#d)"/>
+<line x1="682" y1="190" x2="682" y2="198" stroke="#888780" marker-end="url(#d)"/>
+<rect x="612" y="72" width="140" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="682" y="87" font-size="10.5" font-weight="500" fill="#26215C">checkout -b</text><text x="682" y="100" font-size="9.5" fill="#534AB7">support/x &lt;- tag</text>
+<rect x="612" y="114" width="140" height="34" rx="4" fill="#FCEBEB" stroke="#A32D2D"/><text x="682" y="129" font-size="10.5" font-weight="500" fill="#501313">checkout main</text><text x="682" y="142" font-size="9.5" fill="#A32D2D">merge --no-ff (sem tag)</text>
+<rect x="612" y="156" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="682" y="171" font-size="10.5" font-weight="500" fill="#4A1B0C">branch -d</text><text x="682" y="184" font-size="9.5" fill="#993C1D">support/x</text>
+<rect x="612" y="198" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="682" y="213" font-size="10.5" font-weight="500" fill="#4A1B0C">push --delete</text><text x="682" y="226" font-size="9.5" fill="#993C1D">origin support/x</text>
+</g>
+
+<text x="8" y="462" font-size="11" fill="#5F5E5A">Merge falho interrompe a sequência · "Keep branch" preserva local e remoto · "No fetch" omite o fetch inicial · só release publica main/develop/tag.</text>
+</svg>
