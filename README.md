@@ -8,11 +8,11 @@
 ![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)
 [GitHub Sponsor](https://github.com/sponsors/zimerfeld)
 
-**Version:** 1.0.304  
-**Updated:** 2026-06-12
+**Version:** 1.0.305  
+**Updated:** 2026-06-13
 
-**Versão:** 1.0.304  
-**Atualizado em:** 2026-06-12
+**Versão:** 1.0.305  
+**Atualizado em:** 2026-06-13
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
