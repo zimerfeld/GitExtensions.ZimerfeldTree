@@ -11,7 +11,40 @@ fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 > [!abstract] Resumo
 > Janela **modal** (`GitFlowForm`) que dirige operações git flow usando **git puro** (sem depender do binário `git-flow`): iniciar feature/release/hotfix, publicar, rastrear, atualizar e finalizar. A saída dos comandos aparece numa caixa de texto com scroll automático. Aberta pelo botão/menu **GitFlow** da [[Interface ZimerfeldTree — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
-![[ScreenshotGitFlow.png]]
+![[ScreenShots/ScreenshotGitFlow.png]]
+
+## 🌳 Regras de Start e Finish por tipo
+
+Diagrama-resumo: para cada tipo, a **base do Start**, o **branch criado** e o **destino do merge no Finish**.
+
+![[ScreenShots/ScreenShotStartFinish.png]]
+
+| Tipo | Start — base | Finish — destino |
+| --- | --- | --- |
+| **feature** | `develop` ou `feature/*` (opcional) | `develop` ou pai based-on (`merge --no-ff`) |
+| **bugfix** | `release/*` (obrigatório) | `develop` ou pai (`merge --no-ff`) |
+| **release** | `develop` (fixo) | `main` (`merge --no-ff` + tag) + `develop`; push de main/develop/tag |
+| **hotfix** | `main` (fixo) | `main` (`merge --no-ff` + tag) + `develop` |
+| **support** | tag de produção (obrigatório) | só `main` (`merge --no-ff`, sem tag, sem develop) |
+
+> Comum a todo Finish: fetch opcional · apaga branch local e remoto (exceto **Keep**) · religa os filhos na árvore. Detalhes completos em [[#Botão Finish (`_btnFinish`) → `DoFinish` ⚠️ fluxo composto]].
+
+### Fluxo completo de comandos por tipo
+
+Sequência de comandos `git` de cada tipo, do Start ao Finish (com remote, sem No fetch):
+
+![[ScreenShots/ScreenShotFlowPerType.png]]
+
+### Posicionamento do nó na árvore (based-on)
+
+O git guarda só o commit-tip de cada branch, não a origem. O Start aninha o novo nó por um destes mecanismos:
+
+![[ScreenShots/ScreenShotHierarchyBasedOn.png]]
+
+- **commit vazio** (base develop/main + based-on): `git commit --allow-empty` → tip diverge → ancestralidade real
+- **based-on override** (base `feature/*` custom + based-on): grava `.git/zimerfeld-basedon.json` (link visual, história limpa)
+- **sem based-on**: `checkout -b` simples, aninha pela regra GitFlow + prefixo
+- Finish → `RebaseBasedOnOnFinish` remove o link e re-aponta os filhos para o destino. Ver código em `BranchHierarchyService.cs` (`SaveBasedOnOverride`, `ApplyBasedOnOverrides`, `BreakCycles`).
 
 ## 🧭 Layout
 - **Header** — `HEAD: <ref simbólico>` + link **"About GitFlow"**.

@@ -11,7 +11,7 @@ fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 > [!abstract] Resumo
 > Janela **não-modal** (`BranchHierarchyForm`) que mostra LOCAL / REMOTES / TAGS em árvore hierárquica e fica aberta ao lado do GitExtensions. Este documento descreve **cada controle** e **o passo a passo exato** de cada ação. Para a janela `git flow` ver [[Interface GitFlow — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
-![[ScreenshotBranchHierarchy.png]]
+![[ScreenShots/ScreenshotBranchHierarchy.png]]
 
 ## 🚪 Como a janela abre
 - Menu **Plugins → ZimerfeldTree** chama `ZimerfeldTreePlugin.Execute`.
@@ -98,7 +98,7 @@ Passos (com % no overlay):
 
 ### Botão GitFlow (`_btnGitFlowDedicated`) → `DoGitFlow`
 
-![[ScreenshotGitFlow.png]]
+![[ScreenShots/ScreenshotGitFlow.png]]
 
 1. Cria `GitFlowForm` (modal) e posiciona **lado a lado** com a ZimerfeldTree, ambas centralizadas (se a tela couber; senão centraliza sobre a janela).
 2. Assina `RepoMutated`: a cada mutação dentro do GitFlow, agenda revelar a branch afetada e chama `RefreshTree()` **por trás do modal** (sem roubar foco).
@@ -108,7 +108,7 @@ Passos (com % no overlay):
 
 ### Botão Restore (`_btnRestore`) → `DoRestore`
 
-![[ScreenshotRestore.png]]
+![[ScreenShots/ScreenshotRestore.png]]
 
 > Renomeado de **Voltar Versão** (`_btnVoltar`) para **Restore** (`_btnRestore`).
 
@@ -135,19 +135,19 @@ Valores dos campos são persistidos em `%APPDATA%\GitExtensions\ZimerfeldRestore
 
 1. Itens marcados — o botão mostra `Excluir (8)`:
 
-![[ScreenshotBeforeDelete.png]]
+![[ScreenShots/ScreenshotBeforeDelete.png]]
 
 2. Confirmação única listando os itens, com a opção **Excluir Remotamente?**:
 
-![[ScreenshotConfirmDelete.png]]
+![[ScreenShots/ScreenshotConfirmDelete.png]]
 
 3. Overlay de progresso durante a exclusão (lista de passos + botão **Abortar Operação**):
 
-![[ScreenshotDuringDelete.png]]
+![[ScreenShots/ScreenshotDuringDelete.png]]
 
 4. Árvore reconstruída já sem os itens e com contadores atualizados:
 
-![[ScreenshotAfterDelete.png]]
+![[ScreenShots/ScreenshotAfterDelete.png]]
 
 ### Checkbox "Modo Developer" (`_chkDeveloperMode`)
 1. Ao lado de `Show Debug` no rodapé. Estado persistido em `ZimerfeldTree.uisettings.json` (`developerMode`) via `SaveUiSettings()`, carregado por `LoadDeveloperMode()`.

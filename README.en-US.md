@@ -9,7 +9,7 @@
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
-![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
 
 [English](README.en-US.md) | [Português](README.pt-BR.md)
 
@@ -80,19 +80,19 @@ Complete batch deletion flow:
 
 **1. Before - checked items** (button shows `Delete (8)`):
 
-![Before deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBeforeDelete.png)
+![Before deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBeforeDelete.png)
 
 **2. Single confirmation** listing every item, with the **Delete Remotely?** option:
 
-![Confirm deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotConfirmDelete.png)
+![Confirm deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotConfirmDelete.png)
 
 **3. During deletion** - progress overlay with the step list and **Abort Operation** button:
 
-![During deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotDuringDelete.png)
+![During deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotDuringDelete.png)
 
 **4. After** - the tree is rebuilt without the deleted items and with updated counters:
 
-![After deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotAfterDelete.png)
+![After deletion](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotAfterDelete.png)
 
 #### Main branch protection and Developer Mode
 
@@ -210,12 +210,40 @@ ZimerfeldTree/
 
 ### GitFlow window
 
-![GitFlow window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotGitFlow.png)
+![GitFlow window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotGitFlow.png)
 
 - Closing the GitFlow window re-centers BranchHierarchy and does not trigger an unnecessary refresh, except after finishing a release, when the tree reloads once to focus the new tag.
 - After a successful **Start**, the "Manage existing branches" panel is preselected with the new branch.
 - After any GitFlow action succeeds, the BranchHierarchy tree refreshes immediately while focus stays in GitFlow.
 - The affected branch is checked out and revealed in the LOCAL tree section.
+
+### Start and Finish rules per type
+
+The diagram summarizes, for each branch type, the **base used on Start**, the **branch created**, and the **merge target on Finish**:
+
+![Start and Finish rules per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)
+
+- **feature** — starts from `develop` (or another `feature/*`, optional); finishes into `develop` or the based-on parent
+- **bugfix** — starts from a `release/*` (required pick); finishes into `develop` or the parent
+- **release** — starts from `develop` (fixed base); finishes into `main` (`merge --no-ff` + tag) and `develop`, pushing main/develop/tag
+- **hotfix** — starts from `main` (fixed base); finishes into `main` (`merge --no-ff` + tag) and `develop`
+- **support** — starts from a production **tag** (required pick); finishes into `main` only, with no tag and without touching `develop`
+- Common to every Finish: optional fetch, deletion of the local and remote branch (unless **Keep**), and re-linking of children in the tree
+
+The full `git` command flow for each type, from Start to Finish:
+
+![Full Start to Finish flow per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png)
+
+### Hierarchy: how the node is positioned in the tree
+
+Git stores only each branch's tip commit, not its origin. To nest the new branch under its base, Start uses one of these mechanisms:
+
+![Hierarchy: empty commit and based-on override](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png)
+
+- **empty commit** (base = develop/main, based-on checked) — `git commit --allow-empty` makes the tip diverge; real ancestry nests the node
+- **based-on override** (base = custom `feature/*`, based-on checked) — writes `.git/zimerfeld-basedon.json` (purely visual link, clean history)
+- **GitFlow / path rule** (no based-on) — plain `checkout -b`; the node sits at the base tip and is grouped by the GitFlow rule + prefix
+- On Finish, `RebaseBasedOnOnFinish` removes the finished branch's link and re-points its children to the merge target, keeping the tree connected
 
 ### GitFlow window - base branch on Start
 
@@ -249,7 +277,7 @@ When a git command fails, the output is displayed in the window and a warning is
 
 ### Restore window
 
-![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotRestore.png)
+![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
 
 Opens from **Restore** and provides three operations to recover states from git history.
 
@@ -280,7 +308,7 @@ Opens from **Restore** and provides three operations to recover states from git 
 
 ### Restore window - general behavior
 
-![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotRestore.png)
+![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
 
 - Opens when clicking **Restore** in BranchHierarchy.
 - Keeps focus while BranchHierarchy refreshes in the background.
@@ -376,7 +404,7 @@ cd tools
 .\install.ps1
 ```
 
-![Installation via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotInstall.png)
+![Installation via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotInstall.png)
 
 Restart GitExtensions after installation.
 
@@ -403,7 +431,7 @@ cd tools
 .\uninstall.ps1
 ```
 
-![Uninstall via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUninstall.png)
+![Uninstall via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotUninstall.png)
 
 This removes the plugin DLL from the GitExtensions Plugins folder. GitExtensions itself is not affected.
 
@@ -416,7 +444,7 @@ cd tools
 .\update-dll.ps1
 ```
 
-![Update via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUpdate.png)
+![Update via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotUpdate.png)
 
 ## Build
 
@@ -436,11 +464,11 @@ The script:
 
 Successful build:
 
-![Successful build](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBuild.png)
+![Successful build](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBuild.png)
 
 Build with no changes:
 
-![Build with no changes](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotNoBuild.png)
+![Build with no changes](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotNoBuild.png)
 
 ## Branch hierarchy - limitations
 

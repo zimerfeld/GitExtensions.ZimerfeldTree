@@ -8,17 +8,29 @@
 ![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)
 [GitHub Sponsor](https://github.com/sponsors/zimerfeld)
 
-**Version:** 1.0.312  
+**Version:** 1.0.313  
 **Updated:** 2026-06-13
 
-**Versão:** 1.0.312  
+**Versão:** 1.0.313  
 **Atualizado em:** 2026-06-13
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches em uma arvore hierarquica e disponibiliza o uso da metodologia GitFlow de maneira visual muito fácil, intuitiva e agradável de aplicar em projetos de qualquer tamanho.
 
-![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
+
+GitFlow — Start and Finish rules per branch type / Regras de Start e Finish por tipo de branch:
+
+![Start and Finish rules per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)
+
+Full command flow per type / Fluxo completo de comandos por tipo:
+
+![Full Start to Finish flow per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png)
+
+Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore — commit vazio vs based-on override:
+
+![Hierarchy: empty commit and based-on override](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png)
 
 ## Languages / Idiomas
 

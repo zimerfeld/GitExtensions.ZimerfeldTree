@@ -9,7 +9,7 @@
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
 
 [English](README.en-US.md) | [Português](README.pt-BR.md)
 
@@ -84,19 +84,19 @@ O fluxo completo de exclusão em lote:
 
 **1. Antes — itens marcados** (botão mostra `Excluir (8)`):
 
-![Antes da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBeforeDelete.png)
+![Antes da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBeforeDelete.png)
 
 **2. Confirmação única** listando todos os itens, com a opção **Excluir Remotamente?**:
 
-![Confirmar exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotConfirmDelete.png)
+![Confirmar exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotConfirmDelete.png)
 
 **3. Durante a exclusão** — overlay de progresso com a lista de passos e o botão **Abortar Operação**:
 
-![Durante a exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotDuringDelete.png)
+![Durante a exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotDuringDelete.png)
 
 **4. Depois** — a árvore é reconstruída já sem os itens excluídos e com os contadores atualizados:
 
-![Depois da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotAfterDelete.png)
+![Depois da exclusão](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotAfterDelete.png)
 
 #### Proteção de branches principais e "Modo Developer"
 
@@ -221,13 +221,41 @@ ZimerfeldTree/
 
 ### Janela GitFlow
 
-![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotGitFlow.png)
+![Janela GitFlow](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotGitFlow.png)
 
 - Ao fechar a janela GitFlow, a janela BranchHierarchy é reposicionada automaticamente ao **centro da tela**. O fechamento **não** dispara um novo refresh (a árvore já foi atualizada ao vivo) — exceto após um **Finish de release**, em que a árvore é recarregada uma vez para focar a nova **tag**. O GitExtensions **não** é trazido para frente ao fechar
 - Após um **Start** bem-sucedido, o painel "Manage existing branches" é pré-selecionado automaticamente no mesmo **Type** e na branch recém-criada — válido para feature, release, hotfix, bugfix e support
 - Após **qualquer botão** da janela GitFlow (Start, Publish, Track, Update, Finish) concluir com sucesso, a árvore da janela BranchHierarchy é **atualizada imediatamente** (mesmo com a janela GitFlow ainda aberta) e o **foco permanece na janela GitFlow** — o refresh roda por trás do diálogo modal sem roubar o foco
 - **Checkout + revelar a branch afetada**: após cada botão, o plugin faz `git checkout` da branch afetada e, na árvore, **expande os nós da seção LOCAL até alcançá-la** e a seleciona. Para **Start/Publish/Track/Update** a branch afetada é a própria (`<prefixo><nome>`); para **Finish** (a branch é removida) o plugin revela a branch resultante atual (ex.: `develop`), sem refazer checkout
 - O painel **Resultado** exibe a saída de cada comando `git` em fonte monoespaçada, com fundo bege (`#EFEBD8`) idêntico ao do console nativo do GitExtensions (janelas Push/Fetch)
+
+### Regras de Start e Finish por tipo
+
+O diagrama resume, para cada tipo de branch, a **base usada no Start**, o **branch criado** e o **destino do merge no Finish**:
+
+![Regras de Start e Finish por tipo](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)
+
+- **feature** — nasce de `develop` (ou de outra `feature/*`, opcional); finaliza em `develop` ou no branch pai (based-on)
+- **bugfix** — nasce de uma `release/*` (escolha obrigatória); finaliza em `develop` ou no pai
+- **release** — nasce de `develop` (base fixa); finaliza em `main` (`merge --no-ff` + tag) e em `develop`, com push de main/develop/tag
+- **hotfix** — nasce de `main` (base fixa); finaliza em `main` (`merge --no-ff` + tag) e em `develop`
+- **support** — nasce de uma **tag** de produção (escolha obrigatória); finaliza apenas em `main`, sem tag e sem tocar em `develop`
+- Comum a todo Finish: fetch opcional, exclusão do branch local e remoto (exceto **Keep**) e religação dos filhos na árvore
+
+O fluxo completo de comandos `git` de cada tipo, do Start ao Finish:
+
+![Fluxo completo Start a Finish por tipo](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png)
+
+### Hierarquia: como o nó é posicionado na árvore
+
+O git guarda apenas o commit-tip de cada branch, não a origem. Para aninhar o novo branch sob a base, o Start usa um destes mecanismos:
+
+![Hierarquia: commit vazio e based-on override](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png)
+
+- **commit vazio** (base = develop/main, based-on marcado) — `git commit --allow-empty` faz o tip divergir; a ancestralidade real aninha o nó
+- **based-on override** (base = `feature/*` custom, based-on marcado) — grava `.git/zimerfeld-basedon.json` (link puramente visual, história limpa)
+- **regra GitFlow / path** (sem based-on) — `checkout -b` simples; o nó fica no tip da base e é agrupado pela regra GitFlow + prefixo
+- No Finish, `RebaseBasedOnOnFinish` remove o link do branch finalizado e re-aponta os filhos para o branch destino, mantendo a árvore conectada
 
 ### Janela GitFlow — branch base no Start
 
@@ -282,7 +310,7 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotRestore.png)
+![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
 
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de BranchHierarchy, com três operações para resgatar estados do histórico git:
 
@@ -441,7 +469,7 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\install.ps1
 ```
 
-![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotInstall.png)
+![Instalação via install.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotInstall.png)
 
 > O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
@@ -464,7 +492,7 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\uninstall.ps1
 ```
 
-![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUninstall.png)
+![Desinstalação via uninstall.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotUninstall.png)
 
 > O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
@@ -487,7 +515,7 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 .\update-dll.ps1
 ```
 
-![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotUpdate.png)
+![Atualização via update-dll.ps1](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotUpdate.png)
 
 > O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
@@ -513,11 +541,11 @@ O script:
 
 Build concluído com sucesso (versão incrementada, DLL copiada e `.nupkg` gerado):
 
-![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBuild.png)
+![Build bem-sucedido](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBuild.png)
 
 Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão e ignora build/pack:
 
-![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotNoBuild.png)
+![Build sem mudanças](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotNoBuild.png)
 
 ---
 
