@@ -2259,8 +2259,11 @@ public sealed class BranchHierarchyForm : Form
             b.Location = new Point(x, y);
             x += w + gap;
         }
-        // Absorb integer-division rounding into the last button so the row ends flush at the right margin.
-        _btnRestore.Width = _gitFlowButtonPanel.Width - margin - _btnRestore.Left;
+        // Absorb integer-division rounding into the last button so the row ends flush at the right edge.
+        // Use a 4 px right margin (not `margin`) so btnRestore's right edge lines up with
+        // btnRefresh and btnGitFlow, both of which sit 4 px from the panel's right edge.
+        const int rightMargin = 4;
+        _btnRestore.Width = _gitFlowButtonPanel.Width - rightMargin - _btnRestore.Left;
     }
 
     private static void SetTooltipsRecursive(Control parent, ToolTip tip)
