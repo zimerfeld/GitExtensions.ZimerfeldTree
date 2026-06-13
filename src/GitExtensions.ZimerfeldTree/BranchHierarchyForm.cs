@@ -723,7 +723,7 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildTreeView()
     {
-        _tree = new TreeView
+        _tree = new GatedTreeView
         {
             Name          = "tree",
             Dock          = DockStyle.Fill,
@@ -1860,6 +1860,54 @@ public sealed class BranchHierarchyForm : Form
             state     = 0,
         };
         SendMessage(_tree.Handle, TVM_SETITEM, IntPtr.Zero, ref tvi);
+    }
+
+    /// <summary>
+    /// TreeView that swallows a left double-click landing on the checkbox glyph. WinForms otherwise
+    /// desyncs the checkbox visual from <see cref="TreeNode.Checked"/> when the checkbox is
+    /// double-clicked — the second click toggles it without raising <c>BeforeCheck</c>, so a protected
+    /// branch could *appear* checked even though the single-click gate (<c>Tree_BeforeCheck</c>)
+    /// blocked it. Eating the double-click leaves the gated single-click path as the only way to
+    /// toggle a checkbox; double-clicking the label still checks out (it never reaches here).
+    /// </summary>
+    private sealed class GatedTreeView : TreeView
+    {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TVHITTESTINFO
+        {
+            public int    pt_x;
+            public int    pt_y;
+            public int    flags;
+            public IntPtr hItem;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, ref TVHITTESTINFO lParam);
+
+        private const int WM_LBUTTONDBLCLK     = 0x0203;
+        private const int TVM_HITTEST          = 0x1100 + 17;
+        private const int TVHT_ONITEMSTATEICON = 0x0008;   // hit landed on the checkbox/state image
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == WM_LBUTTONDBLCLK && IsOnCheckBox(m.LParam))
+            {
+                m.Result = IntPtr.Zero;   // eat it: no checkbox toggle, no visual/Checked desync
+                return;
+            }
+            base.WndProc(ref m);
+        }
+
+        private bool IsOnCheckBox(IntPtr lParam)
+        {
+            var hit = new TVHITTESTINFO
+            {
+                pt_x = unchecked((short)(long)lParam),          // client x = low word of lParam
+                pt_y = unchecked((short)((long)lParam >> 16)),  // client y = high word of lParam
+            };
+            SendMessage(Handle, TVM_HITTEST, IntPtr.Zero, ref hit);
+            return (hit.flags & TVHT_ONITEMSTATEICON) != 0;
+        }
     }
 
     /// <summary>Hides the checkbox on every non-leaf node; branch/tag leaves keep theirs.</summary>
