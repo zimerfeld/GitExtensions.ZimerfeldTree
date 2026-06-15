@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.315</Version>
+    <Version>1.0.318</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -78,6 +78,8 @@
          Raster copy of the shields.io "for-the-badge" SVG, baked to PNG since WinForms cannot
          render SVG natively. -->
     <EmbeddedResource Include="Resources\sponsor-badge.png"  Condition="Exists('Resources\sponsor-badge.png')" />
+    <!-- Ko-fi "Buy me a coffee" badge, shown beside the sponsor badge. -->
+    <EmbeddedResource Include="Resources\kofi-badge.png"     Condition="Exists('Resources\kofi-badge.png')" />
     <!-- Language dictionaries (one JSON file per window per language). Loaded at runtime by
          I18n via GetManifestResourceStream("GitExtensions.ZimerfeldTree.Resources.<file>").
          WithCulture=false + explicit LogicalName stop MSBuild from reading the ".en-US"/".pt-BR"

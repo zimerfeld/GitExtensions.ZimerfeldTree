@@ -18,8 +18,14 @@ internal static class SponsorBanner
     private const string SponsorUrl    = "https://github.com/sponsors/zimerfeld";
     private const string BadgeResource = "GitExtensions.ZimerfeldTree.Resources.sponsor-badge.png";
 
+    private const string KofiUrl       = "https://ko-fi.com/C0D621FCGD";
+    private const string KofiResource  = "GitExtensions.ZimerfeldTree.Resources.kofi-badge.png";
+
     // Display size of the badge (its native aspect is 198×28).
     private static readonly Size BadgeSize = new(198, 28);
+
+    // Horizontal gap between the sponsor badge and the Ko-fi badge.
+    private const int BadgeGap = 12;
 
     private static readonly ToolTip Tip = new();
 
@@ -41,14 +47,30 @@ internal static class SponsorBanner
             SizeMode = PictureBoxSizeMode.Zoom,
             Cursor   = Cursors.Hand
         };
-        if (LoadBadge() is { } img) pic.Image = img;
+        if (LoadImage(BadgeResource) is { } img) pic.Image = img;
 
         // Only the badge itself opens the sponsors page — clicks on the surrounding panel do nothing.
-        void Open(object? _, EventArgs __) => OpenSponsors();
-        pic.Click += Open;
+        void OpenSponsor(object? _, EventArgs __) => OpenUrl(SponsorUrl);
+        pic.Click += OpenSponsor;
         Tip.SetToolTip(pic, SponsorUrl);
 
         panel.Controls.Add(pic);
+
+        // Ko-fi "Buy me a coffee" badge, same display size, sitting just to the right of the sponsor badge.
+        var picKofi = new PictureBox
+        {
+            Name     = "picKofi",
+            Size     = BadgeSize,
+            SizeMode = PictureBoxSizeMode.Zoom,
+            Cursor   = Cursors.Hand
+        };
+        if (LoadImage(KofiResource) is { } kofiImg) picKofi.Image = kofiImg;
+
+        void OpenKofi(object? _, EventArgs __) => OpenUrl(KofiUrl);
+        picKofi.Click += OpenKofi;
+        Tip.SetToolTip(picKofi, KofiUrl);
+
+        panel.Controls.Add(picKofi);
 
         if (aboutLink is not null)
         {
@@ -60,9 +82,15 @@ internal static class SponsorBanner
 
         void Layout()
         {
+            // Center the sponsor + Ko-fi badges as one group (badge | gap | badge).
+            int groupWidth = pic.Width + BadgeGap + picKofi.Width;
+            int startX = (panel.ClientSize.Width - groupWidth) / 2;
             pic.Location = new Point(
-                (panel.ClientSize.Width  - pic.Width)  / 2,
+                startX,
                 (panel.ClientSize.Height - pic.Height) / 2);
+            picKofi.Location = new Point(
+                startX + pic.Width + BadgeGap,
+                (panel.ClientSize.Height - picKofi.Height) / 2);
             if (aboutLink is not null)
                 // Right-aligned with an 8 px margin; AutoSize keeps the full text visible.
                 aboutLink.Location = new Point(
@@ -78,11 +106,11 @@ internal static class SponsorBanner
         return panel;
     }
 
-    private static Image? LoadBadge()
+    private static Image? LoadImage(string resourceName)
     {
         try
         {
-            using var s = typeof(SponsorBanner).Assembly.GetManifestResourceStream(BadgeResource);
+            using var s = typeof(SponsorBanner).Assembly.GetManifestResourceStream(resourceName);
             if (s is null) return null;
             using var tmp = new Bitmap(s);
             return new Bitmap(tmp);   // independent copy so the stream can be disposed safely
@@ -90,9 +118,9 @@ internal static class SponsorBanner
         catch { return null; }
     }
 
-    private static void OpenSponsors()
+    private static void OpenUrl(string url)
     {
-        try { Process.Start(new ProcessStartInfo { FileName = SponsorUrl, UseShellExecute = true }); }
+        try { Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }); }
         catch { /* opening the browser is best-effort */ }
     }
 }

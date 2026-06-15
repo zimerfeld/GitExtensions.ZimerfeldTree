@@ -1,3 +1,0 @@
-agora você é um especialista em engenharia de software e preciso que você crie um cofre de neurônios dentro do programa Obsidian, para que ele se torne sua memória. 
-essa é minha pasta: C:\NUGET\ZimerfeldTree\OBSIDIAN\CLAUDE
-tudo o que fizer a partir de agora salve dentro desse cofre. 

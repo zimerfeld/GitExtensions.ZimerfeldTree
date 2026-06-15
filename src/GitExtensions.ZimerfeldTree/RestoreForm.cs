@@ -82,7 +82,10 @@ public sealed class RestoreForm : Form
         _showControlIds = showControlIds;
 
         Text            = _t["title"];
-        Size            = new Size(560, 824 + SponsorBanner.PanelHeight);
+        // Width 700 (was 560): the top banner hosts the sponsor + Ko-fi badges (centered) and the
+        // "About Restore" link (right-aligned). At 560 the wider two-badge group overlapped the link;
+        // 700 leaves a comfortable gap between the badges and the link.
+        Size            = new Size(700, 824 + SponsorBanner.PanelHeight);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;

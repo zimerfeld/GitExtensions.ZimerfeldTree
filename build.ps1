@@ -93,14 +93,16 @@ $csprojContent = Get-Content $csproj -Raw -Encoding UTF8
 $csprojContent = $csprojContent -replace '<Version>[^<]+</Version>', "<Version>$newVersion</Version>"
 [System.IO.File]::WriteAllText($csproj, $csprojContent, [System.Text.Encoding]::UTF8)
 
-# -- 4. Atualizar README.md ----------------------------------------------------
+# -- 4. Atualizar link do nuget no README.md -----------------------------------
+# Atualiza apenas o conteudo interno (URL do pacote / "Versao atual"); o cabecalho
+# de versao+data e' tratado de forma unificada na secao 4b (que tambem emite a
+# mensagem "README.md atualizado para ..."), evitando log duplicado.
 $readmeDoc = "$PSScriptRoot\README.md"
 if (Test-Path $readmeDoc) {
     $content = Get-Content $readmeDoc -Raw -Encoding UTF8
     $content = $content -replace '\*\*Versão atual: [^\*]+\*\*', "**Versão atual: $newVersion**"
     $content = $content -replace 'https://www\.nuget\.org/packages/GitExtensions\.ZimerfeldTree/[\d\.]+', "https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/$newVersion"
     [System.IO.File]::WriteAllText($readmeDoc, $content, [System.Text.Encoding]::UTF8)
-    Write-Host "README.md atualizado para $newVersion"
 }
 
 # -- 4b. Atualizar cabecalho (Versao/Atualizado) no topo dos READMEs -----------
@@ -108,6 +110,10 @@ if (Test-Path $readmeDoc) {
 # linhas o cabecalho de versao e data. Mantemos todos sincronizados com a versao
 # empacotada e a data do build. A alternancia cobre os rotulos PT e EN, incluindo o
 # "Updated" (sem "on") usado no README.md bilingue.
+# Editar qualquer README*.md ja' dispara o incremento de versao (ver secao 1b, que
+# inclui todos os .md na deteccao de mudancas), entao aqui apenas carimbamos a nova
+# versao/data e registramos uma linha por arquivo no formato:
+#   "<arquivo> atualizado para <versao> (<data>)".
 $today = (Get-Date).ToString('yyyy-MM-dd')
 foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "$PSScriptRoot\README.en-US.md")) {
     if (Test-Path $doc) {
