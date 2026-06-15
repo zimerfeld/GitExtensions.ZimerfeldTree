@@ -508,6 +508,24 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>
+    /// Removes stale remote-tracking refs (<c>refs/remotes/&lt;remote&gt;/*</c>) for branches that no
+    /// longer exist on the default remote, so they stop appearing in the tree. Runs
+    /// <c>git remote prune &lt;remote&gt;</c>, which contacts the remote — call only from the async
+    /// refresh path, never from the synchronous window-open load. Best-effort: a missing remote or a
+    /// network failure is swallowed, since pruning is a tree-accuracy nicety, not a hard requirement.
+    /// </summary>
+    public void PruneRemotes()
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return;
+            RunGitFull($"remote prune {remote}");
+        }
+        catch { }
+    }
+
     public (bool ok, string error) RebaseBranch(string branchName)
     {
         try

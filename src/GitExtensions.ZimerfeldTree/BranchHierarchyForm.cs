@@ -334,6 +334,11 @@ public sealed class BranchHierarchyForm : Form
         ip?.Report((10, _t["progLocal"]));
         var local = _svc.GetLocalBranches();
         token.ThrowIfCancellationRequested();
+        // Drop stale remote-tracking refs (branches deleted on the remote) so the tree reflects
+        // reality. Gated on ip != null: only the async/overlay refresh prunes — the synchronous
+        // window-open load (ip == null) must stay fast and offline-safe, never touching the network.
+        if (ip != null) _svc.PruneRemotes();
+        token.ThrowIfCancellationRequested();
         ip?.Report((30, _t["progRemote"]));
         var remote = _svc.GetRemoteBranches();
         token.ThrowIfCancellationRequested();
@@ -2869,7 +2874,11 @@ public sealed class BranchHierarchyForm : Form
             case BranchType.Remote:
             {
                 // A remote-tracking branch only exists on the remote — deletion is inherently remote.
-                var (ok, err) = _svc.DeleteBranch(info.FullName, isRemote: true);
+                // DeleteRemoteBranch treats "remote ref does not exist" as success, so a branch already
+                // gone on the remote (a stale tracking ref) isn't reported as an error. On success we
+                // prune the local tracking ref so the now-orphaned entry disappears from the tree.
+                var (ok, err) = _svc.DeleteRemoteBranch(info.DisplayName);
+                if (ok) _svc.PruneRemotes();
                 return (ok, err, ok);
             }
 
