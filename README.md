@@ -5,13 +5,12 @@
 - Help keep this project always updated 💜
 - Ajude a manter este projeto sempre atualizado 💜
 
-[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
+[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.318  
+**Version:** 1.0.319  
 **Updated:** 2026-06-14
 
-**Versão:** 1.0.318  
+**Versão:** 1.0.319  
 **Atualizado em:** 2026-06-14
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
