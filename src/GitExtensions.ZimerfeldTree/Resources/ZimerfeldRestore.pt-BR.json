@@ -13,7 +13,6 @@
   "filePlaceholder": "ex.: src/Foo/Bar.cs",
   "restoreFileBtn": "Restaurar Arquivo",
   "cherryPickGroup": "Cherry-Pick",
-  "commits": "Commit(s):",
   "applyCherryPick": "Aplicar Cherry-Pick",
   "resetGroup": "Reset Branch",
   "resetMixed": "--mixed  (mantém mudanças como unstaged — padrão)",

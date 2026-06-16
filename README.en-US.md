@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.324  
+**Version:** 1.0.325  
 **Updated:** 2026-06-16
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
@@ -300,6 +300,7 @@ Opens from **Restore** and provides three operations to recover states from git 
 - Applies a selected commit onto the current branch.
 - Useful for recovering one specific change without resetting the branch.
 - Git conflict handling remains the native git behavior.
+- The **Commit hash** field accepts a single hash or a range with `..`.
 
 #### Reset Branch
 
@@ -309,6 +310,7 @@ Opens from **Restore** and provides three operations to recover states from git 
 
 #### Window behavior
 
+- The commit-hash dropdowns (**Restore File**, **Cherry-Pick** and **Reset Branch**) show each entry prefixed with its source branch: `[branch] message  →  hash`.
 - The Restore window is modal and positioned next to BranchHierarchy, with both windows centered on screen.
 - After successful operations, BranchHierarchy refreshes in the background without stealing focus from Restore.
 - The last used values are persisted and restored on the next open.

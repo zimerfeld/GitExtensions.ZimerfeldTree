@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.324  
+**Versão:** 1.0.325  
 **Atualizado em:** 2026-06-16
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
@@ -341,7 +341,7 @@ git cherry-pick <hash>
 git cherry-pick <hash-antigo>..<hash-recente>   # range
 ```
 
-Campo **Commit(s)** aceita hash simples ou intervalo com `..`.
+Campo **Commit hash** aceita hash simples ou intervalo com `..`.
 
 #### Reset Branch
 
@@ -368,6 +368,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 - Janela **modal**, posicionada ao lado de BranchHierarchy com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
 - Contém três grupos de operações independentes: **Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**
 - Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
+- Os dropdowns de commit hash (**Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**) exibem cada item prefixado com a branch de origem: `[branch] mensagem  →  hash`
 - O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, fundo bege `#EFEBD8` igual ao do console nativo do GitExtensions, scroll automático para o fim)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
 - Os últimos valores usados em cada campo são **persistidos** em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` e restaurados na próxima abertura
