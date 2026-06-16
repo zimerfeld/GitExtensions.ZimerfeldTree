@@ -167,13 +167,14 @@ public sealed class RestoreForm : Form
         Stretch(_cboCherryHash);
         RightAlign(_btnCherryPick);
 
-        // Reset Branch
+        // Reset Branch — stretch the combos and right-align the Reset button on the radio row; size the
+        // radios so they fill the row only up to (not over) the button, keeping the button visible.
         Stretch(_cboBranch);
         Stretch(_cboResetHash);
-        Stretch(_rdMixed);
-        Stretch(_rdSoft);
-        Stretch(_rdHard);
         RightAlign(_btnReset);
+        int radioRight = _btnReset.Left - 12;
+        foreach (var rd in new[] { _rdMixed, _rdSoft, _rdHard })
+            rd.Width = Math.Max(60, radioRight - rd.Left);
     }
 
     /// <summary>
@@ -394,7 +395,8 @@ public sealed class RestoreForm : Form
         };
 
         // The three reset-mode radios share the left edge (x=14); the Reset button sits to their
-        // right, right-aligned by LayoutResponsive and vertically centered against the radio block.
+        // right on the first radio row — i.e. directly below cboResetHash with the same ~10 px margin
+        // the other tabs use — and is right-aligned by LayoutResponsive.
         _rdMixed = new RadioButton
         {
             Text    = _t["resetMixed"],
@@ -417,7 +419,7 @@ public sealed class RestoreForm : Form
         {
             Name   = "btnReset",
             Text   = _t["resetBtn"],
-            Bounds = new Rectangle(550, 106, 150, 24)
+            Bounds = new Rectangle(550, 84, 150, 24)   // below cboResetHash, like the other tabs' action buttons
         };
         _btnReset.Click += BtnReset_Click;
 
@@ -694,7 +696,9 @@ public sealed class RestoreForm : Form
             var settings = new Dictionary<string, string>
             {
                 ["restoreFile"] = _txtRestoreFile.Text.Trim(),
-                ["resetMode"]   = _rdHard.Checked ? "hard" : _rdSoft.Checked ? "soft" : "mixed"
+                ["resetMode"]   = _rdHard.Checked ? "hard" : _rdSoft.Checked ? "soft" : "mixed",
+                // Show Debug is remembered per-window (this file is exclusive to the Restore window).
+                ["showDebug"]   = _chkShowDebug.Checked ? "1" : "0"
             };
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings));
         }
@@ -714,6 +718,11 @@ public sealed class RestoreForm : Form
             _rdSoft.Checked  = mode == "soft";
             _rdMixed.Checked = mode != "hard" && mode != "soft";
         }
+
+        // Show Debug: restore this window's own saved state; with no saved value, keep the
+        // constructor default (the owner's Show-Debug state passed in via showControlIds).
+        if (saved.TryGetValue("showDebug", out var sd) && sd.Length > 0)
+            _chkShowDebug.Checked = sd is "1" or "true";
     }
 
     // ── Git execution ────────────────────────────────────────────────────────

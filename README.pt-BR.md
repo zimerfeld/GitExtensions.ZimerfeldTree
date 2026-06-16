@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.328  
+**Versão:** 1.0.331  
 **Atualizado em:** 2026-06-16
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
@@ -122,8 +122,8 @@ O checkbox **Show Debug**, localizado na borda inferior esquerda da janela Branc
 - **Linha 2 do tooltip:** `ID: <nome interno>` — campo Name do controle C#
 - **Tooltip da própria janela:** exibe `TYPE: BranchHierarchyForm` e `Handle: 0x<HWND>` (visível ao passar o mouse sobre área livre da janela)
 - **GitFlowForm** também exibe seu TYPE e Handle quando Show Debug está ativo
-- Funciona em ambas as janelas: BranchHierarchy e a janela GitFlow
-- O estado do checkbox é **persistido** entre sessões em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
+- Funciona nas três janelas: BranchHierarchy, GitFlow e Restore
+- **Cada janela persiste e recarrega o próprio estado de Show Debug individualmente** — BranchHierarchy em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`, GitFlow em `ZimerfeldTree.gitflowsettings.json` e Restore em `ZimerfeldRestore.settings.json`. Na primeira abertura de uma janela auxiliar (sem valor salvo), ela herda o estado da BranchHierarchy
 - Útil para desenvolvimento e manutenção do plugin
 
 ### Checkbox "Modo Developer"

@@ -329,7 +329,7 @@ public sealed class GitFlowForm : Form
             Location = new Point(486, 114),
             Checked  = true  // default: keep branch; overridden by saved settings on Load
         };
-        _chkKeep.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
+        _chkKeep.CheckedChanged += (_, _) => SaveSettings();
 
         _chkNoFetch = new CheckBox
         {
@@ -338,7 +338,7 @@ public sealed class GitFlowForm : Form
             AutoSize = true,
             Location = new Point(486, 136)
         };
-        _chkNoFetch.CheckedChanged += (_, _) => SaveSettings(_chkKeep.Checked, _chkNoFetch.Checked);
+        _chkNoFetch.CheckedChanged += (_, _) => SaveSettings();
 
         // Descriptions for Track/Update live only in the "Sobre" (About) link text.
 
@@ -403,7 +403,11 @@ public sealed class GitFlowForm : Form
             AutoSize = true,
             Checked  = _showControlIds
         };
-        _chkShowDebug.CheckedChanged += (_, _) => ApplyOrClearTooltips(_chkShowDebug.Checked);
+        _chkShowDebug.CheckedChanged += (_, _) =>
+        {
+            ApplyOrClearTooltips(_chkShowDebug.Checked);
+            SaveSettings();   // remember this window's Show-Debug state individually
+        };
 
         // Language selector (right-aligned). Items + selection populated by PopulateLanguageCombo so
         // they stay localized; index order matches AppLanguage (0=Automatic, 1=English, 2=Portuguese).
@@ -551,33 +555,41 @@ public sealed class GitFlowForm : Form
 
     private void ApplySettings()
     {
-        var (keepBranch, noFetch) = LoadSettings();
-        _chkKeep   .Checked = keepBranch;
-        _chkNoFetch.Checked = noFetch;
+        var (keepBranch, noFetch, showDebug) = LoadSettings();
+        _chkKeep     .Checked = keepBranch;
+        _chkNoFetch  .Checked = noFetch;
+        // Show Debug persists per-window; fall back to the owner's state on first open (no saved value).
+        _chkShowDebug.Checked = showDebug ?? _showControlIds;
     }
 
-    private static (bool keepBranch, bool noFetch) LoadSettings()
+    private static (bool keepBranch, bool noFetch, bool? showDebug) LoadSettings()
     {
         try
         {
-            if (!File.Exists(SettingsFilePath)) return (true, false);
+            if (!File.Exists(SettingsFilePath)) return (true, false, null);
             string json = File.ReadAllText(SettingsFilePath);
             bool keep    = json.Contains("\"keepBranchAfterFinish\":true");
             bool noFetch = json.Contains("\"noFetch\":true");
-            return (keep, noFetch);
+            // Distinguish "absent" (→ null, use owner default) from an explicit saved false.
+            bool? showDebug = json.Contains("\"showDebug\":")
+                ? json.Contains("\"showDebug\":true")
+                : null;
+            return (keep, noFetch, showDebug);
         }
-        catch { return (true, false); }
+        catch { return (true, false, null); }
     }
 
-    private static void SaveSettings(bool keepBranch, bool noFetch)
+    /// <summary>Persists all three window checkboxes (Keep branch, No fetch, Show Debug).</summary>
+    private void SaveSettings()
     {
         try
         {
             string dir = Path.GetDirectoryName(SettingsFilePath)!;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
             File.WriteAllText(SettingsFilePath,
-                $"{{\"keepBranchAfterFinish\":{(keepBranch ? "true" : "false")}," +
-                $"\"noFetch\":{(noFetch ? "true" : "false")}}}");
+                $"{{\"keepBranchAfterFinish\":{(_chkKeep.Checked ? "true" : "false")}," +
+                $"\"noFetch\":{(_chkNoFetch.Checked ? "true" : "false")}," +
+                $"\"showDebug\":{(_chkShowDebug.Checked ? "true" : "false")}}}");
         }
         catch { }
     }

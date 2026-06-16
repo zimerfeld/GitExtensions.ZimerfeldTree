@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.328  
+**Version:** 1.0.331  
 **Updated:** 2026-06-16
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
@@ -118,8 +118,8 @@ The **Show Debug** checkbox enables identification tooltips for plugin controls:
 - Tooltip line 2: `ID: <internal name>`.
 - The window tooltip shows `TYPE: BranchHierarchyForm` and `Handle: 0x<HWND>`.
 - GitFlowForm also shows its type and handle when Show Debug is enabled.
-- Works in BranchHierarchy and GitFlow windows.
-- The setting is persisted in `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`.
+- Works in the BranchHierarchy, GitFlow, and Restore windows.
+- **Each window persists and reloads its own Show Debug state individually** — BranchHierarchy in `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`, GitFlow in `ZimerfeldTree.gitflowsettings.json`, and Restore in `ZimerfeldRestore.settings.json`. The first time a helper window opens (no saved value), it inherits the BranchHierarchy state.
 
 ### Developer Mode checkbox
 

@@ -17,9 +17,9 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 - **Header** — `HEAD: <ref simbólico>` + link **"About Restore"** (canto superior direito).
 - **Restaurar Arquivo** (grupo) — `Commit hash` (combobox com histórico) + `Arquivo` (caminho relativo, TextBox) + botão **Restaurar**.
 - **Cherry-Pick** (grupo) — `Commit hash` (combobox com histórico, aceita hash simples ou range `antigo..recente`) + botão **Cherry-Pick**.
-- **Reset Branch** (grupo) — `Branch` (combobox de branches locais, **pré-selecionado com a branch em checkout**; fallback `develop` → `main` → `master`) + `Commit hash` (combobox com histórico) + radio buttons `--mixed` / `--soft` / `--hard` + botão **Reset**.
+- **Reset Branch** (grupo) — `Branch` (combobox de branches locais, **pré-selecionado com a branch em checkout**; fallback `develop` → `main` → `master`) + `Commit hash` (combobox com histórico) + radio buttons `--mixed` / `--soft` / `--hard` + botão **Reset** (**logo abaixo de `cboResetHash`**, na primeira linha dos radios, **alinhado à direita**, com a mesma margem dos botões das outras abas).
 - **Dropdowns de commit hash** (Restaurar Arquivo, Cherry-Pick e Reset Branch) — populados via `git log --all --source -200 --date=format:"%Y-%m-%d %H:%M:%S" --pretty=format:"%h␟%S␟%cd␟%s"` (campos separados por `0x1F`); cada item exibe `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  mensagem` (data entre parênteses, depois branch, hash e mensagem), ordenados do mais recente para o mais antigo. Cada combo inicia na opção **Selecione...** / **Select...** e **não** é persistido (sempre reabre no prompt). A lista suspensa é limitada à largura do campo (`DropDownWidth = Width`) para não ultrapassar a margem direita.
-- **Layout responsivo** (`LayoutResponsive`) — janela com **830 px** de largura; combos/campos são esticados e os botões realinhados à direita em runtime para que a **margem direita seja igual à esquerda** (`SideMargin = 14`), independente de DPI. Recalculado no `Load` e em `_tabs.ClientSizeChanged`.
+- **Layout responsivo** (`LayoutResponsive`) — janela com **830 px** de largura; combos/campos são esticados e os botões realinhados à direita em runtime para que a **margem direita seja igual à esquerda** (`SideMargin = 14`), independente de DPI. Recalculado no `Load` e em `_tabs.ClientSizeChanged`. Na aba Reset, os radios são dimensionados apenas **até a borda esquerda do botão `Reset`** (−12 px), para não cobri-lo.
 - **Resultado** — caixa multilinha somente-leitura (fonte Consolas), scroll automático para o fim.
 - **Fechar** (também é o `CancelButton` — Esc).
 
@@ -55,7 +55,8 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 ## ⚙️ Comportamento da janela
 - Posicionada **lado a lado** com BranchHierarchy (ambas centralizadas na tela — mesmo comportamento da janela GitFlow).
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** (via `RevealInTree`/`RepoMutated`) sem perder o foco da janela Restore.
-- **Ao fechar** (botão Fechar, Esc ou X): o owner **não** dispara refresh extra nem `NotifyRepoChanged` — a árvore já está atualizada das operações feitas ao vivo. O `FormClosing` da janela apenas **persiste os campos não-combo** (`restoreFile`, `resetMode`) em `ZimerfeldRestore.settings.json` (`SaveSettings`) — **nenhum ComboBox é salvo**: todos reabrem no padrão.
+- **Ao fechar** (botão Fechar, Esc ou X): o owner **não** dispara refresh extra nem `NotifyRepoChanged` — a árvore já está atualizada das operações feitas ao vivo. O `FormClosing` da janela apenas **persiste os campos não-combo** (`restoreFile`, `resetMode`, `showDebug`) em `ZimerfeldRestore.settings.json` (`SaveSettings`) — **nenhum ComboBox é salvo**: todos reabrem no padrão.
+- **Show Debug por janela**: o checkbox `chkShowDebug` persiste e recarrega **individualmente** o próprio estado (chave `showDebug` no `ZimerfeldRestore.settings.json`). Na primeira abertura (sem valor salvo) usa o estado herdado do owner (`showControlIds`). Cada janela tem seu próprio arquivo — BranchHierarchy (`ZimerfeldTree.uisettings.json`), GitFlow (`ZimerfeldTree.gitflowsettings.json`) e Restore — então o Show Debug é independente entre elas.
 - Link **About Restore** exibe `MessageBox` descrevendo o propósito de cada operação.
 
 ## 🔗 Relacionado

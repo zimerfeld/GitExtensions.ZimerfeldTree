@@ -149,6 +149,7 @@ Toda ação passa por aqui:
 
 ### Checkboxes do Finish
 - **Keep branch after finish** e **No fetch (--no-fetch)**: ao mudar, salvam em `ZimerfeldTree.gitflowsettings.json`.
+- **Show Debug** (`chkShowDebug`): persiste/recarrega o próprio estado **individualmente** (chave `showDebug` no mesmo `ZimerfeldTree.gitflowsettings.json`). Na primeira abertura (sem valor salvo) usa o estado herdado do owner (`showControlIds`).
 
 ### Link "About GitFlow"
 - Abre `MessageBox` descrevendo os comandos git executados por cada botão.
