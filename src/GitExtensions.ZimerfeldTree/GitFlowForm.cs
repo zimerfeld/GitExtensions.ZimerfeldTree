@@ -14,9 +14,14 @@ public sealed class GitFlowForm : Form
     private readonly bool _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
 
-    // Loaded for the active language; reassigned by ApplyLanguage when the user switches languages
-    // via the bottom-panel dropdown (so the open window re-localizes live, like ZimerfeldTree).
-    private Translator _t = I18n.Load("ZimerfeldGitFlow");
+    // This window's own language, persisted independently of the other windows (in this window's
+    // settings file). Initialized to the app-wide choice as the first-open default; overwritten by
+    // the saved per-window value in ApplySettings.
+    private AppLanguage _lang = I18n.Current;
+
+    // Loaded for _lang; reassigned by ApplyLanguage when the user switches languages via the
+    // bottom-panel dropdown (so the open window re-localizes live, like ZimerfeldTree).
+    private Translator _t = I18n.Load("ZimerfeldGitFlow", I18n.Current);
 
     // (control, dictionary-key) pairs reapplied by ApplyLanguage so every label/button re-localizes
     // in place when the Language dropdown changes.
@@ -122,6 +127,7 @@ public sealed class GitFlowForm : Form
         {
             InitData();
             ApplySettings();
+            ApplyLanguage();   // ApplySettings loaded this window's saved language into _lang
             ApplyOrClearTooltips(_chkShowDebug.Checked);
         };
     }
@@ -457,38 +463,37 @@ public sealed class GitFlowForm : Form
 
     // ── Language selection ────────────────────────────────────────────────────
 
-    /// <summary>Persists the dropdown choice and re-localizes this window in place.</summary>
+    /// <summary>Updates this window's own language, persists it, and re-localizes in place.</summary>
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         if (_suppressLangEvent) return;
-        var lang = _cboLanguage.SelectedIndex switch
+        _lang = _cboLanguage.SelectedIndex switch
         {
             1 => AppLanguage.English,
             2 => AppLanguage.Portuguese,
             _ => AppLanguage.Automatic,
         };
-        I18n.SetLanguage(lang);
+        SaveSettings();   // remember this window's language individually
         ApplyLanguage();
     }
 
-    /// <summary>Reloads the active-language dictionary and reapplies every registered text in place.</summary>
+    /// <summary>Reloads _lang's dictionary and reapplies every registered text in place.</summary>
     private void ApplyLanguage()
     {
-        _t = I18n.Load("ZimerfeldGitFlow");
+        _t = I18n.Load("ZimerfeldGitFlow", _lang);
         Text = _t["title"];
         foreach (var (c, key) in _localized) c.Text = _t[key];
         _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
         PopulateLanguageCombo();
     }
 
-    /// <summary>Repopulates the language dropdown with localized item labels, preserving selection.</summary>
+    /// <summary>Repopulates the language dropdown with localized labels and selects this window's _lang.</summary>
     private void PopulateLanguageCombo()
     {
         _suppressLangEvent = true;
-        int sel = _cboLanguage.SelectedIndex >= 0 ? _cboLanguage.SelectedIndex : (int)I18n.Current;
         _cboLanguage.Items.Clear();
         _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"]]);
-        _cboLanguage.SelectedIndex = sel;
+        _cboLanguage.SelectedIndex = (int)_lang;
         _suppressLangEvent = false;
     }
 
@@ -555,18 +560,22 @@ public sealed class GitFlowForm : Form
 
     private void ApplySettings()
     {
-        var (keepBranch, noFetch, showDebug) = LoadSettings();
+        var (keepBranch, noFetch, showDebug, language) = LoadSettings();
+        // Set _lang BEFORE the checkboxes: assigning them fires CheckedChanged → SaveSettings(), which
+        // writes _lang — so it must already hold the loaded value or the saved language gets clobbered.
+        // With no saved value keep the app-wide default (_lang = I18n.Current).
+        if (language is { } lang) _lang = lang;
         _chkKeep     .Checked = keepBranch;
         _chkNoFetch  .Checked = noFetch;
         // Show Debug persists per-window; fall back to the owner's state on first open (no saved value).
         _chkShowDebug.Checked = showDebug ?? _showControlIds;
     }
 
-    private static (bool keepBranch, bool noFetch, bool? showDebug) LoadSettings()
+    private static (bool keepBranch, bool noFetch, bool? showDebug, AppLanguage? language) LoadSettings()
     {
         try
         {
-            if (!File.Exists(SettingsFilePath)) return (true, false, null);
+            if (!File.Exists(SettingsFilePath)) return (true, false, null, null);
             string json = File.ReadAllText(SettingsFilePath);
             bool keep    = json.Contains("\"keepBranchAfterFinish\":true");
             bool noFetch = json.Contains("\"noFetch\":true");
@@ -574,12 +583,15 @@ public sealed class GitFlowForm : Form
             bool? showDebug = json.Contains("\"showDebug\":")
                 ? json.Contains("\"showDebug\":true")
                 : null;
-            return (keep, noFetch, showDebug);
+            AppLanguage? language = null;
+            foreach (AppLanguage v in Enum.GetValues<AppLanguage>())
+                if (json.Contains($"\"language\":\"{v}\"")) { language = v; break; }
+            return (keep, noFetch, showDebug, language);
         }
-        catch { return (true, false, null); }
+        catch { return (true, false, null, null); }
     }
 
-    /// <summary>Persists all three window checkboxes (Keep branch, No fetch, Show Debug).</summary>
+    /// <summary>Persists the window checkboxes (Keep branch, No fetch, Show Debug) and language.</summary>
     private void SaveSettings()
     {
         try
@@ -589,7 +601,8 @@ public sealed class GitFlowForm : Form
             File.WriteAllText(SettingsFilePath,
                 $"{{\"keepBranchAfterFinish\":{(_chkKeep.Checked ? "true" : "false")}," +
                 $"\"noFetch\":{(_chkNoFetch.Checked ? "true" : "false")}," +
-                $"\"showDebug\":{(_chkShowDebug.Checked ? "true" : "false")}}}");
+                $"\"showDebug\":{(_chkShowDebug.Checked ? "true" : "false")}," +
+                $"\"language\":\"{_lang}\"}}");
         }
         catch { }
     }
