@@ -33,6 +33,8 @@
   "ctxExpand": "Expandir tudo",
   "ctxCollapse": "Recolher tudo",
   "ctxRefresh": "Atualizar",
+  "ctxPull": "↓ Baixar ({0})",
+  "ctxPush": "↑ Enviar ({0})",
 
   "statusCounts": "Local: {0}  |  Remoto: {1}  |  Tags: {2}",
   "sectionLocal": "LOCAL ({0})",

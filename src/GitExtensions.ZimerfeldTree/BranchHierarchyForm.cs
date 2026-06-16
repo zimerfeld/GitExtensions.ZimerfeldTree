@@ -155,6 +155,8 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Context menu ──────────────────────────────────────────────────────────
     private ContextMenuStrip   _ctxMenu     = null!;
+    private ToolStripMenuItem  _miPull      = null!;
+    private ToolStripMenuItem  _miPush      = null!;
     private ToolStripMenuItem  _miCommit    = null!;
     private ToolStripMenuItem  _miCheckout  = null!;
     private ToolStripMenuItem  _miNewBranch = null!;
@@ -504,6 +506,10 @@ public sealed class BranchHierarchyForm : Form
             finally { _tree.EndUpdate(); }
             ApplyCheckBoxVisibility();
             ScrollTreeToTop();
+            // The synchronous open path is offline-safe and shows the LAST-KNOWN ahead/behind counts.
+            // Now that the window is visible, contact the remote off the UI thread to refresh the
+            // current branch's counts and correct the Pull/Push controls + branch label once.
+            _ = RefreshRemoteStatusAsync();
         };
 
         ResumeLayout(false);
@@ -800,6 +806,8 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildContextMenu()
     {
+        _miPull      = new ToolStripMenuItem(_t.F("ctxPull", 0));
+        _miPush      = new ToolStripMenuItem(_t.F("ctxPush", 0));
         _miCommit    = new ToolStripMenuItem(_t["commit"]);
         _miCheckout  = new ToolStripMenuItem(_t["ctxCheckout"]);
         _miNewBranch = new ToolStripMenuItem(_t["ctxNewBranch"]);
@@ -813,6 +821,8 @@ public sealed class BranchHierarchyForm : Form
         _miCollapse  = new ToolStripMenuItem(_t["ctxCollapse"]);
         _miRefresh   = new ToolStripMenuItem(_t["ctxRefresh"]);
 
+        _miPull     .Image = LoadMenuIcon("ctx-pull.png");      // optional — null when absent
+        _miPush     .Image = LoadMenuIcon("ctx-push.png");      // optional — null when absent
         _miCommit   .Image = LoadMenuIcon("ctx-commit.png");
         _miCheckout .Image = LoadMenuIcon("ctx-checkout.png");
         _miNewBranch.Image = LoadMenuIcon("ctx-new-branch.png");
@@ -826,6 +836,8 @@ public sealed class BranchHierarchyForm : Form
         _miCollapse .Image = LoadMenuIcon("ctx-collapse.png");
         _miRefresh  .Image = LoadMenuIcon("ctx-refresh.png");
 
+        _miPull     .Click += (_, _) => DoPull();
+        _miPush     .Click += (_, _) => DoPush();
         _miCommit   .Click += (_, _) => DoCommit();
         _miCheckout .Click += (_, _) => DoCheckout();
         _miNewBranch.Click += (_, _) => DoNewBranch();
@@ -843,6 +855,7 @@ public sealed class BranchHierarchyForm : Form
         _ctxMenu.Opening += CtxMenu_Opening;
         _ctxMenu.Items.AddRange(
         [
+            _miPull, _miPush,
             _miCommit,
             new ToolStripSeparator(),
             _miCheckout, _miNewBranch,
@@ -1779,7 +1792,14 @@ public sealed class BranchHierarchyForm : Form
             _t.F("statusCounts", _localBranches.Count, _remoteBranches.Count, _tags.Count);
 
     private void UpdateBranchLabel()
-        => _lblBranch.Text = _t.F("branchLabel", _svc.GetCurrentBranch());
+    {
+        string text = _t.F("branchLabel", _svc.GetCurrentBranch());
+        // When the remote is ahead of the checked-out branch, append the pull count (↓N) so the
+        // user sees there is something to pull straight from the branch label. Hidden when in sync.
+        int behind = _localBranches.FirstOrDefault(b => b.IsCurrent)?.BehindCount ?? 0;
+        if (behind > 0) text += $"  ↓{behind}";
+        _lblBranch.Text = text;
+    }
 
     private void UpdateCommitActionTexts()
         => UpdateCommitActionTexts(_svc.GetPendingChangesCount());
@@ -1800,6 +1820,34 @@ public sealed class BranchHierarchyForm : Form
         int ahead  = current.AheadCount;
         _btnPull.Text = _t.F("pullCount", behind);
         _btnPush.Text = _t.F("pushCount", ahead);
+        _miPull.Text  = _t.F("ctxPull", behind);
+        _miPush.Text  = _t.F("ctxPush", ahead);
+    }
+
+    /// <summary>
+    /// After the window is shown, contacts the remote (off the UI thread) to refresh the current
+    /// branch's ahead/behind counts, then updates the Pull/Push controls and branch label. Best-effort
+    /// and non-blocking: the window already shows last-known counts; this corrects them once the network
+    /// round-trip completes. Kept off the synchronous open path, which must stay fast and offline-safe.
+    /// </summary>
+    private async Task RefreshRemoteStatusAsync()
+    {
+        bool fetched = await Task.Run(() => _svc.FetchCurrentBranchUpstream());
+        if (!fetched || IsDisposed) return;
+
+        var tracking = await Task.Run(() => _svc.GetBranchTrackingInfo());
+        if (IsDisposed) return;
+
+        foreach (var b in _localBranches)
+            if (tracking.TryGetValue(b.FullName, out var ti))
+            {
+                b.HasUpstream = ti.hasUpstream;
+                b.AheadCount  = ti.ahead;
+                b.BehindCount = ti.behind;
+            }
+
+        UpdatePullPushButtons();
+        UpdateBranchLabel();
     }
 
     private BranchInfo? SelectedBranch()
@@ -2078,7 +2126,10 @@ public sealed class BranchHierarchyForm : Form
 
         int miPending = _svc.GetPendingChangesCount();
         UpdateCommitActionTexts(miPending);
+        UpdatePullPushButtons();   // refresh the ↓N / ↑N counts on the Pull/Push items from cache
 
+        _miPull        .Visible = true;
+        _miPush        .Visible = true;
         _miCommit      .Visible = true;
         _miCheckout    .Visible = branch;
         _miNewBranch   .Visible = local || tag;
