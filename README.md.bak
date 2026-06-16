@@ -5,28 +5,38 @@
 - Help keep this project always updated 💜
 - Ajude a manter este projeto sempre atualizado 💜
 
-![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)
-[GitHub Sponsor](https://github.com/sponsors/zimerfeld)
+[![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
+**Version:** 1.0.319  
 <<<<<<< HEAD
-**Version:** 1.0.305  
-**Updated:** 2026-06-13
+**Updated:** 2026-06-14
 
-**Versão:** 1.0.305  
-**Atualizado em:** 2026-06-13
+**Versão:** 1.0.319  
+**Atualizado em:** 2026-06-14
 =======
-**Version:** 1.0.311  
-**Updated:** 2026-06-12
+**Updated:** 2026-06-15
 
-**Versão:** 1.0.311  
-**Atualizado em:** 2026-06-12
->>>>>>> 6aba1aee19b63d7d2fb25f5976aa98655fd234a7
+**Versão:** 1.0.319  
+**Atualizado em:** 2026-06-15
+>>>>>>> c5eb6c23056e7dad4afa512e1e5d95a253ddfec9
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches em uma arvore hierarquica e disponibiliza o uso da metodologia GitFlow de maneira visual muito fácil, intuitiva e agradável de aplicar em projetos de qualquer tamanho.
 
-![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenshotBranchHierarchy.png)
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
+
+GitFlow — Start and Finish rules per branch type / Regras de Start e Finish por tipo de branch:
+
+![Start and Finish rules per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)
+
+Full command flow per type / Fluxo completo de comandos por tipo:
+
+![Full Start to Finish flow per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png)
+
+Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore — commit vazio vs based-on override:
+
+![Hierarchy: empty commit and based-on override](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png)
 
 ## Languages / Idiomas
 
