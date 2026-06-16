@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-06
-atualizado: 2026-06-16 (dropdowns de hash: `(data) [branch] hash → mensagem`, ordem decrescente, prompt "Selecione..."; NENHUM combo persistido; layout responsivo com margens iguais, janela 830 px)
+atualizado: 2026-06-16 (combos de branch pré-selecionam a branch em checkout; dropdowns de hash `(data) [branch] hash → mensagem`, ordem decrescente, prompt "Selecione..."; NENHUM combo persistido; layout responsivo com margens iguais, janela 830 px)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, restore]
 fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 ---
@@ -17,7 +17,7 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 - **Header** — `HEAD: <ref simbólico>` + link **"About Restore"** (canto superior direito).
 - **Restaurar Arquivo** (grupo) — `Commit hash` (combobox com histórico) + `Arquivo` (caminho relativo, TextBox) + botão **Restaurar**.
 - **Cherry-Pick** (grupo) — `Commit hash` (combobox com histórico, aceita hash simples ou range `antigo..recente`) + botão **Cherry-Pick**.
-- **Reset Branch** (grupo) — `Branch` (combobox de branches locais, padrão `develop`) + `Commit hash` (combobox com histórico) + radio buttons `--mixed` / `--soft` / `--hard` + botão **Reset**.
+- **Reset Branch** (grupo) — `Branch` (combobox de branches locais, **pré-selecionado com a branch em checkout**; fallback `develop` → `main` → `master`) + `Commit hash` (combobox com histórico) + radio buttons `--mixed` / `--soft` / `--hard` + botão **Reset**.
 - **Dropdowns de commit hash** (Restaurar Arquivo, Cherry-Pick e Reset Branch) — populados via `git log --all --source -200 --date=format:"%Y-%m-%d %H:%M:%S" --pretty=format:"%h␟%S␟%cd␟%s"` (campos separados por `0x1F`); cada item exibe `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  mensagem` (data entre parênteses, depois branch, hash e mensagem), ordenados do mais recente para o mais antigo. Cada combo inicia na opção **Selecione...** / **Select...** e **não** é persistido (sempre reabre no prompt). A lista suspensa é limitada à largura do campo (`DropDownWidth = Width`) para não ultrapassar a margem direita.
 - **Layout responsivo** (`LayoutResponsive`) — janela com **830 px** de largura; combos/campos são esticados e os botões realinhados à direita em runtime para que a **margem direita seja igual à esquerda** (`SideMargin = 14`), independente de DPI. Recalculado no `Load` e em `_tabs.ClientSizeChanged`.
 - **Resultado** — caixa multilinha somente-leitura (fonte Consolas), scroll automático para o fim.
@@ -27,6 +27,7 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 1. Preenche `HEAD:` (`git rev-parse --symbolic-full-name HEAD`).
 2. Popula combo de branches para Reset (`git branch --format=%(refname:short)`).
 3. Restaura últimos valores dos campos de `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` — **nenhum combo é restaurado**: branch/tag de emergência, dropdowns de hash e branch de reset abrem no padrão. Só `restoreFile` (TextBox) e `resetMode` (radios) são lembrados.
+4. **Os dois combos de branch** (`_cboBranch` do Reset e `_cboEmergencyBranch`) são pré-selecionados com a branch em checkout via `SelectBranchDefault(cbo, _svc.GetCurrentBranch())` (fallback `develop` → `main` → `master` → índice 0).
 
 ## 🖱️ Botões e ações
 

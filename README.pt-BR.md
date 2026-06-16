@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.327  
+**Versão:** 1.0.328  
 **Atualizado em:** 2026-06-16
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
@@ -345,7 +345,7 @@ Campo **Commit hash** aceita hash simples ou intervalo com `..`.
 
 #### Reset Branch
 
-Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (padrão: `develop`), informe o commit hash de destino e escolha o modo:
+Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (por padrão, ao abrir a janela, vem **pré-selecionada a branch em checkout**; fallback: `develop` → `main` → `master`), informe o commit hash de destino e escolha o modo:
 
 | Modo      | Efeito                                                                            |
 | --------- | --------------------------------------------------------------------------------- |
@@ -370,6 +370,7 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 - Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
 - Os dropdowns de commit hash (**Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**) listam os commits recentes como `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  mensagem`, com a data do commit entre parênteses, depois a branch de origem, o hash e a mensagem do commit, ordenados do mais recente para o mais antigo. Cada lista suspensa é limitada à largura do campo, ficando dentro da margem direita da janela
 - Cada dropdown de hash inicia na opção **Selecione...** (português) / **Select...** (inglês) e **não** é persistido, evitando reutilizar silenciosamente um hash antigo
+- Os dois combos de **branch** (Plano de Emergência e Reset Branch) vêm **pré-selecionados com a branch em checkout** ao abrir a janela (fallback: `develop` → `main` → `master`)
 - O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, fundo bege `#EFEBD8` igual ao do console nativo do GitExtensions, scroll automático para o fim)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
 - **Nenhum dropdown é persistido** — todos os combos (branch/tag de emergência, dropdowns de hash e branch de reset) reabrem no padrão a cada vez. Apenas os campos que não são combo (o caminho do arquivo e o modo de reset) são lembrados entre aberturas, em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`

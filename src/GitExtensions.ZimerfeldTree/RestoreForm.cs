@@ -613,24 +613,25 @@ public sealed class RestoreForm : Form
         var saved = LoadSettings();
         RestoreSettings(saved);
 
-        // fallback: if no saved branch selection, pick develop or index 0
-        if (_cboBranch.SelectedItem is null)
-        {
-            string? develop = branches.FirstOrDefault(b => b == "develop");
-            if (develop != null) _cboBranch.SelectedItem  = develop;
-            else if (branches.Count > 0) _cboBranch.SelectedIndex = 0;
-        }
+        // Both branch combos default to the currently checked-out branch (the one most likely to be
+        // restored/reset). If it isn't in the list, fall back to develop/main/master, then index 0.
+        string current = _svc.GetCurrentBranch();
+        SelectBranchDefault(_cboBranch, current);
+        SelectBranchDefault(_cboEmergencyBranch, current);
+    }
 
-        // Emergency branch defaults to the currently checked-out branch (the one most likely
-        // to be rolled back), falling back to main/master or index 0.
-        if (_cboEmergencyBranch.SelectedItem is null && _cboEmergencyBranch.Items.Count > 0)
-        {
-            string current = _svc.GetCurrentBranch();
-            int idx = _cboEmergencyBranch.Items.IndexOf(current);
-            if (idx < 0) idx = _cboEmergencyBranch.Items.IndexOf("main");
-            if (idx < 0) idx = _cboEmergencyBranch.Items.IndexOf("master");
-            _cboEmergencyBranch.SelectedIndex = idx >= 0 ? idx : 0;
-        }
+    /// <summary>
+    /// Preselects <paramref name="current"/> in a branch combo, falling back to develop → main →
+    /// master → first item when the checked-out branch isn't present.
+    /// </summary>
+    private static void SelectBranchDefault(ComboBox cbo, string current)
+    {
+        if (cbo.Items.Count == 0) return;
+        int idx = cbo.Items.IndexOf(current);
+        if (idx < 0) idx = cbo.Items.IndexOf("develop");
+        if (idx < 0) idx = cbo.Items.IndexOf("main");
+        if (idx < 0) idx = cbo.Items.IndexOf("master");
+        cbo.SelectedIndex = idx >= 0 ? idx : 0;
     }
 
     private List<CommitRef> LoadCommitRefs()
