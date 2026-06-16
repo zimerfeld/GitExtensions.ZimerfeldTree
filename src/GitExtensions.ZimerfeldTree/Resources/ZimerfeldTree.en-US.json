@@ -33,8 +33,8 @@
   "ctxExpand": "Expand all",
   "ctxCollapse": "Collapse all",
   "ctxRefresh": "Refresh",
-  "ctxPull": "↓ Pull ({0})",
-  "ctxPush": "↑ Push ({0})",
+  "ctxPull": "Pull ({0})",
+  "ctxPush": "Push ({0})",
 
   "statusCounts": "Local: {0}  |  Remote: {1}  |  Tags: {2}",
   "sectionLocal": "LOCAL ({0})",
@@ -45,8 +45,8 @@
   "emptyTags": "(no tag found)",
   "commitCount": "Commit ({0})",
   "deleteCount": "Delete ({0})",
-  "pullCount": "↓ Pull ({0})",
-  "pushCount": "↑ Push ({0})",
+  "pullCount": "Pull ({0})",
+  "pushCount": "Push ({0})",
 
   "loadingTitle": "Loading repository data",
   "abortOperation": "Abort Operation",

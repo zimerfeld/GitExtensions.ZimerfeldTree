@@ -720,8 +720,10 @@ public sealed class BranchHierarchyForm : Form
         };
         _btnRestore.Click += (_, _) => DoRestore();
 
-        // Each button shows the same icon as its matching right-click action. Pull/Push have no
-        // context-menu counterpart, so they stay text-only.
+        // Each button shows the same icon as its matching right-click action. The Pull/Push icons
+        // (down/up glyphs) replace the ↓/↑ characters that used to prefix the button text.
+        ApplyButtonIcon(_btnPull,            "ctx-pull.png");
+        ApplyButtonIcon(_btnPush,            "ctx-push.png");
         ApplyButtonIcon(_btnCommitDedicated, "ctx-commit.png");
         ApplyButtonIcon(_btnExcluir,         "ctx-delete.png");
         ApplyButtonIcon(_btnGitFlowDedicated, "ctx-gitflow.png");
