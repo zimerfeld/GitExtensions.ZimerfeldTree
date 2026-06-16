@@ -47,6 +47,8 @@
   "deleteCount": "Delete ({0})",
   "pullCount": "Pull ({0})",
   "pushCount": "Push ({0})",
+  "pushBehindTitle": "Push blocked",
+  "pushBehindWarn": "Your branch is {0} commit(s) behind the remote — pull first.\n\nPull now?",
 
   "loadingTitle": "Loading repository data",
   "abortOperation": "Abort Operation",

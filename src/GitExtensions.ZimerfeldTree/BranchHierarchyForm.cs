@@ -155,6 +155,8 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Context menu ──────────────────────────────────────────────────────────
     private ContextMenuStrip   _ctxMenu     = null!;
+    private ToolStripLabel     _miHeader    = null!;   // overlay-style header: checked-out branch name
+    private ToolStripSeparator _miHeaderSep = null!;
     private ToolStripMenuItem  _miPull      = null!;
     private ToolStripMenuItem  _miPush      = null!;
     private ToolStripMenuItem  _miCommit    = null!;
@@ -808,6 +810,20 @@ public sealed class BranchHierarchyForm : Form
 
     private void BuildContextMenu()
     {
+        // Overlay-style header: a bold, centered banner at the top of the (borderless) popup showing
+        // the checked-out branch, with the actual menu commands below it. Text is set on open.
+        _miHeader = new ToolStripLabel
+        {
+            Name         = "miHeader",
+            Font         = new Font(Font, FontStyle.Bold),
+            TextAlign    = ContentAlignment.MiddleCenter,
+            BackColor    = SystemColors.Window,
+            AutoToolTip  = false
+            // A ToolStripLabel is non-interactive by design (clicks do nothing) and renders in normal
+            // text color — kept Enabled so the branch name stays crisp, not greyed like a disabled item.
+        };
+        _miHeaderSep = new ToolStripSeparator();
+
         _miPull      = new ToolStripMenuItem(_t.F("ctxPull", 0));
         _miPush      = new ToolStripMenuItem(_t.F("ctxPush", 0));
         _miCommit    = new ToolStripMenuItem(_t["commit"]);
@@ -838,8 +854,8 @@ public sealed class BranchHierarchyForm : Form
         _miCollapse .Image = LoadMenuIcon("ctx-collapse.png");
         _miRefresh  .Image = LoadMenuIcon("ctx-refresh.png");
 
-        _miPull     .Click += (_, _) => DoPull();
-        _miPush     .Click += (_, _) => DoPush();
+        _miPull     .Click += (_, _) => DoPullForSelected();
+        _miPush     .Click += (_, _) => DoPushForSelected();
         _miCommit   .Click += (_, _) => DoCommit();
         _miCheckout .Click += (_, _) => DoCheckout();
         _miNewBranch.Click += (_, _) => DoNewBranch();
@@ -857,6 +873,7 @@ public sealed class BranchHierarchyForm : Form
         _ctxMenu.Opening += CtxMenu_Opening;
         _ctxMenu.Items.AddRange(
         [
+            _miHeader, _miHeaderSep,
             _miPull, _miPush,
             _miCommit,
             new ToolStripSeparator(),
@@ -1813,17 +1830,16 @@ public sealed class BranchHierarchyForm : Form
         _btnCommitDedicated.Text = _miCommit.Text;
     }
 
+    // The Pull/Push BUTTONS act on the checked-out branch (HEAD), so their counts always reflect it.
+    // The context-menu Baixar/Enviar items act on the CLICKED branch instead — their counts/visibility
+    // are set per-selection in CtxMenu_Opening.
     private void UpdatePullPushButtons()
     {
         var current = _localBranches.FirstOrDefault(b => b.IsCurrent);
         if (current == null) return;
 
-        int behind = current.BehindCount;
-        int ahead  = current.AheadCount;
-        _btnPull.Text = _t.F("pullCount", behind);
-        _btnPush.Text = _t.F("pushCount", ahead);
-        _miPull.Text  = _t.F("ctxPull", behind);
-        _miPush.Text  = _t.F("ctxPush", ahead);
+        _btnPull.Text = _t.F("pullCount", current.BehindCount);
+        _btnPush.Text = _t.F("pushCount", current.AheadCount);
     }
 
     /// <summary>
@@ -2109,16 +2125,21 @@ public sealed class BranchHierarchyForm : Form
     private void CtxMenu_Opening(object? sender, CancelEventArgs e)
     {
         // Multi-selection (2+ checked branch/tag leaves): only bulk Excluir + Atualizar apply.
+        // The header always shows the checked-out branch, regardless of selection.
+        _miHeader.Text = _t.F("branchLabel", _svc.GetCurrentBranch());
+
         var checkedNodes = CheckedBranchNodes();
         if (checkedNodes.Count >= 2)
         {
             foreach (ToolStripItem it in _ctxMenu.Items)
-                it.Visible = it == _miDelete || it == _miRefresh;
+                it.Visible = it == _miHeader || it == _miHeaderSep || it == _miDelete || it == _miRefresh;
             _miDelete.Text = _t.F("ctxDeleteCount", checkedNodes.Count);
-            return;   // no separators shown — just the two commands
+            return;   // header + the two bulk commands
         }
 
         _miDelete.Text = _t["ctxDelete"];
+        _miHeader.Visible = true;
+        _miHeaderSep.Visible = true;
 
         var info     = SelectedBranch();
         bool branch  = info != null;
@@ -2128,10 +2149,17 @@ public sealed class BranchHierarchyForm : Form
 
         int miPending = _svc.GetPendingChangesCount();
         UpdateCommitActionTexts(miPending);
-        UpdatePullPushButtons();   // refresh the ↓N / ↑N counts on the Pull/Push items from cache
 
-        _miPull        .Visible = true;
-        _miPush        .Visible = true;
+        // Baixar/Enviar act on the CLICKED branch (checking it out first when it isn't HEAD), so their
+        // counts reflect that branch's own divergence — not HEAD. Only meaningful for local branches.
+        if (local && info != null)
+        {
+            _miPull.Text = _t.F("ctxPull", info.BehindCount);
+            _miPush.Text = _t.F("ctxPush", info.AheadCount);
+        }
+
+        _miPull        .Visible = local;
+        _miPush        .Visible = local;
         _miCommit      .Visible = true;
         _miCheckout    .Visible = branch;
         _miNewBranch   .Visible = local || tag;
@@ -2172,6 +2200,66 @@ public sealed class BranchHierarchyForm : Form
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Context-menu "Baixar": pulls the CLICKED branch. git pull always targets HEAD, so the clicked
+    /// branch is checked out first when it isn't already current; then the normal Pull runs against it.
+    /// </summary>
+    private void DoPullForSelected()
+    {
+        var info = SelectedBranch();
+        if (info is null || info.Type != BranchType.Local) return;
+        if (!EnsureCurrentBranch(info)) return;
+        DoPull();
+    }
+
+    /// <summary>
+    /// Context-menu "Enviar": pushes the CLICKED branch, checking it out first when it isn't current
+    /// so the push (and any divergence warning) targets that branch.
+    /// </summary>
+    private void DoPushForSelected()
+    {
+        var info = SelectedBranch();
+        if (info is null || info.Type != BranchType.Local) return;
+        if (!EnsureCurrentBranch(info)) return;     // info's branch is now HEAD
+        if (!EnsureNotBehindBeforePush(info)) return;
+        PushCurrent();
+    }
+
+    /// <summary>
+    /// Ensures <paramref name="info"/> is the checked-out branch before a per-branch Pull/Push acts on
+    /// it. No-op when it is already current. On a failed checkout (e.g. local changes would be lost),
+    /// shows the error and returns false so the caller aborts.
+    /// </summary>
+    private bool EnsureCurrentBranch(BranchInfo info)
+    {
+        if (info.IsCurrent) return true;
+
+        // No tree refresh here: the following Pull/Push refreshes once it finishes, reflecting the
+        // checkout and the pull/push together (and avoids a refresh running concurrently with pull).
+        var (ok, err) = _svc.Checkout(info.FullName);
+        if (!ok && !string.IsNullOrEmpty(err))
+            MessageBox.Show(err, _t["checkoutFailedTitle"], MessageBoxButtons.OK, MessageBoxIcon.Error);
+        return ok;
+    }
+
+    /// <summary>
+    /// Blocks a push when <paramref name="branch"/> is behind its upstream — the exact cause of a
+    /// non-fast-forward rejection. Warns that a Pull is needed first and offers to run it now; either
+    /// way the push is aborted. Returns true (push may proceed) only when the branch is not behind.
+    /// </summary>
+    private bool EnsureNotBehindBeforePush(BranchInfo branch)
+    {
+        if (branch.BehindCount <= 0) return true;
+
+        var choice = MessageBox.Show(
+            _t.F("pushBehindWarn", branch.BehindCount),
+            _t["pushBehindTitle"],
+            MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+        if (choice == DialogResult.Yes)
+            DoPull();   // branch is already HEAD here, so this pulls the right branch
+        return false;   // never push while behind
+    }
+
     private void DoPull()
     {
         _btnPull.Enabled = false;
@@ -2189,7 +2277,16 @@ public sealed class BranchHierarchyForm : Form
         });
     }
 
+    // Pull/Push BUTTONS act on the checked-out branch (HEAD).
     private void DoPush()
+    {
+        var current = _localBranches.FirstOrDefault(b => b.IsCurrent);
+        if (current != null && !EnsureNotBehindBeforePush(current)) return;
+        PushCurrent();
+    }
+
+    /// <summary>Raw push of the checked-out branch (HEAD). Callers guard against a behind branch first.</summary>
+    private void PushCurrent()
     {
         if (_openPushDialog != null)
         {

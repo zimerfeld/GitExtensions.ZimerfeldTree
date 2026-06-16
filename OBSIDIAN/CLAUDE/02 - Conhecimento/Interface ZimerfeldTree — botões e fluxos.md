@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-09 (1.0.254: checkboxes multi-seleção, botão Excluir, Modo Developer, persistência expande/recolhe no Shown)
+atualizado: 2026-06-16 (ícones Pull/Push nos botões e menu; fetch da branch atual ao abrir; menu Baixar/Enviar agindo na branch clicada; aviso que bloqueia push atrás; cabeçalho com branch em checkout no menu)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, zimerfeldtree]
 fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 ---
@@ -20,6 +20,7 @@ fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 - O plugin assina eventos do host (`Register`): `PostBrowseInitialize` → troca de repositório; `PostCheckoutBranch` / `PostCheckoutRevision` → refaz a árvore; `PostCommit` → refaz + foca; `PostRepositoryChanged` → `OnExternalChange`. Assim a árvore se mantém em sincronia automaticamente.
 - `OnExternalChange` chama `NotifyExternalRepoChanged()`: refresca em mudanças externas **genuínas**, mas **ignora o eco** do nosso próprio `NotifyRepoChanged` (flag `_suppressEcho`) — evita refresh redundante / flash de overlay.
 - O **overlay só aparece na primeira exibição** (`VisibleChanged` guarda `_initialLoadDone`): reativar a janela depois de fechar GitFlow/Restore **não** dispara overlay (a árvore já está atualizada).
+- **Verificação do remoto pós-abertura** (`Shown` → `RefreshRemoteStatusAsync`): a carga inicial é **offline-safe** e mostra ahead/behind do último fetch; depois que a janela aparece, um `git fetch` da upstream da branch atual roda **fora da UI thread** (`FetchCurrentBranchUpstream` → `git fetch <remote> <branch>`), recalcula o tracking e corrige os botões Pull/Push e o label `Branch:`. Best-effort: falha de rede/sem upstream é ignorada.
 
 ## 🧭 Layout (de cima para baixo)
 1. **Top panel** — label "Working Directory:", combo de repositórios (`_cboRepo`), label "Branch: \<atual\>".
@@ -75,18 +76,20 @@ Passos (com % no overlay):
 2. Inverte `_gitFlowForced`.
 3. `RefreshTree()` → árvore é reconstruída no layout escolhido.
 
-### Botão Pull (`_btnPull`) → `DoPull`
+### Botão Pull (`_btnPull`) → `DoPull` — age no **HEAD**
 1. Desabilita o botão.
 2. Em background: `git pull --tags`.
 3. Na UI: reabilita o botão, `RefreshTree()`, `NotifyRepoChanged()` (avisa o GitExtensions e devolve o foco à janela).
 4. Se falhar e houver mensagem → `MessageBox` "Pull falhou".
-- Rótulo mostra `Pull (↓M)` quando a branch atual está M commits atrás.
+- O botão exibe um **ícone de seta para baixo** (`ctx-pull.png`, azul) **antes do texto**, substituindo o antigo caractere `↓`. Rótulo `Baixar (M)` quando a branch atual está M commits atrás.
+- O label do topo `Branch: <nome>` ganha o sufixo `↓M` quando há commits a baixar (`UpdateBranchLabel`).
 
-### Botão Push (`_btnPush`) → `DoPush`
-1. **Preferencial:** abre o **diálogo nativo de Push do GitExtensions in-process** (`StartPushDialog`, `pushOnShow: true` — dispara o push automaticamente ao abrir).
+### Botão Push (`_btnPush`) → `DoPush` → `PushCurrent` — age no **HEAD**
+1. **Guarda de divergência** (`EnsureNotBehindBeforePush`): se a branch atual está **atrás** (`behind > 0`), exibe aviso "Sua branch está N commit(s) atrás do remoto — faça Baixar primeiro. Deseja Baixar agora?" — **Sim** roda `DoPull`, **Não** cancela; em ambos o push é **bloqueado** (evita `non-fast-forward`).
+2. **Preferencial:** abre o **diálogo nativo de Push do GitExtensions in-process** (`StartPushDialog`, `pushOnShow: true` — dispara o push automaticamente ao abrir).
    - Ao fechar: `RefreshTree()` + `NotifyRepoChanged()` — **sempre**, independentemente do valor de retorno (`pushCompleted` não é confiável com `pushOnShow`).
-2. **Fallback** (sem `_openPushDialog`): lança `GitExtensions.exe push` como novo processo (fire-and-forget — sem refresh possível). Erro ao iniciar → `MessageBox`.
-- Rótulo mostra `↑ Push (N)` quando a branch atual está N commits à frente do remoto.
+3. **Fallback** (sem `_openPushDialog`): lança `GitExtensions.exe push` como novo processo (fire-and-forget — sem refresh possível). Erro ao iniciar → `MessageBox`.
+- O botão exibe um **ícone de seta para cima** (`ctx-push.png`, verde) **antes do texto**, substituindo o antigo caractere `↑`. Rótulo `Enviar (N)` quando a branch atual está N commits à frente do remoto.
 
 ### Botão Commit (`_btnCommitDedicated`) → `DoCommit`
 1. **Preferencial:** abre a **janela de commit nativa do GitExtensions in-process** (`_openCommitDialog` → `IGitUICommands.StartCommitDialog`). Isso mantém os plugins de Commit Template visíveis (ex.: "Zimerfeld: Auto-resumo").
@@ -172,8 +175,13 @@ Valores dos campos são persistidos em `%APPDATA%\GitExtensions\ZimerfeldRestore
 ## 📋 Menu de contexto (visibilidade depende do tipo do nó)
 Definida em `CtxMenu_Opening`: `branch` = local|remote; `local`/`remote`/`tag` específicos. Separadores órfãos são ocultados.
 
+- **Cabeçalho estilo overlay** (`_miHeader`, um `ToolStripLabel` em negrito + separador `_miHeaderSep` no topo): mostra a branch em checkout (`Branch: <nome>`) — o `ContextMenuStrip` já é uma janela flutuante sem bordas; o header fica no topo e os comandos abaixo. Visível tanto na seleção simples quanto na múltipla. (Opção deliberada em vez de um `Form` sem bordas separado, que seria frágil — ver memória "Pragmatic over literal".)
+- **Baixar/Enviar agem na branch clicada** (não no HEAD): a branch é colocada em checkout primeiro e os contadores refletem o atrás/à frente **dela**. Os botões da barra continuam agindo no HEAD.
+
 | Item | Visível para | Ação (passo a passo) |
 |------|--------------|----------------------|
+| **Baixar (N)** | branch local | `DoPullForSelected`: faz **checkout da branch clicada** (`EnsureCurrentBranch`) e então `DoPull`. Ícone `ctx-pull.png`. `N` = commits atrás **daquela** branch. |
+| **Enviar (N)** | branch local | `DoPushForSelected`: checkout da branch clicada + guarda de divergência (`EnsureNotBehindBeforePush`, bloqueia/oferece Baixar se atrás) + `PushCurrent`. Ícone `ctx-push.png`. `N` = commits à frente **daquela** branch. |
 | **Commit (n)** | sempre | Igual ao botão Commit → `DoCommit`. Mostra contagem de pendências. |
 | **Checkout** | branch (local/remote) | `DoCheckout`: local → `git checkout "<nome>"`; remote → `CheckoutRemoteAsLocal` = `git checkout -b "<local>" --track "<origin/...>"`. Sucesso → `RefreshTree` + `NotifyRepoChanged`; erro → `MessageBox`. |
 | **Nova branch daqui…** | local ou tag | `DoNewBranch`: pede nome (`InputDialog`) → `git checkout -b "<novo>" "<ref>"`. Sucesso → refresh + notify. |

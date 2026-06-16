@@ -125,6 +125,25 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
     }
 }
 
+# -- 4c. Carimbar a versao na nota do Obsidian (o vault espelha o README) -------
+# O bump tambem deve refletir na nota-hub do cofre, para o vault nao ficar defasado
+# em relacao ao README -- mesma versao em README/csproj/nuspec/vault, sem sync manual.
+# Atualiza o 'versao:' do frontmatter e a linha 'Versao atual: **X**' (Versionamento).
+# Roda ANTES do pack (secao 7), entao o .nupkg permanece o arquivo mais novo e a
+# deteccao de mudancas (secao 1b) nao dispara em loop. A linha descritiva 'atualizado:'
+# do frontmatter e' um changelog escrito a mao e nao e' tocada aqui.
+$vaultNote = "$PSScriptRoot\OBSIDIAN\CLAUDE\01 - Projetos\GitExtensions.ZimerfeldTree.md"
+if (Test-Path $vaultNote) {
+    $v = Get-Content $vaultNote -Raw -Encoding UTF8
+    $v = $v -replace '(?m)^versao:\s+[\d\.]+',          "versao: $newVersion"
+    $v = $v -replace 'Versão atual: \*\*[\d\.]+\*\*',   "Versão atual: **$newVersion**"
+    # Carimba so' a DATA inicial da linha 'atualizado:', preservando o texto descritivo
+    # do changelog (ex.: '(1.0.x: ...)') que e' escrito a mao.
+    $v = $v -replace '(?m)^atualizado:\s+\d{4}-\d{2}-\d{2}', "atualizado: $today"
+    [System.IO.File]::WriteAllText($vaultNote, $v, [System.Text.Encoding]::UTF8)
+    Write-Host "Vault (nota do projeto) atualizado para $newVersion ($today)"
+}
+
 # -- 5. Build ------------------------------------------------------------------
 Write-Host "Compilando..."
 $buildOutput = & dotnet build $csproj -c Release --nologo -v minimal 2>&1
