@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.325  
+**Versão:** 1.0.331  
 **Atualizado em:** 2026-06-16
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
@@ -122,8 +122,8 @@ O checkbox **Show Debug**, localizado na borda inferior esquerda da janela Branc
 - **Linha 2 do tooltip:** `ID: <nome interno>` — campo Name do controle C#
 - **Tooltip da própria janela:** exibe `TYPE: BranchHierarchyForm` e `Handle: 0x<HWND>` (visível ao passar o mouse sobre área livre da janela)
 - **GitFlowForm** também exibe seu TYPE e Handle quando Show Debug está ativo
-- Funciona em ambas as janelas: BranchHierarchy e a janela GitFlow
-- O estado do checkbox é **persistido** entre sessões em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`
+- Funciona nas três janelas: BranchHierarchy, GitFlow e Restore
+- **Cada janela persiste e recarrega o próprio estado de Show Debug individualmente** — BranchHierarchy em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`, GitFlow em `ZimerfeldTree.gitflowsettings.json` e Restore em `ZimerfeldRestore.settings.json`. Na primeira abertura de uma janela auxiliar (sem valor salvo), ela herda o estado da BranchHierarchy
 - Útil para desenvolvimento e manutenção do plugin
 
 ### Checkbox "Modo Developer"
@@ -345,7 +345,7 @@ Campo **Commit hash** aceita hash simples ou intervalo com `..`.
 
 #### Reset Branch
 
-Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (padrão: `develop`), informe o commit hash de destino e escolha o modo:
+Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (por padrão, ao abrir a janela, vem **pré-selecionada a branch em checkout**; fallback: `develop` → `main` → `master`), informe o commit hash de destino e escolha o modo:
 
 | Modo      | Efeito                                                                            |
 | --------- | --------------------------------------------------------------------------------- |
@@ -368,10 +368,12 @@ Se a branch selecionada não for a atual, o plugin executa `git checkout <branch
 - Janela **modal**, posicionada ao lado de BranchHierarchy com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
 - Contém três grupos de operações independentes: **Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**
 - Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
-- Os dropdowns de commit hash (**Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**) exibem cada item prefixado com a branch de origem: `[branch] mensagem  →  hash`
+- Os dropdowns de commit hash (**Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**) listam os commits recentes como `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  mensagem`, com a data do commit entre parênteses, depois a branch de origem, o hash e a mensagem do commit, ordenados do mais recente para o mais antigo. Cada lista suspensa é limitada à largura do campo, ficando dentro da margem direita da janela
+- Cada dropdown de hash inicia na opção **Selecione...** (português) / **Select...** (inglês) e **não** é persistido, evitando reutilizar silenciosamente um hash antigo
+- Os dois combos de **branch** (Plano de Emergência e Reset Branch) vêm **pré-selecionados com a branch em checkout** ao abrir a janela (fallback: `develop` → `main` → `master`)
 - O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, fundo bege `#EFEBD8` igual ao do console nativo do GitExtensions, scroll automático para o fim)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
-- Os últimos valores usados em cada campo são **persistidos** em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` e restaurados na próxima abertura
+- **Nenhum dropdown é persistido** — todos os combos (branch/tag de emergência, dropdowns de hash e branch de reset) reabrem no padrão a cada vez. Apenas os campos que não são combo (o caminho do arquivo e o modo de reset) são lembrados entre aberturas, em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`
 - Link **About Restore** no canto superior direito descreve o propósito de cada operação
 - Fechar a janela (botão **Fechar** ou tecla **Esc**) salva os valores automaticamente; o fechamento **não** dispara refresh extra (a árvore já foi atualizada ao vivo) nem traz o GitExtensions para frente
 

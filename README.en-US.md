@@ -6,7 +6,7 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.325  
+**Version:** 1.0.331  
 **Updated:** 2026-06-16
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
@@ -118,8 +118,8 @@ The **Show Debug** checkbox enables identification tooltips for plugin controls:
 - Tooltip line 2: `ID: <internal name>`.
 - The window tooltip shows `TYPE: BranchHierarchyForm` and `Handle: 0x<HWND>`.
 - GitFlowForm also shows its type and handle when Show Debug is enabled.
-- Works in BranchHierarchy and GitFlow windows.
-- The setting is persisted in `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`.
+- Works in the BranchHierarchy, GitFlow, and Restore windows.
+- **Each window persists and reloads its own Show Debug state individually** — BranchHierarchy in `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`, GitFlow in `ZimerfeldTree.gitflowsettings.json`, and Restore in `ZimerfeldRestore.settings.json`. The first time a helper window opens (no saved value), it inherits the BranchHierarchy state.
 
 ### Developer Mode checkbox
 
@@ -305,15 +305,17 @@ Opens from **Restore** and provides three operations to recover states from git 
 #### Reset Branch
 
 - Resets a branch to a selected commit.
+- On open, both branch dropdowns (Emergency Plan and Reset Branch) default to the **currently checked-out branch** (fallback: develop → main → master).
 - If the selected branch is not the current one, the plugin checks it out, applies the reset, and returns to the original branch automatically.
 - Intended for deliberate history recovery operations.
 
 #### Window behavior
 
-- The commit-hash dropdowns (**Restore File**, **Cherry-Pick** and **Reset Branch**) show each entry prefixed with its source branch: `[branch] message  →  hash`.
+- The commit-hash dropdowns (**Restore File**, **Cherry-Pick** and **Reset Branch**) list recent commits as `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  message`, with the commit date in parentheses, then the source branch, the hash, and the commit message, ordered newest first. Each drop-down list is pinned to its field width so it stays within the window's right margin.
+- Each hash dropdown opens on a **Select...** (English) / **Selecione...** (Portuguese) prompt and is **not** persisted, so a stale hash is never silently reused.
 - The Restore window is modal and positioned next to BranchHierarchy, with both windows centered on screen.
 - After successful operations, BranchHierarchy refreshes in the background without stealing focus from Restore.
-- The last used values are persisted and restored on the next open.
+- **No dropdown is persisted** — every combo (emergency branch/tag, the hash dropdowns and the reset branch) reopens at its default each time. Only the non-combo fields (the file path and the reset mode) are remembered across opens.
 - The **About Restore** link explains each operation.
 
 ### Restore window - general behavior

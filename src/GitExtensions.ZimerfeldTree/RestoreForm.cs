@@ -27,6 +27,10 @@ public sealed class RestoreForm : Form
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "GitExtensions", "ZimerfeldRestore.settings.json");
 
+    // Left inset of the labels/radios inside a tab page; LayoutResponsive mirrors it on the right so
+    // the input column has equal left/right margins regardless of window width or DPI.
+    private const int SideMargin = 14;
+
     // ── Layout shell (docked) ──
     private Panel       _headerPanel = null!;
     private Panel       _bottomPanel = null!;
@@ -82,10 +86,12 @@ public sealed class RestoreForm : Form
         _showControlIds = showControlIds;
 
         Text            = _t["title"];
-        // Width 700 (was 560): the top banner hosts the sponsor + Ko-fi badges (centered) and the
-        // "About Restore" link (right-aligned). At 560 the wider two-badge group overlapped the link;
-        // 700 leaves a comfortable gap between the badges and the link.
-        Size            = new Size(700, 824 + SponsorBanner.PanelHeight);
+        // Width 830 (was 880): the hash dropdowns show "(YYYY-MM-dd HH:mm:ss) [branch] hash → message",
+        // so the input column is wide. LayoutResponsive() stretches the combos/fields and right-aligns
+        // the buttons at runtime so the right margin always equals the left (SideMargin), regardless of
+        // DPI/border math; each combo's drop-down list is pinned to its field width so the open list
+        // never spills past the right margin.
+        Size            = new Size(830, 824 + SponsorBanner.PanelHeight);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -121,8 +127,54 @@ public sealed class RestoreForm : Form
         {
             InitData();
             ApplyOrClearTooltips(_chkShowDebug.Checked);
+            LayoutResponsive();
         };
+        // Re-run once the tab control has its final (DPI-scaled) size so the margins stay equal.
+        _tabs.ClientSizeChanged += (_, _) => LayoutResponsive();
         FormClosing  += (_, _) => SaveSettings();
+    }
+
+    /// <summary>
+    /// Stretches the wide inputs to the right margin and right-aligns the action buttons so each tab's
+    /// input column has equal left/right margins (<see cref="SideMargin"/>), independent of window
+    /// width or DPI. Each combo's drop-down list width is pinned to its field width so the open list
+    /// never extends past the right margin.
+    /// </summary>
+    private void LayoutResponsive()
+    {
+        if (_tabs.TabPages.Count == 0) return;
+
+        void Stretch(Control c)
+        {
+            int right = c.Parent!.ClientSize.Width - SideMargin;
+            c.Width = Math.Max(60, right - c.Left);
+            if (c is ComboBox cb) cb.DropDownWidth = cb.Width;
+        }
+        void RightAlign(Control c) => c.Left = c.Parent!.ClientSize.Width - SideMargin - c.Width;
+
+        // Emergency: stretch both combos; right-align the Reset button and tuck Restore to its left.
+        Stretch(_cboEmergencyBranch);
+        Stretch(_cboEmergencyTag);
+        RightAlign(_btnEmergencyReset);
+        _btnEmergencyRestore.Left = _btnEmergencyReset.Left - 12 - _btnEmergencyRestore.Width;
+
+        // Restore File
+        Stretch(_cboRestoreHash);
+        Stretch(_txtRestoreFile);
+        RightAlign(_btnRestoreFile);
+
+        // Cherry-Pick
+        Stretch(_cboCherryHash);
+        RightAlign(_btnCherryPick);
+
+        // Reset Branch — stretch the combos and right-align the Reset button on the radio row; size the
+        // radios so they fill the row only up to (not over) the button, keeping the button visible.
+        Stretch(_cboBranch);
+        Stretch(_cboResetHash);
+        RightAlign(_btnReset);
+        int radioRight = _btnReset.Left - 12;
+        foreach (var rd in new[] { _rdMixed, _rdSoft, _rdHard })
+            rd.Width = Math.Max(60, radioRight - rd.Left);
     }
 
     /// <summary>
@@ -166,7 +218,7 @@ public sealed class RestoreForm : Form
 
     private void BuildEmergencyTab()
     {
-        // Row 1 — branch combo (full width, aligned to the shared input column x=110, ending at x=520).
+        // Row 1 — branch combo on the shared input column x=110 (width set by LayoutResponsive).
         var lblBranch = new Label
         {
             Text      = _t["branchLabel"],
@@ -179,10 +231,10 @@ public sealed class RestoreForm : Form
             Name          = "cboEmergencyBranch",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Sorted        = true,
-            Bounds        = new Rectangle(110, 24, 410, 22)
+            Bounds        = new Rectangle(110, 24, 590, 22)
         };
 
-        // Row 2 — tag combo on its own line (full width, ending at x=520).
+        // Row 2 — tag combo on its own line (width set by LayoutResponsive).
         var lblTag = new Label
         {
             Text      = _t["tagLabel"],
@@ -194,16 +246,16 @@ public sealed class RestoreForm : Form
         {
             Name          = "cboEmergencyTag",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(110, 52, 410, 22),
-            DropDownWidth = 380
+            Bounds        = new Rectangle(110, 52, 590, 22),
+            DropDownWidth = 560
         };
 
-        // Row 3 — action buttons as a right-aligned pair (equal 150 px width, ending at x=520).
+        // Row 3 — action buttons as a right-aligned pair (equal 150 px width; positioned by LayoutResponsive).
         _btnEmergencyRestore = new Button
         {
             Name   = "btnEmergencyRestore",
             Text   = _t["restoreToTag"],
-            Bounds = new Rectangle(208, 84, 150, 26)
+            Bounds = new Rectangle(388, 84, 150, 26)
         };
         _btnEmergencyRestore.Click += BtnEmergencyRestore_Click;
 
@@ -212,7 +264,7 @@ public sealed class RestoreForm : Form
             Name      = "btnEmergencyReset",
             Text      = _t["resetToTag"],
             ForeColor = Color.DarkRed,
-            Bounds    = new Rectangle(370, 84, 150, 26)
+            Bounds    = new Rectangle(550, 84, 150, 26)
         };
         _btnEmergencyReset.Click += BtnEmergencyReset_Click;
 
@@ -230,7 +282,7 @@ public sealed class RestoreForm : Form
     private void BuildRestoreFileTab()
     {
         // Both rows share the input column x=174 (wide enough for the long "Arquivo (caminho
-        // relativo):" label) and end flush at x=520.
+        // relativo):" label); their widths are set by LayoutResponsive.
         var lblHash = new Label
         {
             Text      = _t["commitHash"],
@@ -242,8 +294,8 @@ public sealed class RestoreForm : Form
         {
             Name          = "cboRestoreHash",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(174, 24, 346, 22),
-            DropDownWidth = 380
+            Bounds        = new Rectangle(174, 24, 526, 22),
+            DropDownWidth = 526   // pinned to the field width by LayoutResponsive (stays within the right margin)
         };
 
         var lblFile = new Label
@@ -257,14 +309,14 @@ public sealed class RestoreForm : Form
         {
             Name            = "txtRestoreFile",
             PlaceholderText = _t["filePlaceholder"],
-            Bounds          = new Rectangle(174, 52, 346, 22)
+            Bounds          = new Rectangle(174, 52, 526, 22)
         };
 
         _btnRestoreFile = new Button
         {
             Name   = "btnRestoreFile",
             Text   = _t["restoreFileBtn"],
-            Bounds = new Rectangle(370, 84, 150, 24)
+            Bounds = new Rectangle(550, 84, 150, 24)
         };
         _btnRestoreFile.Click += BtnRestoreFile_Click;
 
@@ -290,15 +342,15 @@ public sealed class RestoreForm : Form
         {
             Name          = "cboCherryHash",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(110, 24, 410, 22),   // full width, ending flush at x=520
-            DropDownWidth = 380
+            Bounds        = new Rectangle(110, 24, 590, 22),   // width set by LayoutResponsive
+            DropDownWidth = 590   // pinned to the field width by LayoutResponsive (stays within the right margin)
         };
-        // Button on its own row below the combo, right-aligned to x=520.
+        // Button on its own row below the combo, right-aligned by LayoutResponsive.
         _btnCherryPick = new Button
         {
             Name   = "btnCherryPick",
             Text   = _t["applyCherryPick"],
-            Bounds = new Rectangle(370, 52, 150, 24)
+            Bounds = new Rectangle(550, 52, 150, 24)
         };
         _btnCherryPick.Click += BtnCherryPick_Click;
 
@@ -324,7 +376,7 @@ public sealed class RestoreForm : Form
             Name          = "cboBranch",
             DropDownStyle = ComboBoxStyle.DropDownList,
             Sorted        = true,
-            Bounds        = new Rectangle(110, 24, 410, 22)
+            Bounds        = new Rectangle(110, 24, 590, 22)
         };
 
         var lblHash = new Label
@@ -338,27 +390,28 @@ public sealed class RestoreForm : Form
         {
             Name          = "cboResetHash",
             DropDownStyle = ComboBoxStyle.DropDown,
-            Bounds        = new Rectangle(110, 52, 410, 22),
-            DropDownWidth = 380
+            Bounds        = new Rectangle(110, 52, 590, 22),
+            DropDownWidth = 590   // pinned to the field width by LayoutResponsive (stays within the right margin)
         };
 
         // The three reset-mode radios share the left edge (x=14); the Reset button sits to their
-        // right, right-aligned to x=520 and vertically centered against the radio block.
+        // right on the first radio row — i.e. directly below cboResetHash with the same ~10 px margin
+        // the other tabs use — and is right-aligned by LayoutResponsive.
         _rdMixed = new RadioButton
         {
             Text    = _t["resetMixed"],
-            Bounds  = new Rectangle(14, 84, 348, 20),
+            Bounds  = new Rectangle(14, 84, 520, 20),
             Checked = true
         };
         _rdSoft = new RadioButton
         {
             Text   = _t["resetSoft"],
-            Bounds = new Rectangle(14, 106, 348, 20)
+            Bounds = new Rectangle(14, 106, 520, 20)
         };
         _rdHard = new RadioButton
         {
             Text      = _t["resetHard"],
-            Bounds    = new Rectangle(14, 128, 348, 20),
+            Bounds    = new Rectangle(14, 128, 520, 20),
             ForeColor = Color.DarkRed
         };
 
@@ -366,7 +419,7 @@ public sealed class RestoreForm : Form
         {
             Name   = "btnReset",
             Text   = _t["resetBtn"],
-            Bounds = new Rectangle(370, 106, 150, 24)
+            Bounds = new Rectangle(550, 84, 150, 24)   // below cboResetHash, like the other tabs' action buttons
         };
         _btnReset.Click += BtnReset_Click;
 
@@ -498,6 +551,16 @@ public sealed class RestoreForm : Form
         foreach (var (c, key) in _localized) c.Text = _t[key];
         _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
         _txtRestoreFile.PlaceholderText = _t["filePlaceholder"];
+
+        // Re-localize the "Select..." prompt sitting at index 0 of each hash combo.
+        foreach (var cbo in new[] { _cboRestoreHash, _cboCherryHash, _cboResetHash })
+        {
+            if (cbo.Items.Count == 0 || cbo.Items[0] is not string) continue;
+            bool wasPrompt = cbo.SelectedIndex == 0;
+            cbo.Items[0] = _t["selectPrompt"];
+            if (wasPrompt) cbo.SelectedIndex = 0;
+        }
+
         PopulateLanguageCombo();
     }
 
@@ -541,49 +604,57 @@ public sealed class RestoreForm : Form
         if (_cboEmergencyTag.Items.Count > 0) _cboEmergencyTag.SelectedIndex = 0;
 
         var refs = LoadCommitRefs();
-        foreach (var r in refs)
+        foreach (var cbo in new[] { _cboRestoreHash, _cboCherryHash, _cboResetHash })
         {
-            _cboRestoreHash.Items.Add(r);
-            _cboCherryHash.Items.Add(r);
-            _cboResetHash.Items.Add(r);
+            // index 0 is the "Select..." prompt; the commit refs follow (already newest-first).
+            cbo.Items.Add(_t["selectPrompt"]);
+            cbo.Items.AddRange(refs.Cast<object>().ToArray());
+            cbo.SelectedIndex = 0;
         }
 
         var saved = LoadSettings();
-        RestoreSettings(saved, refs, branches);
+        RestoreSettings(saved);
 
-        // fallback: if no saved branch selection, pick develop or index 0
-        if (_cboBranch.SelectedItem is null)
-        {
-            string? develop = branches.FirstOrDefault(b => b == "develop");
-            if (develop != null) _cboBranch.SelectedItem  = develop;
-            else if (branches.Count > 0) _cboBranch.SelectedIndex = 0;
-        }
+        // Both branch combos default to the currently checked-out branch (the one most likely to be
+        // restored/reset). If it isn't in the list, fall back to develop/main/master, then index 0.
+        string current = _svc.GetCurrentBranch();
+        SelectBranchDefault(_cboBranch, current);
+        SelectBranchDefault(_cboEmergencyBranch, current);
+    }
 
-        // Emergency branch defaults to the currently checked-out branch (the one most likely
-        // to be rolled back), falling back to main/master or index 0.
-        if (_cboEmergencyBranch.SelectedItem is null && _cboEmergencyBranch.Items.Count > 0)
-        {
-            string current = _svc.GetCurrentBranch();
-            int idx = _cboEmergencyBranch.Items.IndexOf(current);
-            if (idx < 0) idx = _cboEmergencyBranch.Items.IndexOf("main");
-            if (idx < 0) idx = _cboEmergencyBranch.Items.IndexOf("master");
-            _cboEmergencyBranch.SelectedIndex = idx >= 0 ? idx : 0;
-        }
+    /// <summary>
+    /// Preselects <paramref name="current"/> in a branch combo, falling back to develop → main →
+    /// master → first item when the checked-out branch isn't present.
+    /// </summary>
+    private static void SelectBranchDefault(ComboBox cbo, string current)
+    {
+        if (cbo.Items.Count == 0) return;
+        int idx = cbo.Items.IndexOf(current);
+        if (idx < 0) idx = cbo.Items.IndexOf("develop");
+        if (idx < 0) idx = cbo.Items.IndexOf("main");
+        if (idx < 0) idx = cbo.Items.IndexOf("master");
+        cbo.SelectedIndex = idx >= 0 ? idx : 0;
     }
 
     private List<CommitRef> LoadCommitRefs()
     {
         // --source tags each commit with the ref by which the walk first reached it
-        // (e.g. "refs/heads/develop"), which we prepend as the owning branch. The line
-        // shape is "<hash>\t<source-ref> <subject>".
-        var (output, _) = _svc.RunGitFlow("log --oneline --all --source -200");
+        // (e.g. "refs/heads/develop"), exposed via %S and shown as the owning branch.
+        // Fields are separated by the unit-separator byte (0x1F, %x1f) so subjects
+        // containing spaces/tabs don't break parsing: "<hash>␟<source>␟<date>␟<subject>".
+        var (output, _) = _svc.RunGitFlow(
+            "log --all --source -200 --date=format:\"%Y-%m-%d %H:%M:%S\" " +
+            "--pretty=format:\"%h%x1f%S%x1f%cd%x1f%s\"");
         var refs = new List<CommitRef>();
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            var parts = line.Trim().Split(new[] { ' ', '\t' }, 3, StringSplitOptions.RemoveEmptyEntries);
-            if (parts.Length == 3 && parts[0].Length >= 7)
-                refs.Add(new CommitRef(parts[2], parts[0], ShortRef(parts[1])));
+            var parts = line.Split('\x1f');
+            if (parts.Length == 4 && parts[0].Length >= 7)
+                refs.Add(new CommitRef(parts[3], parts[0], ShortRef(parts[1]), parts[2]));
         }
+        // Newest first. The date string is fixed-width "YYYY-MM-dd HH:mm:ss", so an ordinal
+        // descending sort orders by actual chronology without parsing to DateTime.
+        refs.Sort((a, b) => string.CompareOrdinal(b.Date, a.Date));
         return refs;
     }
 
@@ -619,69 +690,39 @@ public sealed class RestoreForm : Form
         {
             string dir = Path.GetDirectoryName(SettingsFilePath)!;
             if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            // No ComboBox in this window is persisted — every combo (emergency branch/tag, hash
+            // dropdowns and reset branch) reopens at its default each time, so a stale selection is
+            // never silently reused. Only the non-combo fields below are remembered.
             var settings = new Dictionary<string, string>
             {
-                ["emergencyBranch"] = _cboEmergencyBranch.SelectedItem as string ?? string.Empty,
-                ["emergencyTag"]    = _cboEmergencyTag.Text.Trim(),
-                ["restoreHash"] = HashOf(_cboRestoreHash),
                 ["restoreFile"] = _txtRestoreFile.Text.Trim(),
-                ["cherryHash"]  = HashOf(_cboCherryHash),
-                ["resetBranch"] = _cboBranch.SelectedItem as string ?? string.Empty,
-                ["resetHash"]   = HashOf(_cboResetHash),
-                ["resetMode"]   = _rdHard.Checked ? "hard" : _rdSoft.Checked ? "soft" : "mixed"
+                ["resetMode"]   = _rdHard.Checked ? "hard" : _rdSoft.Checked ? "soft" : "mixed",
+                // Show Debug is remembered per-window (this file is exclusive to the Restore window).
+                ["showDebug"]   = _chkShowDebug.Checked ? "1" : "0"
             };
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings));
         }
         catch { }
     }
 
-    private void RestoreSettings(Dictionary<string, string> saved, List<CommitRef> refs, List<string> branches)
+    private void RestoreSettings(Dictionary<string, string> saved)
     {
-        if (saved.TryGetValue("emergencyBranch", out var eb) && eb.Length > 0)
-        {
-            int idx = _cboEmergencyBranch.Items.IndexOf(eb);
-            if (idx >= 0) _cboEmergencyBranch.SelectedIndex = idx;
-        }
-        if (saved.TryGetValue("emergencyTag", out var et) && et.Length > 0)
-        {
-            int idx = _cboEmergencyTag.Items.IndexOf(et);
-            if (idx >= 0) _cboEmergencyTag.SelectedIndex = idx;
-            else          _cboEmergencyTag.Text = et;
-        }
-
-        if (saved.TryGetValue("restoreHash", out var rh) && rh.Length > 0)
-        {
-            var match = refs.FirstOrDefault(r => r.Hash == rh || r.Hash.StartsWith(rh));
-            if (match != null) _cboRestoreHash.SelectedItem = match;
-            else               _cboRestoreHash.Text = rh;
-        }
+        // No combo is restored — emergency branch/tag, the hash dropdowns and the reset branch all
+        // open at their defaults. Only the non-combo fields (restore file, reset mode) are remembered.
         if (saved.TryGetValue("restoreFile", out var rf) && rf.Length > 0)
             _txtRestoreFile.Text = rf;
 
-        if (saved.TryGetValue("cherryHash", out var ch) && ch.Length > 0)
-        {
-            var match = refs.FirstOrDefault(r => r.Hash == ch || r.Hash.StartsWith(ch));
-            if (match != null) _cboCherryHash.SelectedItem = match;
-            else               _cboCherryHash.Text = ch;
-        }
-
-        if (saved.TryGetValue("resetBranch", out var rb) && rb.Length > 0)
-        {
-            int idx = branches.IndexOf(rb);
-            if (idx >= 0) _cboBranch.SelectedIndex = idx;
-        }
-        if (saved.TryGetValue("resetHash", out var resetH) && resetH.Length > 0)
-        {
-            var match = refs.FirstOrDefault(r => r.Hash == resetH || r.Hash.StartsWith(resetH));
-            if (match != null) _cboResetHash.SelectedItem = match;
-            else               _cboResetHash.Text = resetH;
-        }
         if (saved.TryGetValue("resetMode", out var mode))
         {
             _rdHard.Checked  = mode == "hard";
             _rdSoft.Checked  = mode == "soft";
             _rdMixed.Checked = mode != "hard" && mode != "soft";
         }
+
+        // Show Debug: restore this window's own saved state; with no saved value, keep the
+        // constructor default (the owner's Show-Debug state passed in via showControlIds).
+        if (saved.TryGetValue("showDebug", out var sd) && sd.Length > 0)
+            _chkShowDebug.Checked = sd is "1" or "true";
     }
 
     // ── Git execution ────────────────────────────────────────────────────────
@@ -878,17 +919,27 @@ public sealed class RestoreForm : Form
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private static string HashOf(ComboBox cbo) =>
-        cbo.SelectedItem is CommitRef r ? r.Hash : cbo.Text.Trim();
+    private string HashOf(ComboBox cbo)
+    {
+        if (cbo.SelectedItem is CommitRef r) return r.Hash;
+        string text = cbo.Text.Trim();
+        // The "Select..." prompt is not a hash — treat it as no selection.
+        return text == _t["selectPrompt"] ? string.Empty : text;
+    }
 
     private sealed class CommitRef
     {
         public string Hash { get; }
+        /// <summary>Commit date as "YYYY-MM-dd HH:mm:ss" — lexically sortable, newest first.</summary>
+        public string Date { get; }
         private readonly string _display;
-        public CommitRef(string name, string hash, string source)
+        public CommitRef(string name, string hash, string source, string date)
         {
             Hash = hash;
-            _display = $"[{source}] {name}  →  {hash}";
+            Date = date;
+            // "(YYYY-MM-dd HH:mm:ss) [branch] hash  →  subject" — date in parentheses, then branch,
+            // then the hash, then the commit message.
+            _display = $"({date}) [{source}] {hash}  →  {name}";
         }
         public override string ToString() => _display;
     }
