@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-06
-atualizado: 2026-06-07 (botão Restore, helper RevealInTree, fechamento sem refresh/notify)
+atualizado: 2026-06-16 (rótulo Cherry-Pick "Commit hash:"; dropdowns de hash prefixados com a branch de origem)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, restore]
 fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 ---
@@ -16,8 +16,9 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 ## 🧭 Layout
 - **Header** — `HEAD: <ref simbólico>` + link **"About Restore"** (canto superior direito).
 - **Restaurar Arquivo** (grupo) — `Commit hash` (combobox com histórico) + `Arquivo` (caminho relativo, TextBox) + botão **Restaurar**.
-- **Cherry-Pick** (grupo) — `Commit(s)` (combobox com histórico, aceita hash simples ou range `antigo..recente`) + botão **Cherry-Pick**.
+- **Cherry-Pick** (grupo) — `Commit hash` (combobox com histórico, aceita hash simples ou range `antigo..recente`) + botão **Cherry-Pick**.
 - **Reset Branch** (grupo) — `Branch` (combobox de branches locais, padrão `develop`) + `Commit hash` (combobox com histórico) + radio buttons `--mixed` / `--soft` / `--hard` + botão **Reset**.
+- **Dropdowns de commit hash** (Restaurar Arquivo, Cherry-Pick e Reset Branch) — populados via `git log --oneline --all --source -200`; cada item é prefixado com a branch de origem: `[branch] mensagem  →  hash`.
 - **Resultado** — caixa multilinha somente-leitura (fonte Consolas), scroll automático para o fim.
 - **Fechar** (também é o `CancelButton` — Esc).
 
@@ -36,7 +37,7 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 3. Exibe resultado. Sucesso → `RevealInTree(null)` (só refresca).
 
 ### Botão Cherry-Pick (`_btnCherryPick`) → `DoCherryPick`
-1. Lê campo `Commit(s)`:
+1. Lê campo `Commit hash`:
    - Hash simples → `git cherry-pick <hash>`.
    - Range com `..` → `git cherry-pick <antigo>..<recente>`.
 2. Exibe resultado. Sucesso → `RevealInTree(null)`.

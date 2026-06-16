@@ -1,11 +1,11 @@
----
+﻿---
 tipo: projeto
 criado: 2026-06-01
 atualizado: 2026-06-16 (1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.323
+versao: 1.0.325
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -253,7 +253,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.323** (README + csproj + nuspec + vault em sincronia)
+- Versão atual: **1.0.325** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
