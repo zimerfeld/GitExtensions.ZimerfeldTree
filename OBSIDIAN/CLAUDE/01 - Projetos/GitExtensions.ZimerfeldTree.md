@@ -1,11 +1,11 @@
 ---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-09 (1.0.276: tags excluídas na árvore também são removidas do remoto; link About corrigido + seções Show Debug/Modo Developer; títulos das janelas padronizados com prefixo "ZimerfeldTree - " + nome da janela: "ZimerfeldTree - BranchHierarchy" / "ZimerfeldTree - GitFlow" / "ZimerfeldTree - Restore")
+atualizado: 2026-06-16 (1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.276
+versao: 1.0.323
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -72,7 +72,7 @@ C:\GitExtensions\ZimerfeldTree\
 | Seções da árvore | `local.png`, `remotes.png`, `tags.png` | Cabeçalhos LOCAL / REMOTES / TAGS |
 | Nós de branch | `master.png`, `develop.png`, `feature.png`, `folha.png`, `release.png` | Ícones por tipo de branch GitFlow |
 | Remote / tag | `origin.png`, `remote-branch.png`, `tag.png` | Grupo de remote (foguete), branch remota, tag |
-| Menu de contexto | `ctx-checkout.png`, `ctx-collapse.png`, `ctx-commit.png`, `ctx-delete.png`, `ctx-expand.png`, `ctx-gitflow.png`, `ctx-merge.png`, `ctx-new-branch.png`, `ctx-rebase.png`, `ctx-refresh.png`, `ctx-rename.png`, `ctx-restore.png` | Ícones do menu de contexto da árvore |
+| Menu de contexto | `ctx-checkout.png`, `ctx-collapse.png`, `ctx-commit.png`, `ctx-delete.png`, `ctx-expand.png`, `ctx-gitflow.png`, `ctx-merge.png`, `ctx-new-branch.png`, `ctx-pull.png`, `ctx-push.png`, `ctx-rebase.png`, `ctx-refresh.png`, `ctx-rename.png`, `ctx-restore.png` | Ícones do menu de contexto da árvore. `ctx-pull` (seta ↓ azul) / `ctx-push` (seta ↑ verde) também usados nos botões Pull/Push — gerados via Pillow (ver `tools\make_pull_push_icons.py`) |
 
 > Cada `<EmbeddedResource>` é **condicional à existência do arquivo** (`Condition="Exists(...)"`). Em runtime, `NodeIcons.LoadEmbedded` lê o recurso por `GitExtensions.ZimerfeldTree.Resources.<arquivo>` e redimensiona para 16×16. Se ausente/ilegível, cai no **glifo GDI+ de reserva** — o build nunca quebra por falta da imagem.
 
@@ -85,7 +85,9 @@ C:\GitExtensions\ZimerfeldTree\
 - **Overlay só na 1ª exibição e nas recargas explícitas** — não aparece ao reativar após fechar GitFlow/Restore (árvore já atualizada ao vivo) nem no eco do próprio `NotifyRepoChanged`
 - Seletor de **Working Directory** (combo lido de `%APPDATA%\GitExtensions\GitExtensions\GitExtensions.settings`) e **branch atual em negrito** + cor de destaque
 - **Filtro em tempo real** em todas as seções (substring case-insensitive), preservando nós-pai com filhos correspondentes
-- **Botões Pull / Push / Commit / Excluir / GitFlow / Restore** acima da árvore (quando há branch em checkout); contadores `↓N` / `↑N` / `(N)`
+- **Botões Pull / Push / Commit / Excluir / GitFlow / Restore** acima da árvore (quando há branch em checkout); contadores `↓N` / `↑N` / `(N)`. **Pull/Push exibem ícones de seta** (↓ azul / ↑ verde) no lugar dos antigos caracteres `↓`/`↑`. Agem no **HEAD**
+- **Verificação do remoto ao abrir** — `git fetch` da upstream da branch atual roda em segundo plano após a janela aparecer (offline-safe na abertura); corrige os contadores Pull/Push e adiciona `↓N` ao label `Branch:`
+- **Push protegido contra divergência** — se a branch a enviar está **atrás** do remoto, o Push é bloqueado com aviso "faça Baixar primeiro" (oferece baixar na hora), evitando rejeição `non-fast-forward`
 - **Seleção múltipla por checkbox** — cada branch (local/remota) e tag tem checkbox (seções e pastas não); marcar 2+ habilita exclusão em lote. O botão **Excluir** muda para `Excluir (N)` e o menu de contexto reduz para **Excluir + Atualizar**
 - **Checkbox "Modo Developer"** (ao lado de Show Debug) — **desligado (padrão):** `main`/`master`/`develop` ficam **protegidas**, com checkbox bloqueado (não podem ser marcadas nem excluídas); **ligado:** libera a marcação/exclusão dessas branches específicas. Desativar o modo **desmarca automaticamente** qualquer main/master/develop marcada. Estado persistido em `ZimerfeldTree.uisettings.json`
 - **Foco automático após Commit** — a janela retoma o foco e atualiza a árvore ao fechar a janela de Commit
@@ -93,7 +95,7 @@ C:\GitExtensions\ZimerfeldTree\
 - **Persistência de estado da árvore** (expande/recolhe) por Working Directory em `ZimerfeldTree.treestate.json` — caminho estável por nó (ex.: `LOCAL|master|develop|feature`), debounce 500 ms + save no fechamento, restaurado no `Shown` da 1ª abertura
 - **Organização automática como GitFlow** — detecta hierarquia fora do padrão e auto-organiza; botão "Restaurar hierarquia real" / "Organizar como GitFlow"
 - **Atualização automática** em checkout, troca de repositório, init/reabertura; botão **Atualizar** manual
-- **Menu de contexto** com ícones embutidos (Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir, GitFlow…, Restore…, Expandir/Recolher, Atualizar)
+- **Menu de contexto** com ícones embutidos (Baixar, Enviar, Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir, GitFlow…, Restore…, Expandir/Recolher, Atualizar) + **cabeçalho no topo** com a branch em checkout. **Baixar/Enviar agem na branch clicada** (checkout dela primeiro), com contadores próprios
 - **Botão GitFlow Initialize** — aplica de uma vez as chaves `gitflow.*` padrão (ver [[git flow - chaves de config (CLI)]])
 - **Restore / Cherry-Pick / Reset** (`RestoreForm`) — janela modal de restauração de histórico
 
@@ -251,7 +253,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.276** (README + csproj + nuspec em sincronia)
+- Versão atual: **1.0.323** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
@@ -270,6 +272,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 - [[2026-06-06 - Hierarquia branches mesmo commit, commit automático no Start]]
 - [[2026-06-06 - Push fix, double refresh, Voltar Versão menu]]
 - [[2026-06-07 - Refresh, overlay, eco e botão Restore]]
+- [[2026-06-16 - Pull-Push remoto ao abrir, ícones, menu na branch clicada, aviso de push]]
 
 ## 🔗 Relacionado
 - [[Interface ZimerfeldTree — botões e fluxos]]
