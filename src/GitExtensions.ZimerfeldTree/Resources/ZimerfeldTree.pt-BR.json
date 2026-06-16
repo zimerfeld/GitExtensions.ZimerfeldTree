@@ -33,6 +33,8 @@
   "ctxExpand": "Expandir tudo",
   "ctxCollapse": "Recolher tudo",
   "ctxRefresh": "Atualizar",
+  "ctxPull": "Baixar ({0})",
+  "ctxPush": "Enviar ({0})",
 
   "statusCounts": "Local: {0}  |  Remoto: {1}  |  Tags: {2}",
   "sectionLocal": "LOCAL ({0})",
@@ -43,8 +45,8 @@
   "emptyTags": "(nenhuma tag encontrada)",
   "commitCount": "Cometer ({0})",
   "deleteCount": "Excluir ({0})",
-  "pullCount": "↓ Baixar ({0})",
-  "pushCount": "↑ Enviar ({0})",
+  "pullCount": "Baixar ({0})",
+  "pushCount": "Enviar ({0})",
 
   "loadingTitle": "Carregando dados do repositório",
   "abortOperation": "Abortar Operação",

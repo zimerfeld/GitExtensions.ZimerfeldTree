@@ -508,6 +508,51 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>
+    /// Removes stale remote-tracking refs (<c>refs/remotes/&lt;remote&gt;/*</c>) for branches that no
+    /// longer exist on the default remote, so they stop appearing in the tree. Runs
+    /// <c>git remote prune &lt;remote&gt;</c>, which contacts the remote — call only from the async
+    /// refresh path, never from the synchronous window-open load. Best-effort: a missing remote or a
+    /// network failure is swallowed, since pruning is a tree-accuracy nicety, not a hard requirement.
+    /// </summary>
+    public void PruneRemotes()
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            if (remote.Length == 0) return;
+            RunGitFull($"remote prune {remote}");
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Contacts the default remote to refresh the remote-tracking ref of the current branch only
+    /// (<c>git fetch &lt;remote&gt; &lt;branch&gt;</c>), so its ahead/behind counts reflect the real
+    /// remote state instead of the last fetch. Network-bound — call only from an async/background
+    /// path, never from the synchronous window-open load. Best-effort: a missing upstream, missing
+    /// remote, or network failure is swallowed. Returns true when a fetch actually ran.
+    /// </summary>
+    public bool FetchCurrentBranchUpstream()
+    {
+        try
+        {
+            // Resolve the upstream of the current branch (e.g. "origin/develop"). Fails cleanly when
+            // HEAD is detached or no upstream is configured — nothing to fetch in those cases.
+            string upstream = RunGit("rev-parse --abbrev-ref --symbolic-full-name @{u}", out int uc).Trim();
+            if (uc != 0 || upstream.Length == 0) return false;
+
+            int slash = upstream.IndexOf('/');
+            if (slash <= 0) return false;
+            string remote = upstream[..slash];
+            string branch = upstream[(slash + 1)..];
+
+            var (_, _, code) = RunGitFull($"fetch {EscapeArg(remote)} {EscapeArg(branch)}");
+            return code == 0;
+        }
+        catch { return false; }
+    }
+
     public (bool ok, string error) RebaseBranch(string branchName)
     {
         try

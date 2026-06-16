@@ -10,7 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-    <Version>1.0.318</Version>
+    <Version>1.0.322</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
@@ -62,6 +62,8 @@
     <EmbeddedResource Include="Resources\tag.png"     Condition="Exists('Resources\tag.png')" />
     <EmbeddedResource Include="Resources\remote-branch.png" Condition="Exists('Resources\remote-branch.png')" />
     <!-- Context menu icons -->
+    <EmbeddedResource Include="Resources\ctx-pull.png"       Condition="Exists('Resources\ctx-pull.png')" />
+    <EmbeddedResource Include="Resources\ctx-push.png"       Condition="Exists('Resources\ctx-push.png')" />
     <EmbeddedResource Include="Resources\ctx-commit.png"     Condition="Exists('Resources\ctx-commit.png')" />
     <EmbeddedResource Include="Resources\ctx-checkout.png"   Condition="Exists('Resources\ctx-checkout.png')" />
     <EmbeddedResource Include="Resources\ctx-new-branch.png" Condition="Exists('Resources\ctx-new-branch.png')" />
