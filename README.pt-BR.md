@@ -126,6 +126,13 @@ O checkbox **Show Debug**, localizado na borda inferior esquerda da janela Branc
 - **Cada janela persiste e recarrega o próprio estado de Show Debug individualmente** — BranchHierarchy em `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`, GitFlow em `ZimerfeldTree.gitflowsettings.json` e Restore em `ZimerfeldRestore.settings.json`. Na primeira abertura de uma janela auxiliar (sem valor salvo), ela herda o estado da BranchHierarchy
 - Útil para desenvolvimento e manutenção do plugin
 
+### Seletor de Idioma
+
+Um dropdown **Idioma** na borda inferior de cada janela troca o texto da UI ao vivo entre **Automático** (segue a cultura do SO), **Inglês** e **Português**:
+
+- **Cada janela persiste e recarrega o próprio idioma individualmente**, então BranchHierarchy, GitFlow e Restore podem ser exibidas em idiomas diferentes ao mesmo tempo. BranchHierarchy é gravado em `%APPDATA%\GitExtensions\ZimerfeldTree.language.json`, GitFlow em `ZimerfeldTree.gitflowsettings.json` e Restore em `ZimerfeldRestore.settings.json`.
+- A janela reabre no idioma em que foi deixada por último. Na primeira abertura de uma janela auxiliar (sem valor salvo), ela herda o idioma da BranchHierarchy como padrão.
+
 ### Checkbox "Modo Developer"
 
 O checkbox **Modo Developer**, ao lado de _Show Debug_ na borda inferior da janela, controla a proteção das branches principais:

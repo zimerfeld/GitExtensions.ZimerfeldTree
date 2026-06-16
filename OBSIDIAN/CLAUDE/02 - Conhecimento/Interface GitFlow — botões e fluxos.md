@@ -150,6 +150,7 @@ Toda ação passa por aqui:
 ### Checkboxes do Finish
 - **Keep branch after finish** e **No fetch (--no-fetch)**: ao mudar, salvam em `ZimerfeldTree.gitflowsettings.json`.
 - **Show Debug** (`chkShowDebug`): persiste/recarrega o próprio estado **individualmente** (chave `showDebug` no mesmo `ZimerfeldTree.gitflowsettings.json`). Na primeira abertura (sem valor salvo) usa o estado herdado do owner (`showControlIds`).
+- **Idioma** (`cboLanguage`): **por janela** (campo `_lang`), persistido individualmente (chave `language` no `ZimerfeldTree.gitflowsettings.json`), aplicado no `Load` via `ApplyLanguage()` com `I18n.Load(scope, _lang)`. **Não** chama mais `I18n.SetLanguage` global. Em `ApplySettings`, `_lang` é definido **antes** dos checkboxes (cujo `CheckedChanged` chama `SaveSettings`) para não sobrescrever o idioma salvo. Primeira abertura sem valor herda `I18n.Current`.
 
 ### Link "About GitFlow"
 - Abre `MessageBox` descrevendo os comandos git executados por cada botão.

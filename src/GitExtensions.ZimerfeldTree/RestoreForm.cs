@@ -15,9 +15,14 @@ public sealed class RestoreForm : Form
     private readonly bool    _showControlIds;
     private readonly ToolTip _mainTooltip = new ToolTip();
 
-    // Loaded for the active language; reassigned by ApplyLanguage when the user switches languages
-    // via the bottom-panel dropdown (so the open window re-localizes live, like ZimerfeldTree).
-    private Translator _t = I18n.Load("ZimerfeldRestore");
+    // This window's own language, persisted independently of the other windows (in this window's
+    // settings file). Initialized to the app-wide choice as the first-open default; overwritten by
+    // the saved per-window value in RestoreSettings.
+    private AppLanguage _lang = I18n.Current;
+
+    // Loaded for _lang; reassigned by ApplyLanguage when the user switches languages via the
+    // bottom-panel dropdown (so the open window re-localizes live, like ZimerfeldTree).
+    private Translator _t = I18n.Load("ZimerfeldRestore", I18n.Current);
 
     // (control, dictionary-key) pairs reapplied by ApplyLanguage so every label/button/tab re-localizes
     // in place when the Language dropdown changes.
@@ -126,6 +131,7 @@ public sealed class RestoreForm : Form
         Load         += (_, _) =>
         {
             InitData();
+            ApplyLanguage();   // InitData loaded this window's saved language into _lang
             ApplyOrClearTooltips(_chkShowDebug.Checked);
             LayoutResponsive();
         };
@@ -529,24 +535,23 @@ public sealed class RestoreForm : Form
 
     // ── Language selection ────────────────────────────────────────────────────
 
-    /// <summary>Persists the dropdown choice and re-localizes this window in place.</summary>
+    /// <summary>Updates this window's own language and re-localizes in place (persisted on close).</summary>
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         if (_suppressLangEvent) return;
-        var lang = _cboLanguage.SelectedIndex switch
+        _lang = _cboLanguage.SelectedIndex switch
         {
             1 => AppLanguage.English,
             2 => AppLanguage.Portuguese,
             _ => AppLanguage.Automatic,
         };
-        I18n.SetLanguage(lang);
         ApplyLanguage();
     }
 
-    /// <summary>Reloads the active-language dictionary and reapplies every registered text in place.</summary>
+    /// <summary>Reloads _lang's dictionary and reapplies every registered text in place.</summary>
     private void ApplyLanguage()
     {
-        _t = I18n.Load("ZimerfeldRestore");
+        _t = I18n.Load("ZimerfeldRestore", _lang);
         Text = _t["title"];
         foreach (var (c, key) in _localized) c.Text = _t[key];
         _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
@@ -564,14 +569,13 @@ public sealed class RestoreForm : Form
         PopulateLanguageCombo();
     }
 
-    /// <summary>Repopulates the language dropdown with localized item labels, preserving selection.</summary>
+    /// <summary>Repopulates the language dropdown with localized labels and selects this window's _lang.</summary>
     private void PopulateLanguageCombo()
     {
         _suppressLangEvent = true;
-        int sel = _cboLanguage.SelectedIndex >= 0 ? _cboLanguage.SelectedIndex : (int)I18n.Current;
         _cboLanguage.Items.Clear();
         _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"]]);
-        _cboLanguage.SelectedIndex = sel;
+        _cboLanguage.SelectedIndex = (int)_lang;
         _suppressLangEvent = false;
     }
 
@@ -697,8 +701,9 @@ public sealed class RestoreForm : Form
             {
                 ["restoreFile"] = _txtRestoreFile.Text.Trim(),
                 ["resetMode"]   = _rdHard.Checked ? "hard" : _rdSoft.Checked ? "soft" : "mixed",
-                // Show Debug is remembered per-window (this file is exclusive to the Restore window).
-                ["showDebug"]   = _chkShowDebug.Checked ? "1" : "0"
+                // Show Debug and language are remembered per-window (this file is exclusive to Restore).
+                ["showDebug"]   = _chkShowDebug.Checked ? "1" : "0",
+                ["language"]    = _lang.ToString()
             };
             File.WriteAllText(SettingsFilePath, JsonSerializer.Serialize(settings));
         }
@@ -723,6 +728,11 @@ public sealed class RestoreForm : Form
         // constructor default (the owner's Show-Debug state passed in via showControlIds).
         if (saved.TryGetValue("showDebug", out var sd) && sd.Length > 0)
             _chkShowDebug.Checked = sd is "1" or "true";
+
+        // Language: restore this window's own saved choice; with no saved value, keep the app-wide
+        // default (_lang was initialized to I18n.Current). ApplyLanguage (called next) re-localizes.
+        if (saved.TryGetValue("language", out var lng) && Enum.TryParse<AppLanguage>(lng, out var pl))
+            _lang = pl;
     }
 
     // ── Git execution ────────────────────────────────────────────────────────

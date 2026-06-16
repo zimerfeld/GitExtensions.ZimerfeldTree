@@ -121,6 +121,13 @@ The **Show Debug** checkbox enables identification tooltips for plugin controls:
 - Works in the BranchHierarchy, GitFlow, and Restore windows.
 - **Each window persists and reloads its own Show Debug state individually** — BranchHierarchy in `%APPDATA%\GitExtensions\ZimerfeldTree.uisettings.json`, GitFlow in `ZimerfeldTree.gitflowsettings.json`, and Restore in `ZimerfeldRestore.settings.json`. The first time a helper window opens (no saved value), it inherits the BranchHierarchy state.
 
+### Language selector
+
+A **Language** dropdown at the bottom of each window switches the UI text live between **Automatic** (follows the OS culture), **English**, and **Portuguese**:
+
+- **Each window persists and reloads its own language individually**, so BranchHierarchy, GitFlow, and Restore can each be shown in a different language at the same time. BranchHierarchy is stored in `%APPDATA%\GitExtensions\ZimerfeldTree.language.json`, GitFlow in `ZimerfeldTree.gitflowsettings.json`, and Restore in `ZimerfeldRestore.settings.json`.
+- A window reopens in the language it was last set to. The first time a helper window opens (no saved value), it inherits the BranchHierarchy language as the default.
+
 ### Developer Mode checkbox
 
 The **Developer Mode** checkbox controls protection for main branches:

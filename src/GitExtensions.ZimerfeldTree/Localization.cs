@@ -34,7 +34,10 @@ public static class I18n
     }
 
     /// <summary>Resolves the active choice to a concrete culture code ("en-US" / "pt-BR").</summary>
-    public static string Culture => _current switch
+    public static string Culture => CultureOf(_current);
+
+    /// <summary>Resolves an explicit language to a concrete culture code ("en-US" / "pt-BR").</summary>
+    public static string CultureOf(AppLanguage lang) => lang switch
     {
         AppLanguage.English    => "en-US",
         AppLanguage.Portuguese => "pt-BR",
@@ -50,9 +53,15 @@ public static class I18n
     /// "ZimerfeldGitFlow" / "ZimerfeldRestore") in the active language, falling back to en-US then
     /// to an empty map (in which case <see cref="Translator"/> echoes each key back).
     /// </summary>
-    public static Translator Load(string scope)
+    public static Translator Load(string scope) => Load(scope, _current);
+
+    /// <summary>
+    /// Same as <see cref="Load(string)"/> but for an explicit <paramref name="lang"/> rather than the
+    /// global choice — lets each window display and persist its own language independently.
+    /// </summary>
+    public static Translator Load(string scope, AppLanguage lang)
     {
-        var map = ReadEmbedded($"{scope}.{Culture}.json")
+        var map = ReadEmbedded($"{scope}.{CultureOf(lang)}.json")
                ?? ReadEmbedded($"{scope}.en-US.json")
                ?? new Dictionary<string, string>();
         return new Translator(map);
