@@ -281,7 +281,7 @@ public sealed class RestoreForm : Form
         // Label + combo on the first row, at the same height as cboEmergencyBranch (combo y=24, label y=26).
         var lblHash = new Label
         {
-            Text      = _t["commits"],
+            Text      = _t["commitHash"],
             AutoSize  = false,
             Bounds    = new Rectangle(14, 26, 90, 18),
             TextAlign = ContentAlignment.MiddleLeft
@@ -306,7 +306,7 @@ public sealed class RestoreForm : Form
 
         _localized.AddRange(new KeyValuePair<Control, string>[]
         {
-            new(lblHash, "commits"), new(_btnCherryPick, "applyCherryPick"),
+            new(lblHash, "commitHash"), new(_btnCherryPick, "applyCherryPick"),
         });
     }
 
@@ -573,15 +573,28 @@ public sealed class RestoreForm : Form
 
     private List<CommitRef> LoadCommitRefs()
     {
-        var (output, _) = _svc.RunGitFlow("log --oneline --all -200");
+        // --source tags each commit with the ref by which the walk first reached it
+        // (e.g. "refs/heads/develop"), which we prepend as the owning branch. The line
+        // shape is "<hash>\t<source-ref> <subject>".
+        var (output, _) = _svc.RunGitFlow("log --oneline --all --source -200");
         var refs = new List<CommitRef>();
         foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
         {
-            var parts = line.Trim().Split(' ', 2);
-            if (parts.Length == 2 && parts[0].Length >= 7)
-                refs.Add(new CommitRef(parts[1], parts[0]));
+            var parts = line.Trim().Split(new[] { ' ', '\t' }, 3, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 3 && parts[0].Length >= 7)
+                refs.Add(new CommitRef(parts[2], parts[0], ShortRef(parts[1])));
         }
         return refs;
+    }
+
+    /// <summary>Strips the <c>refs/heads/</c>, <c>refs/remotes/</c> and <c>refs/tags/</c>
+    /// prefixes so the dropdown shows a compact branch/tag name.</summary>
+    private static string ShortRef(string fullRef)
+    {
+        foreach (var prefix in new[] { "refs/heads/", "refs/remotes/", "refs/tags/" })
+            if (fullRef.StartsWith(prefix))
+                return fullRef[prefix.Length..];
+        return fullRef;
     }
 
     // ── Persistence ──────────────────────────────────────────────────────────
@@ -872,7 +885,11 @@ public sealed class RestoreForm : Form
     {
         public string Hash { get; }
         private readonly string _display;
-        public CommitRef(string name, string hash) { Hash = hash; _display = $"{name}  →  {hash}"; }
+        public CommitRef(string name, string hash, string source)
+        {
+            Hash = hash;
+            _display = $"[{source}] {name}  →  {hash}";
+        }
         public override string ToString() => _display;
     }
 
