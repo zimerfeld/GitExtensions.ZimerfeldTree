@@ -19,6 +19,14 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
 
+### GitFlow flexible hierarchy — feature under feature
+
+Classic GitFlow does not provide for a feature branch as a child of another feature. GitFlow defines a fixed hierarchy where all `feature/*` branches derive from `develop` and are siblings of one another. Sub-features are usually handled with separate commits on the same branch or with sibling branches sharing a common prefix. **ZimerfeldTree GitFlow**, however, allows a flexible hierarchy where `feature/*` branches can derive either from `develop` or from another `feature/*` above them. In that case, finishing a feature must necessarily **cascade** all its changes up to the parent `feature/*` node, successively re-applying *finish feature* until it reaches `develop`.
+
+### Hierarquia flexível do GitFlow — feature filha de feature
+
+O GitFlow conhecido não prevê feature filha de feature. O GitFlow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são irmãs entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum. Porém o **ZimerfeldTree GitFlow** permite uma hierarquia flexível onde as branches `feature/*` podem tanto derivar de `develop` quanto de uma outra `feature/*` acima dela. Nesse caso o *finish feature* deve obrigatoriamente **cascatear** todas as mudanças para a branch `feature/*` nó pai sucessivamente, aplicando *finish feature* novamente até chegar em `develop`.
+
 GitFlow — Start and Finish rules per branch type / Regras de Start e Finish por tipo de branch:
 
 ![Start and Finish rules per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)

@@ -499,9 +499,11 @@ The plugin combines git commit ancestry with path grouping. Git itself does not 
 
 If a branch name is also a prefix for other branches, the tree must represent both concepts: the actual branch and the folder path. This avoids hiding a real ref behind a visual grouping node.
 
-### GitFlow does not model feature-under-feature
+### GitFlow flexible hierarchy — feature under feature
 
-GitFlow defines a fixed hierarchy where `feature/*` branches derive from `develop` and are siblings. Sub-features are usually modeled as commits in the same branch or sibling branches with a common prefix.
+Classic GitFlow does not provide for a feature branch as a child of another feature. GitFlow defines a fixed hierarchy where all `feature/*` branches derive from `develop` and are siblings of one another. Sub-features are usually handled with separate commits on the same branch or with sibling branches sharing a common prefix.
+
+**ZimerfeldTree GitFlow**, however, allows a flexible hierarchy where `feature/*` branches can derive either from `develop` or from another `feature/*` above them (use **based on:** in GitFlow → Start). In that case, finishing a feature must necessarily **cascade** all its changes up to the parent `feature/*` node, successively re-applying *finish feature* until it reaches `develop`.
 
 ### Two branches on the same commit are not parent and child
 
