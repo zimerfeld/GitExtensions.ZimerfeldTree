@@ -40,6 +40,13 @@ Features:
   • Working-directory combo populated from GitExtensions history
   • Auto-refresh on checkout and repository switch
   • Status bar: Local N | Remoto N | Tags N
+
+Flexible GitFlow hierarchy:
+  Classic GitFlow does not provide for a feature branch as a child of another feature —
+  all feature/* branches derive from develop and are siblings. ZimerfeldTree GitFlow instead
+  allows a flexible hierarchy where a feature/* can derive either from develop or from another
+  feature/* above it. When that happens, finishing a feature must cascade all its changes up to
+  the parent feature/* node, successively re-applying "finish feature" until it reaches develop.
     </description>
     <summary>
       Hierarchical branch tree viewer plugin for GitExtensions — groups branches by path

@@ -1,7 +1,7 @@
 ﻿---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-16 (1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
+atualizado: 2026-06-16 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
@@ -242,7 +242,8 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 ## ⛔ Limitações de hierarquia de branches
 - **Agrupamento é por nome (`/`), não por parentesco de commits** para o eixo de pastas — `master` e `develop` aparecem como irmãos; para aninhar por nome use `/`.
 - **Branch real não pode ser nó-pai de outra branch** — se `feature/login` existe, criar `feature/login/oauth` falha (`cannot lock ref … exists`), pois o ref seria arquivo **e** diretório. Solução: nomes irmãos (`feature/login-oauth`) ou agrupador sem branch real (`feature/login/base` + `feature/login/oauth`).
-- **GitFlow não prevê feature-filha-de-feature** — todas as `feature/*` derivam de `develop` e são irmãs.
+- **Flexible GitFlow — feature under feature** — Classic GitFlow does not provide for a feature branch as a child of another feature (all `feature/*` derive from `develop` as siblings). **ZimerfeldTree GitFlow** breaks that rigidity: a `feature/*` can derive from `develop` **or from another `feature/*` above it** (via **based on:** at Start). Consequence: finishing such a feature must **cascade** its changes up to the parent `feature/*` node, successively re-applying *finish feature* until it reaches `develop`.
+  - *PT:* O GitFlow clássico não prevê feature filha de feature (todas as `feature/*` derivam de `develop` e são irmãs). O ZimerfeldTree GitFlow permite uma hierarquia flexível onde uma `feature/*` pode derivar de `develop` ou de outra `feature/*` acima dela; o *finish feature* cascateia as mudanças para a `feature/*` pai sucessivamente, reaplicando *finish feature* até chegar em `develop`.
 - **Duas branches no exato mesmo commit não formam pai-filho** — o BFS de ancestralidade nunca encontra uma como pai da outra; ambas viram raízes. Solução automática: commit vazio no Start com **based on**. Detalhe em [[Hierarquia de branches — branches no mesmo commit]].
 
 ## 🐛 Armadilhas conhecidas

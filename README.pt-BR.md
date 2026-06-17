@@ -606,9 +606,11 @@ Isso ocorre porque `feature/login` seria simultaneamente um **arquivo** (a branc
 | Sub-tarefas de login      | `feature/login-oauth`, `feature/login-session` |
 | Agrupador sem branch real | `feature/login/base` + `feature/login/oauth`   |
 
-### Gitflow não prevê feature filha de feature
+### Hierarquia flexível do GitFlow — feature filha de feature
 
-O gitflow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são **irmãs** entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum.
+O GitFlow conhecido **não prevê feature filha de feature**. O GitFlow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são **irmãs** entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum.
+
+Porém o **ZimerfeldTree GitFlow** permite uma hierarquia **flexível** onde as branches `feature/*` podem tanto derivar de `develop` quanto de uma outra `feature/*` acima dela (use **based on:** em GitFlow → Start). Nesse caso o *finish feature* deve obrigatoriamente **cascatear** todas as mudanças para a branch `feature/*` nó pai sucessivamente, aplicando *finish feature* novamente até chegar em `develop`.
 
 ### Duas branches no mesmo commit não formam hierarquia pai-filho
 
