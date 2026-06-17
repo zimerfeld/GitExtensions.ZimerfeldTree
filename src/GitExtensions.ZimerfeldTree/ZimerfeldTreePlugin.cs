@@ -28,7 +28,12 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
     {
         // false = plugin has no configurable settings in the GitExtensions settings dialog
         Name        = "ZimerfeldTree";
-        Description = "Visualiza branches hierarquicamente em estrutura de árvore (ZimerfeldTree)";
+        Description = "Visualiza branches hierarquicamente em estrutura de árvore (ZimerfeldTree). "
+                    + "Diferente do GitFlow clássico — que não prevê feature filha de feature e mantém todas as "
+                    + "feature/* irmãs derivando de develop —, o GitFlow do ZimerfeldTree permite uma hierarquia "
+                    + "flexível: uma feature/* pode derivar de develop ou de outra feature/* acima dela. Nesse caso "
+                    + "o finish feature cascateia as mudanças para a feature/* pai sucessivamente, reaplicando finish "
+                    + "feature até chegar em develop.";
         Icon        = PluginIcon.ForMenu();
     }
 
