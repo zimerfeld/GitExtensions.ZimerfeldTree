@@ -54,6 +54,7 @@ public sealed class RestoreForm : Form
     // ── Restore File ──
     private ComboBox _cboRestoreHash = null!;
     private TextBox  _txtRestoreFile = null!;
+    private Button   _btnBrowseFile  = null!;
     private Button   _btnRestoreFile = null!;
 
     // ── Cherry-Pick ──
@@ -67,6 +68,38 @@ public sealed class RestoreForm : Form
     private RadioButton _rdSoft      = null!;
     private RadioButton _rdHard      = null!;
     private Button      _btnReset    = null!;
+
+    // ── Restore Tree (whole working tree from any commit) ──
+    private ComboBox _cboTreeHash   = null!;
+    private Button   _btnRestoreTree = null!;
+
+    // ── Revert (safe undo — new commit) ──
+    private ComboBox _cboRevertHash = null!;
+    private Button   _btnRevert     = null!;
+    private Button   _btnRevertMerge = null!;
+
+    // ── New Branch / Tag from a commit (+ inspect detached) ──
+    private ComboBox _cboNewRefHash = null!;
+    private TextBox  _txtNewRefName = null!;
+    private Button   _btnNewBranch  = null!;
+    private Button   _btnNewTag     = null!;
+    private Button   _btnInspect    = null!;
+
+    // ── Reflog recovery (recover lost commits / deleted branches) ──
+    private ComboBox _cboReflog        = null!;
+    private TextBox  _txtReflogBranch  = null!;
+    private Button   _btnReflogReset   = null!;
+    private Button   _btnReflogBranch  = null!;
+
+    // ── Discard local changes (working tree) ──
+    private Button _btnDiscardUnstaged = null!;
+    private Button _btnDiscardHard     = null!;
+    private Button _btnClean           = null!;
+
+    // ── Rebase (drop a commit — rewrites history) ──
+    private ComboBox _cboRebaseHash  = null!;
+    private Button   _btnRebaseDrop  = null!;
+    private Button   _btnRebaseAbort = null!;
 
     // ── Result (below the tabs, mirroring ZimerfeldGitFlow) ──
     private GroupBox _grpResult = null!;
@@ -96,7 +129,9 @@ public sealed class RestoreForm : Form
         // the buttons at runtime so the right margin always equals the left (SideMargin), regardless of
         // DPI/border math; each combo's drop-down list is pinned to its field width so the open list
         // never spills past the right margin.
-        Size            = new Size(830, 824 + SponsorBanner.PanelHeight);
+        // Width 980: enough for the now-eleven tabs and the wide hash dropdowns. The window grew
+        // (was 830) to host every history-recovery operation as its own aligned tab.
+        Size            = new Size(980, 824 + SponsorBanner.PanelHeight);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox     = false;
         MinimizeBox     = false;
@@ -106,15 +141,25 @@ public sealed class RestoreForm : Form
 
         // Docked shell (6 px padding → symmetric borders): a short tab control on top holding the
         // input groups, and the result group filling the space below the tabs (like ZimerfeldGitFlow),
-        // with the sponsor banner on top and a centered close-button bar below.
+        // with the sponsor banner on top and a centered close-button bar below. Multiline=true so all
+        // tabs are always visible (wrap to a second row) instead of hidden behind scroll arrows; the
+        // extra header row is why the height is 218 (vs the old single-row 196).
         var content = new Panel { Name = "contentPanel", Dock = DockStyle.Fill, Padding = new Padding(6, 4, 6, 6) };
-        _tabs = new TabControl { Name = "tabs", Dock = DockStyle.Top, Height = 196 };
+        _tabs = new TabControl { Name = "tabs", Dock = DockStyle.Top, Height = 218, Multiline = true };
 
         BuildHeader();
+        // Tab order runs from the safest operations to the most destructive: restore/inspect →
+        // cherry-pick/revert → reset → create-ref/reflog → discard → rebase.
         BuildEmergencyTab();
         BuildRestoreFileTab();
+        BuildRestoreTreeTab();
         BuildCherryPickTab();
+        BuildRevertTab();
         BuildResetTab();
+        BuildNewRefTab();
+        BuildReflogTab();
+        BuildDiscardTab();
+        BuildRebaseTab();
         BuildResultGroup();   // grpResult fills the area below the tabs (not a tab)
         BuildCloseButton();
 
@@ -164,14 +209,24 @@ public sealed class RestoreForm : Form
         RightAlign(_btnEmergencyReset);
         _btnEmergencyRestore.Left = _btnEmergencyReset.Left - 12 - _btnEmergencyRestore.Width;
 
-        // Restore File
+        // Restore File — Browse is right-aligned on the file row; the path field stretches up to it.
         Stretch(_cboRestoreHash);
-        Stretch(_txtRestoreFile);
+        RightAlign(_btnBrowseFile);
+        _txtRestoreFile.Width = Math.Max(60, _btnBrowseFile.Left - 8 - _txtRestoreFile.Left);
         RightAlign(_btnRestoreFile);
+
+        // Restore Tree
+        Stretch(_cboTreeHash);
+        RightAlign(_btnRestoreTree);
 
         // Cherry-Pick
         Stretch(_cboCherryHash);
         RightAlign(_btnCherryPick);
+
+        // Revert — two right-aligned buttons (merge revert outermost, plain revert tucked left).
+        Stretch(_cboRevertHash);
+        RightAlign(_btnRevertMerge);
+        _btnRevert.Left = _btnRevertMerge.Left - 12 - _btnRevert.Width;
 
         // Reset Branch — stretch the combos and right-align the Reset button on the radio row; size the
         // radios so they fill the row only up to (not over) the button, keeping the button visible.
@@ -181,6 +236,28 @@ public sealed class RestoreForm : Form
         int radioRight = _btnReset.Left - 12;
         foreach (var rd in new[] { _rdMixed, _rdSoft, _rdHard })
             rd.Width = Math.Max(60, radioRight - rd.Left);
+
+        // New Branch/Tag — three right-aligned buttons (branch outermost, then tag, then inspect).
+        Stretch(_cboNewRefHash);
+        Stretch(_txtNewRefName);
+        RightAlign(_btnNewBranch);
+        _btnNewTag.Left  = _btnNewBranch.Left - 12 - _btnNewTag.Width;
+        _btnInspect.Left = _btnNewTag.Left    - 12 - _btnInspect.Width;
+
+        // Reflog — two right-aligned buttons (reset outermost/red, create-branch to its left).
+        Stretch(_cboReflog);
+        Stretch(_txtReflogBranch);
+        RightAlign(_btnReflogReset);
+        _btnReflogBranch.Left = _btnReflogReset.Left - 12 - _btnReflogBranch.Width;
+
+        // Discard — three full-width stacked buttons.
+        foreach (var b in new[] { _btnDiscardUnstaged, _btnDiscardHard, _btnClean })
+            b.Width = Math.Max(120, b.Parent!.ClientSize.Width - SideMargin - b.Left);
+
+        // Rebase — drop button outermost/red, abort to its left.
+        Stretch(_cboRebaseHash);
+        RightAlign(_btnRebaseDrop);
+        _btnRebaseAbort.Left = _btnRebaseDrop.Left - 12 - _btnRebaseAbort.Width;
     }
 
     /// <summary>
@@ -315,8 +392,18 @@ public sealed class RestoreForm : Form
         {
             Name            = "txtRestoreFile",
             PlaceholderText = _t["filePlaceholder"],
-            Bounds          = new Rectangle(174, 52, 526, 22)
+            Bounds          = new Rectangle(174, 52, 420, 22)
         };
+
+        // "Browse…" opens a native file dialog rooted at the repository folder; the picked file is
+        // converted to a path relative to the repo and rejected if it sits outside it (see Browse_Click).
+        _btnBrowseFile = new Button
+        {
+            Name   = "btnBrowseFile",
+            Text   = _t["browseBtn"],
+            Bounds = new Rectangle(600, 52, 100, 22)
+        };
+        _btnBrowseFile.Click += BtnBrowseFile_Click;
 
         _btnRestoreFile = new Button
         {
@@ -326,11 +413,12 @@ public sealed class RestoreForm : Form
         };
         _btnRestoreFile.Click += BtnRestoreFile_Click;
 
-        AddTab("restoreFileGroup", lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnRestoreFile);
+        AddTab("restoreFileGroup", lblHash, _cboRestoreHash, lblFile, _txtRestoreFile, _btnBrowseFile, _btnRestoreFile);
 
         _localized.AddRange(new KeyValuePair<Control, string>[]
         {
-            new(lblHash, "commitHash"), new(lblFile, "fileRelative"), new(_btnRestoreFile, "restoreFileBtn"),
+            new(lblHash, "commitHash"), new(lblFile, "fileRelative"),
+            new(_btnBrowseFile, "browseBtn"), new(_btnRestoreFile, "restoreFileBtn"),
         });
     }
 
@@ -436,6 +524,311 @@ public sealed class RestoreForm : Form
             new(lblBranch, "branchLabel"), new(lblHash, "commitHash"),
             new(_rdMixed, "resetMixed"), new(_rdSoft, "resetSoft"), new(_rdHard, "resetHard"),
             new(_btnReset, "resetBtn"),
+        });
+    }
+
+    private void BuildRestoreTreeTab()
+    {
+        var lblHash = new Label
+        {
+            Text      = _t["commitHash"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 26, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboTreeHash = new ComboBox
+        {
+            Name          = "cboTreeHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(110, 24, 590, 22),
+            DropDownWidth = 590
+        };
+        var lblHint = new Label
+        {
+            Name      = "lblTreeHint",
+            Text      = _t["treeHint"],
+            AutoSize  = false,
+            ForeColor = SystemColors.GrayText,
+            Bounds    = new Rectangle(14, 54, 686, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _btnRestoreTree = new Button
+        {
+            Name   = "btnRestoreTree",
+            Text   = _t["restoreTreeBtn"],
+            Bounds = new Rectangle(550, 84, 150, 24)
+        };
+        _btnRestoreTree.Click += BtnRestoreTree_Click;
+
+        AddTab("restoreTreeGroup", lblHash, _cboTreeHash, lblHint, _btnRestoreTree);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHash, "commitHash"), new(lblHint, "treeHint"), new(_btnRestoreTree, "restoreTreeBtn"),
+        });
+    }
+
+    private void BuildRevertTab()
+    {
+        var lblHash = new Label
+        {
+            Text      = _t["commitHash"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 26, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboRevertHash = new ComboBox
+        {
+            Name          = "cboRevertHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(110, 24, 590, 22),
+            DropDownWidth = 590
+        };
+        var lblHint = new Label
+        {
+            Name      = "lblRevertHint",
+            Text      = _t["revertHint"],
+            AutoSize  = false,
+            ForeColor = SystemColors.GrayText,
+            Bounds    = new Rectangle(14, 54, 686, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        // Two right-aligned buttons (like Emergency): plain revert and merge revert (-m 1).
+        _btnRevert = new Button
+        {
+            Name   = "btnRevert",
+            Text   = _t["revertBtn"],
+            Bounds = new Rectangle(388, 84, 150, 26)
+        };
+        _btnRevert.Click += BtnRevert_Click;
+        _btnRevertMerge = new Button
+        {
+            Name   = "btnRevertMerge",
+            Text   = _t["revertMergeBtn"],
+            Bounds = new Rectangle(550, 84, 150, 26)
+        };
+        _btnRevertMerge.Click += BtnRevertMerge_Click;
+
+        AddTab("revertGroup", lblHash, _cboRevertHash, lblHint, _btnRevert, _btnRevertMerge);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHash, "commitHash"), new(lblHint, "revertHint"),
+            new(_btnRevert, "revertBtn"), new(_btnRevertMerge, "revertMergeBtn"),
+        });
+    }
+
+    private void BuildNewRefTab()
+    {
+        var lblHash = new Label
+        {
+            Text      = _t["commitHash"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 26, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboNewRefHash = new ComboBox
+        {
+            Name          = "cboNewRefHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(110, 24, 590, 22),
+            DropDownWidth = 590
+        };
+        var lblName = new Label
+        {
+            Name      = "lblNewRefName",
+            Text      = _t["newRefName"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 54, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _txtNewRefName = new TextBox
+        {
+            Name            = "txtNewRefName",
+            PlaceholderText = _t["newRefPlaceholder"],
+            Bounds          = new Rectangle(110, 52, 590, 22)
+        };
+        // Three right-aligned buttons: create branch, create tag, inspect (detached checkout).
+        _btnInspect = new Button
+        {
+            Name   = "btnInspect",
+            Text   = _t["inspectBtn"],
+            Bounds = new Rectangle(226, 84, 150, 26)
+        };
+        _btnInspect.Click += BtnInspect_Click;
+        _btnNewTag = new Button
+        {
+            Name   = "btnNewTag",
+            Text   = _t["newTagBtn"],
+            Bounds = new Rectangle(388, 84, 150, 26)
+        };
+        _btnNewTag.Click += BtnNewTag_Click;
+        _btnNewBranch = new Button
+        {
+            Name   = "btnNewBranch",
+            Text   = _t["newBranchBtn"],
+            Bounds = new Rectangle(550, 84, 150, 26)
+        };
+        _btnNewBranch.Click += BtnNewBranch_Click;
+
+        AddTab("newRefGroup", lblHash, _cboNewRefHash, lblName, _txtNewRefName,
+            _btnInspect, _btnNewTag, _btnNewBranch);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHash, "commitHash"), new(lblName, "newRefName"),
+            new(_btnInspect, "inspectBtn"), new(_btnNewTag, "newTagBtn"), new(_btnNewBranch, "newBranchBtn"),
+        });
+    }
+
+    private void BuildReflogTab()
+    {
+        var lblEntry = new Label
+        {
+            Name      = "lblReflogEntry",
+            Text      = _t["reflogEntry"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 26, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboReflog = new ComboBox
+        {
+            Name          = "cboReflog",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(110, 24, 590, 22),
+            DropDownWidth = 590
+        };
+        var lblBranch = new Label
+        {
+            Name      = "lblReflogBranch",
+            Text      = _t["newRefName"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 54, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _txtReflogBranch = new TextBox
+        {
+            Name            = "txtReflogBranch",
+            PlaceholderText = _t["newRefPlaceholder"],
+            Bounds          = new Rectangle(110, 52, 590, 22)
+        };
+        _btnReflogBranch = new Button
+        {
+            Name   = "btnReflogBranch",
+            Text   = _t["reflogBranchBtn"],
+            Bounds = new Rectangle(388, 84, 150, 26)
+        };
+        _btnReflogBranch.Click += BtnReflogBranch_Click;
+        _btnReflogReset = new Button
+        {
+            Name      = "btnReflogReset",
+            Text      = _t["reflogResetBtn"],
+            ForeColor = Color.DarkRed,
+            Bounds    = new Rectangle(550, 84, 150, 26)
+        };
+        _btnReflogReset.Click += BtnReflogReset_Click;
+
+        AddTab("reflogGroup", lblEntry, _cboReflog, lblBranch, _txtReflogBranch,
+            _btnReflogBranch, _btnReflogReset);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblEntry, "reflogEntry"), new(lblBranch, "newRefName"),
+            new(_btnReflogBranch, "reflogBranchBtn"), new(_btnReflogReset, "reflogResetBtn"),
+        });
+    }
+
+    private void BuildDiscardTab()
+    {
+        var lblHint = new Label
+        {
+            Name      = "lblDiscardHint",
+            Text      = _t["discardHint"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 22, 686, 36),
+            TextAlign = ContentAlignment.TopLeft
+        };
+        // Three stacked, full-width action buttons, increasingly destructive.
+        _btnDiscardUnstaged = new Button
+        {
+            Name   = "btnDiscardUnstaged",
+            Text   = _t["discardUnstagedBtn"],
+            Bounds = new Rectangle(14, 64, 686, 26)
+        };
+        _btnDiscardUnstaged.Click += BtnDiscardUnstaged_Click;
+        _btnDiscardHard = new Button
+        {
+            Name      = "btnDiscardHard",
+            Text      = _t["discardHardBtn"],
+            ForeColor = Color.DarkRed,
+            Bounds    = new Rectangle(14, 94, 686, 26)
+        };
+        _btnDiscardHard.Click += BtnDiscardHard_Click;
+        _btnClean = new Button
+        {
+            Name      = "btnClean",
+            Text      = _t["cleanBtn"],
+            ForeColor = Color.DarkRed,
+            Bounds    = new Rectangle(14, 124, 686, 26)
+        };
+        _btnClean.Click += BtnClean_Click;
+
+        AddTab("discardGroup", lblHint, _btnDiscardUnstaged, _btnDiscardHard, _btnClean);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHint, "discardHint"), new(_btnDiscardUnstaged, "discardUnstagedBtn"),
+            new(_btnDiscardHard, "discardHardBtn"), new(_btnClean, "cleanBtn"),
+        });
+    }
+
+    private void BuildRebaseTab()
+    {
+        var lblHash = new Label
+        {
+            Text      = _t["commitHash"],
+            AutoSize  = false,
+            Bounds    = new Rectangle(14, 26, 90, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _cboRebaseHash = new ComboBox
+        {
+            Name          = "cboRebaseHash",
+            DropDownStyle = ComboBoxStyle.DropDown,
+            Bounds        = new Rectangle(110, 24, 590, 22),
+            DropDownWidth = 590
+        };
+        var lblHint = new Label
+        {
+            Name      = "lblRebaseHint",
+            Text      = _t["rebaseHint"],
+            AutoSize  = false,
+            ForeColor = Color.DarkRed,
+            Bounds    = new Rectangle(14, 54, 686, 18),
+            TextAlign = ContentAlignment.MiddleLeft
+        };
+        _btnRebaseAbort = new Button
+        {
+            Name   = "btnRebaseAbort",
+            Text   = _t["rebaseAbortBtn"],
+            Bounds = new Rectangle(388, 84, 150, 26)
+        };
+        _btnRebaseAbort.Click += BtnRebaseAbort_Click;
+        _btnRebaseDrop = new Button
+        {
+            Name      = "btnRebaseDrop",
+            Text      = _t["rebaseDropBtn"],
+            ForeColor = Color.DarkRed,
+            Bounds    = new Rectangle(550, 84, 150, 26)
+        };
+        _btnRebaseDrop.Click += BtnRebaseDrop_Click;
+
+        AddTab("rebaseGroup", lblHash, _cboRebaseHash, lblHint, _btnRebaseAbort, _btnRebaseDrop);
+
+        _localized.AddRange(new KeyValuePair<Control, string>[]
+        {
+            new(lblHash, "commitHash"), new(lblHint, "rebaseHint"),
+            new(_btnRebaseAbort, "rebaseAbortBtn"), new(_btnRebaseDrop, "rebaseDropBtn"),
         });
     }
 
@@ -557,8 +950,8 @@ public sealed class RestoreForm : Form
         _lblHead.Text = _t.F("headLabel", _svc.GetHeadRef());
         _txtRestoreFile.PlaceholderText = _t["filePlaceholder"];
 
-        // Re-localize the "Select..." prompt sitting at index 0 of each hash combo.
-        foreach (var cbo in new[] { _cboRestoreHash, _cboCherryHash, _cboResetHash })
+        // Re-localize the "Select..." prompt sitting at index 0 of each hash combo (and the reflog combo).
+        foreach (var cbo in HashCombos.Append(_cboReflog))
         {
             if (cbo.Items.Count == 0 || cbo.Items[0] is not string) continue;
             bool wasPrompt = cbo.SelectedIndex == 0;
@@ -568,6 +961,13 @@ public sealed class RestoreForm : Form
 
         PopulateLanguageCombo();
     }
+
+    /// <summary>Every commit-hash dropdown, populated from the same recent-commits list in InitData.</summary>
+    private ComboBox[] HashCombos => new[]
+    {
+        _cboRestoreHash, _cboTreeHash, _cboCherryHash, _cboRevertHash,
+        _cboResetHash, _cboNewRefHash, _cboRebaseHash,
+    };
 
     /// <summary>Repopulates the language dropdown with localized labels and selects this window's _lang.</summary>
     private void PopulateLanguageCombo()
@@ -608,13 +1008,19 @@ public sealed class RestoreForm : Form
         if (_cboEmergencyTag.Items.Count > 0) _cboEmergencyTag.SelectedIndex = 0;
 
         var refs = LoadCommitRefs();
-        foreach (var cbo in new[] { _cboRestoreHash, _cboCherryHash, _cboResetHash })
+        foreach (var cbo in HashCombos)
         {
             // index 0 is the "Select..." prompt; the commit refs follow (already newest-first).
             cbo.Items.Add(_t["selectPrompt"]);
             cbo.Items.AddRange(refs.Cast<object>().ToArray());
             cbo.SelectedIndex = 0;
         }
+
+        // Reflog tab: list the HEAD movement history (reset/rebase/checkout/commit) so a "lost"
+        // commit or a deleted branch can be recovered. index 0 is the "Select..." prompt.
+        _cboReflog.Items.Add(_t["selectPrompt"]);
+        _cboReflog.Items.AddRange(LoadReflogRefs().Cast<object>().ToArray());
+        _cboReflog.SelectedIndex = 0;
 
         var saved = LoadSettings();
         RestoreSettings(saved);
@@ -659,6 +1065,28 @@ public sealed class RestoreForm : Form
         // Newest first. The date string is fixed-width "YYYY-MM-dd HH:mm:ss", so an ordinal
         // descending sort orders by actual chronology without parsing to DateTime.
         refs.Sort((a, b) => string.CompareOrdinal(b.Date, a.Date));
+        return refs;
+    }
+
+    /// <summary>
+    /// Loads the HEAD reflog (most recent first) as selectable refs. Each entry records a movement
+    /// of HEAD — commit, reset, rebase, checkout, merge — letting the user jump a branch back to a
+    /// state that is no longer reachable from any branch (e.g. after a bad reset --hard, or to
+    /// recover a deleted branch). %gd is the reflog selector (HEAD@{n}), %gs the reflog subject.
+    /// </summary>
+    private List<CommitRef> LoadReflogRefs()
+    {
+        var (output, _) = _svc.RunGitFlow(
+            "log -g -150 --date=format:\"%Y-%m-%d %H:%M:%S\" " +
+            "--pretty=format:\"%h%x1f%gd%x1f%cd%x1f%gs\"");
+        var refs = new List<CommitRef>();
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var parts = line.Split('\x1f');
+            if (parts.Length == 4 && parts[0].Length >= 7)
+                // name = reflog subject, source = selector (HEAD@{n}); reflog is already chronological.
+                refs.Add(new CommitRef(parts[3], parts[0], parts[1], parts[2]));
+        }
         return refs;
     }
 
@@ -776,6 +1204,204 @@ public sealed class RestoreForm : Form
         }
         bool ok = RunGit($"checkout {Clean(hash)} -- \"{Clean(file)}\"");
         if (ok) RevealInTree(null);
+    }
+
+    /// <summary>
+    /// Opens a native file-picker rooted at the repository folder and writes the chosen file back as a
+    /// path relative to the repo. The managed OpenFileDialog cannot hard-block navigating elsewhere, so
+    /// the guard is enforced after selection: a file outside the repo root is rejected with a warning.
+    /// </summary>
+    private void BtnBrowseFile_Click(object? sender, EventArgs e)
+    {
+        string root = Path.GetFullPath(_svc.WorkingDir).TrimEnd(Path.DirectorySeparatorChar);
+        using var dlg = new OpenFileDialog
+        {
+            Title            = _t["restoreFileTitle"],
+            InitialDirectory = root,
+            RestoreDirectory = false,
+            CheckFileExists  = false,
+            Filter           = _t["allFilesFilter"] + "|*.*"
+        };
+        if (dlg.ShowDialog(this) != DialogResult.OK) return;
+
+        string picked = Path.GetFullPath(dlg.FileName);
+        string rootWithSep = root + Path.DirectorySeparatorChar;
+        if (!picked.StartsWith(rootWithSep, StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show(_t.F("fileOutsideRepo", root),
+                _t["restoreFileTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        // Store the repo-relative path with forward slashes (git's path convention).
+        _txtRestoreFile.Text = Path.GetRelativePath(root, picked).Replace('\\', '/');
+    }
+
+    private void BtnRestoreTree_Click(object? sender, EventArgs e)
+    {
+        string hash = HashOf(_cboTreeHash);
+        if (hash.Length == 0)
+        {
+            MessageBox.Show(_t["informHashTarget"],
+                _t["restoreTreeTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        // Stages the whole tracked tree from that commit; history untouched (mirrors Emergency-restore).
+        bool ok = RunGit($"checkout {Clean(hash)} -- .");
+        if (ok) RevealInTree(null);
+    }
+
+    private void BtnRevert_Click(object? sender, EventArgs e)   => DoRevert(merge: false);
+    private void BtnRevertMerge_Click(object? sender, EventArgs e) => DoRevert(merge: true);
+
+    /// <summary>
+    /// Reverts the selected commit by creating a NEW commit that undoes it — the safe way to undo on a
+    /// branch already shared/pushed (no history rewrite). For a merge commit, -m 1 reverts relative to
+    /// the first parent (the branch that received the merge).
+    /// </summary>
+    private void DoRevert(bool merge)
+    {
+        string hash = HashOf(_cboRevertHash);
+        if (hash.Length == 0)
+        {
+            MessageBox.Show(_t["informHashTarget"],
+                _t["revertTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        string args = merge
+            ? $"revert -m 1 --no-edit {Clean(hash)}"
+            : $"revert --no-edit {Clean(hash)}";
+        bool ok = RunGit(args);
+        if (ok) RevealInTree(null);
+    }
+
+    private void BtnNewBranch_Click(object? sender, EventArgs e) => DoNewRef(tag: false);
+    private void BtnNewTag_Click(object? sender, EventArgs e)    => DoNewRef(tag: true);
+
+    /// <summary>Creates a branch or tag pointing at the chosen commit — a non-destructive way to
+    /// "fork off" a past state while leaving every existing branch untouched.</summary>
+    private void DoNewRef(bool tag)
+    {
+        string hash = HashOf(_cboNewRefHash);
+        string name = _txtNewRefName.Text.Trim();
+        if (hash.Length == 0 || name.Length == 0)
+        {
+            MessageBox.Show(_t["informHashAndName"],
+                _t["newRefTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        bool ok = RunGit($"{(tag ? "tag" : "branch")} {Clean(name)} {Clean(hash)}");
+        if (ok) RevealInTree(tag ? null : name);
+    }
+
+    /// <summary>Checks out the chosen commit as a detached HEAD so the user can inspect that exact
+    /// version of the code (read-only time travel). No branch is moved.</summary>
+    private void BtnInspect_Click(object? sender, EventArgs e)
+    {
+        string hash = HashOf(_cboNewRefHash);
+        if (hash.Length == 0)
+        {
+            MessageBox.Show(_t["informHashTarget"],
+                _t["newRefTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        var dr = MessageBox.Show(_t["confirmInspectWarn"],
+            _t["newRefTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+        if (dr != DialogResult.Yes) return;
+        bool ok = RunGit($"checkout {Clean(hash)}");
+        if (ok) RevealInTree(null);
+    }
+
+    private void BtnReflogBranch_Click(object? sender, EventArgs e)
+    {
+        string sha  = HashOf(_cboReflog);
+        string name = _txtReflogBranch.Text.Trim();
+        if (sha.Length == 0 || name.Length == 0)
+        {
+            MessageBox.Show(_t["informReflogAndName"],
+                _t["reflogTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        // Recreate a branch at the reflog entry — recovers a deleted branch / lost commit.
+        bool ok = RunGit($"branch {Clean(name)} {Clean(sha)}");
+        if (ok) RevealInTree(name);
+    }
+
+    private void BtnReflogReset_Click(object? sender, EventArgs e)
+    {
+        string sha = HashOf(_cboReflog);
+        if (sha.Length == 0)
+        {
+            MessageBox.Show(_t["informReflogEntry"],
+                _t["reflogTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        var dr = MessageBox.Show(_t.F("confirmReflogResetWarn", _svc.GetCurrentBranch(), sha),
+            _t["reflogTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (dr != DialogResult.Yes) return;
+        bool ok = RunGit($"reset --hard {Clean(sha)}");
+        if (ok) RevealInTree(_svc.GetCurrentBranch());
+    }
+
+    private void BtnDiscardUnstaged_Click(object? sender, EventArgs e)
+    {
+        var dr = MessageBox.Show(_t["confirmDiscardUnstaged"],
+            _t["discardTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (dr != DialogResult.Yes) return;
+        // Discards unstaged changes to tracked files only (staged content and untracked files survive).
+        bool ok = RunGit("checkout -- .");
+        if (ok) RevealInTree(null);
+    }
+
+    private void BtnDiscardHard_Click(object? sender, EventArgs e)
+    {
+        var dr = MessageBox.Show(_t["confirmDiscardHard"],
+            _t["discardTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (dr != DialogResult.Yes) return;
+        // Resets the working tree and index back to HEAD — discards every staged/unstaged change.
+        bool ok = RunGit("reset --hard HEAD");
+        if (ok) RevealInTree(null);
+    }
+
+    private void BtnClean_Click(object? sender, EventArgs e)
+    {
+        var dr = MessageBox.Show(_t["confirmClean"],
+            _t["discardTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (dr != DialogResult.Yes) return;
+        // Removes untracked files and directories (does not touch tracked or ignored files).
+        bool ok = RunGit("clean -fd");
+        if (ok) RevealInTree(null);
+    }
+
+    private void BtnRebaseDrop_Click(object? sender, EventArgs e)
+    {
+        string hash = HashOf(_cboRebaseHash);
+        if (hash.Length == 0)
+        {
+            MessageBox.Show(_t["informHashTarget"],
+                _t["rebaseTitle"], MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        var dr = MessageBox.Show(_t.F("confirmRebaseDrop", hash),
+            _t["rebaseTitle"], MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
+            MessageBoxDefaultButton.Button2);
+        if (dr != DialogResult.Yes) return;
+
+        // Replay every commit AFTER <hash> onto <hash>'s parent, dropping <hash> itself. A conflict
+        // leaves the rebase in progress; surface that so the user can resolve or hit "Abort Rebase".
+        string safe = Clean(hash);
+        bool ok = RunGit($"rebase --onto {safe}^ {safe}");
+        if (ok) RevealInTree(_svc.GetCurrentBranch());
+        else    _txtResult.Text += "\r\n\r\n" + _t["rebaseConflictHint"];
+    }
+
+    private void BtnRebaseAbort_Click(object? sender, EventArgs e)
+    {
+        bool ok = RunGit("rebase --abort");
+        if (ok) RevealInTree(_svc.GetCurrentBranch());
     }
 
     private void BtnCherryPick_Click(object? sender, EventArgs e)
@@ -921,10 +1547,50 @@ public sealed class RestoreForm : Form
 
     // ── About ────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Shows the About dialog. The explanatory text is long (it documents every tab plus the
+    /// collaboration guidance), so it is hosted in a scrollable read-only text box inside a sized,
+    /// centered dialog rather than a MessageBox, which would overflow the screen.
+    /// </summary>
     private void ShowAbout()
     {
-        MessageBox.Show(_t["aboutBody"], _t["aboutTitle"],
-            MessageBoxButtons.OK, MessageBoxIcon.Information);
+        using var dlg = new Form
+        {
+            Text            = _t["aboutTitle"],
+            FormBorderStyle = FormBorderStyle.Sizable,
+            StartPosition   = FormStartPosition.CenterParent,
+            MinimizeBox     = false,
+            MaximizeBox     = true,
+            ShowIcon        = false,
+            ShowInTaskbar   = false,
+            Size            = new Size(760, 640),
+            MinimumSize     = new Size(480, 360),
+            Font            = new Font("Segoe UI", 9f)
+        };
+        var txt = new TextBox
+        {
+            Multiline  = true,
+            ReadOnly   = true,
+            ScrollBars = ScrollBars.Vertical,
+            WordWrap   = true,
+            BorderStyle = BorderStyle.None,
+            BackColor  = SystemColors.Window,
+            Dock       = DockStyle.Fill,
+            Text       = _t["aboutBody"].Replace("\n", "\r\n")
+        };
+        var bottom = new Panel { Dock = DockStyle.Bottom, Height = 44 };
+        var ok = new Button { Text = _t["closeBtn"], Width = 90, Height = 28, DialogResult = DialogResult.OK };
+        bottom.Controls.Add(ok);
+        bottom.Layout += (_, _) => ok.Location = new Point(
+            (bottom.Width - ok.Width) / 2, (bottom.Height - ok.Height) / 2);
+        var pad = new Panel { Dock = DockStyle.Fill, Padding = new Padding(12, 12, 12, 6) };
+        pad.Controls.Add(txt);
+        dlg.Controls.Add(pad);
+        dlg.Controls.Add(bottom);
+        dlg.AcceptButton = ok;
+        dlg.CancelButton = ok;
+        txt.Select(0, 0);
+        dlg.ShowDialog(this);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

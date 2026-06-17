@@ -7,11 +7,11 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.331  
-**Updated:** 2026-06-16
+**Version:** 1.0.333  
+**Updated:** 2026-06-17
 
-**Versão:** 1.0.331  
-**Atualizado em:** 2026-06-16
+**Versão:** 1.0.333  
+**Atualizado em:** 2026-06-17
 
 Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
@@ -38,6 +38,24 @@ Full command flow per type / Fluxo completo de comandos por tipo:
 Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore — commit vazio vs based-on override:
 
 ![Hierarchy: empty commit and based-on override](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png)
+
+## Highlights / Destaques
+
+**English**
+
+- **Hierarchical branch tree** — LOCAL, REMOTES and TAGS sections combining real commit ancestry with `/` path grouping; current branch in bold, live counters and a real-time filter.
+- **One-click GitFlow** — start/publish/track/update/finish for feature, release, hotfix, bugfix and support, with a flexible hierarchy that even allows a *feature under a feature* (finish cascades up to `develop`).
+- **Pull / Push / Commit at hand** — arrow-icon buttons with ahead/behind counters, a background remote check on open, and a guard that blocks a push when the branch is behind.
+- **Restore — your "go back in time" hub** — a dedicated window gathering **every** safe way to recover or undo history: restore a file/tree/tag, cherry-pick, **revert** (the safe undo for shared branches), create a branch/tag from any commit, **reflog recovery** of lost commits or deleted branches, discard local changes, and an advanced rebase to drop a commit — each with a clear, built-in explanation and teamwork guidance.
+- **Localized (English / Portuguese)** — every window picks its language independently and remembers it.
+
+**Português**
+
+- **Árvore hierárquica de branches** — seções LOCAL, REMOTES e TAGS combinando ancestralidade real de commits com agrupamento por caminho `/`; branch atual em negrito, contadores ao vivo e filtro em tempo real.
+- **GitFlow num clique** — start/publish/track/update/finish para feature, release, hotfix, bugfix e support, com hierarquia flexível que permite até *feature filha de feature* (o finish cascateia até a `develop`).
+- **Pull / Push / Commit à mão** — botões com ícones de seta e contadores adiante/atrás, verificação do remoto em segundo plano ao abrir e um aviso que bloqueia o push quando a branch está atrás.
+- **Restore — sua central de "voltar no tempo"** — uma janela dedicada reunindo **todas** as formas seguras de recuperar ou desfazer histórico: restaurar arquivo/árvore/tag, cherry-pick, **reverter** (o desfazer seguro para branches compartilhadas), criar branch/tag a partir de qualquer commit, **recuperação via reflog** de commits perdidos ou branches deletadas, descartar mudanças locais e um rebase avançado para remover um commit — cada um com explicação embutida e orientações de trabalho em equipe.
+- **Localizado (Inglês / Português)** — cada janela escolhe seu idioma de forma independente e o memoriza.
 
 ## Languages / Idiomas
 
