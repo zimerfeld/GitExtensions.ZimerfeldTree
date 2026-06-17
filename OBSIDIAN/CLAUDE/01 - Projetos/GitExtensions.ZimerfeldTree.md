@@ -1,11 +1,11 @@
 ﻿---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-16 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
+atualizado: 2026-06-17 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.331
+versao: 1.0.333
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -27,7 +27,7 @@ C:\GitExtensions\ZimerfeldTree\
 │   ├─ ZimerfeldTreePlugin.cs              # ponto de entrada MEF (IGitPlugin)
 │   ├─ BranchHierarchyForm.cs              # janela principal: árvore hierárquica de branches
 │   ├─ GitFlowForm.cs                      # janela Git Flow: start/publish/track/update/finish
-│   ├─ RestoreForm.cs                      # janela Restore: restore de arquivo, cherry-pick, reset
+│   ├─ RestoreForm.cs                      # janela Restore: 10 abas de "voltar no tempo" (restore/revert/reset/reflog/rebase…)
 │   ├─ BranchHierarchyService.cs           # lógica git: coleta, hierarquia, Git Flow
 │   ├─ BranchNode.cs                       # modelos: classe BranchInfo + enum BranchType
 │   ├─ NodeIcons.cs                        # ícones 16×16 da árvore (GDI+ + PNGs embutidos)
@@ -58,7 +58,7 @@ C:\GitExtensions\ZimerfeldTree\
 | `BranchHierarchyForm.cs` | ~2066 | Janela principal não-modal (a maior parte da UI) |
 | `BranchHierarchyService.cs` | ~831 | Executa comandos git e parseia a saída |
 | `GitFlowForm.cs` | ~758 | Janela modal que dirige comandos `git flow` (git puro) |
-| `RestoreForm.cs` | ~534 | Janela modal: restore de arquivo, cherry-pick, reset de branch |
+| `RestoreForm.cs` | ~1473 | Janela modal: 10 abas de recuperação/desfazer (restore arquivo/árvore/tag, cherry-pick, revert, reset, nova branch/tag, reflog, descartar, rebase) |
 | `NodeIcons.cs` | ~381 | Ícones 16×16 GDI+ + PNGs embutidos (ImageList) |
 | `ZimerfeldTreePlugin.cs` | ~238 | Entry point MEF do plugin (IGitPlugin) |
 | `BranchNode.cs` | ~41 | Modelos: classe `BranchInfo` + enum `BranchType` (Local/Remote/Tag) |
@@ -80,7 +80,7 @@ C:\GitExtensions\ZimerfeldTree\
 - Janela **não-modal**, singleton por sessão, abre **centralizada** e redimensionável (`Sizable`), independente do GitExtensions. Título da barra: **`ZimerfeldTree - BranchHierarchy`** (auxiliares: `ZimerfeldTree - GitFlow`, `ZimerfeldTree - Restore`) — o prefixo **ZimerfeldTree** é sempre mantido, seguido do nome específico da janela. `BranchHierarchyForm` é só o nome interno da classe C#
 - Árvore em 3 seções fixas: **LOCAL**, **REMOTES**, **TAGS**, com contadores `(N)` e status bar `Local: N | Remoto: N | Tags: N`
 - LOCAL/REMOTES combinam **ancestralidade real** (parentesco por commits / GitFlow) **+ agrupamento por caminho** (`/`). Ex.: `feature/teste` → pasta `feature` → folha `teste`
-- **Carregamento assíncrono** com overlay de progresso (0→100%), lista acumulativa dos 8 passos, botão Cancelar, formulário bloqueado durante o load; overlay fecha após 1 s no "Concluído."
+- **Carregamento assíncrono**: a janela abre imediatamente com os controles renderizados mas vazios (sem dados calculados) + overlay de progresso (0→100%), lista acumulativa dos 8 passos, botão Cancelar, formulário bloqueado durante o load. O construtor **não** faz git; tudo é lido em background (`Task.Run`) disparado pelo `Shown` (`FirstLoadAsync` → `RefreshTreeAsync(showOverlay:true, finalDelay:false)`). Nas recargas o overlay fecha após 1 s no "Concluído."; na **1ª abertura** fecha assim que a árvore é populada (sem o atraso)
 - **Hierarquia otimizada:** um único `git log --all` constrói o grafo de commits em memória, pais via BFS → **O(commits)** em vez de O(N²×subprocesso)
 - **Overlay só na 1ª exibição e nas recargas explícitas** — não aparece ao reativar após fechar GitFlow/Restore (árvore já atualizada ao vivo) nem no eco do próprio `NotifyRepoChanged`
 - Seletor de **Working Directory** (combo lido de `%APPDATA%\GitExtensions\GitExtensions\GitExtensions.settings`) e **branch atual em negrito** + cor de destaque
@@ -97,7 +97,7 @@ C:\GitExtensions\ZimerfeldTree\
 - **Atualização automática** em checkout, troca de repositório, init/reabertura; botão **Atualizar** manual
 - **Menu de contexto** com ícones embutidos (Baixar, Enviar, Commit, Checkout, Nova branch, Merge, Rebase, Renomear, Excluir, GitFlow…, Restore…, Expandir/Recolher, Atualizar) + **cabeçalho no topo** com a branch em checkout. **Baixar/Enviar agem na branch clicada** (checkout dela primeiro), com contadores próprios
 - **Botão GitFlow Initialize** — aplica de uma vez as chaves `gitflow.*` padrão (ver [[git flow - chaves de config (CLI)]])
-- **Restore / Cherry-Pick / Reset** (`RestoreForm`) — janela modal de restauração de histórico
+- **Restore** (`RestoreForm`) — central de "voltar no tempo" (980 px, 10 abas, da mais segura à mais destrutiva): Plano de Emergência (branch←tag), Restaurar Arquivo (com **Procurar…** restrito à raiz do repo), Restaurar Árvore, Cherry-Pick, **Reverter** (commit / merge -m 1), Reset Branch, **Nova Branch/Tag** (+Inspecionar detached), **Recuperar (Reflog)**, **Descartar Locais** (checkout/reset --hard HEAD/clean), **Rebase** (remove commit). **Sobre o Restore** = janela rolável com explicação por categoria + trabalho em equipe
 
 > Detalhes controle-a-controle: [[Interface ZimerfeldTree — botões e fluxos]] · [[Interface GitFlow — botões e fluxos]] · [[Interface Restore — botões e fluxos]].
 
@@ -254,7 +254,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.331** (README + csproj + nuspec + vault em sincronia)
+- Versão atual: **1.0.333** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
@@ -274,6 +274,8 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 - [[2026-06-06 - Push fix, double refresh, Voltar Versão menu]]
 - [[2026-06-07 - Refresh, overlay, eco e botão Restore]]
 - [[2026-06-16 - Pull-Push remoto ao abrir, ícones, menu na branch clicada, aviso de push]]
+- [[2026-06-17 - Abertura assíncrona com overlay (controles vazios primeiro)]]
+- [[2026-06-17 - Restore expandido (revert, reflog, rebase, descartar, nova branch, restaurar árvore)]]
 
 ## 🔗 Relacionado
 - [[Interface ZimerfeldTree — botões e fluxos]]

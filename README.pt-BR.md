@@ -6,8 +6,8 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.331  
-**Atualizado em:** 2026-06-16
+**Versão:** 1.0.333  
+**Atualizado em:** 2026-06-17
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -34,7 +34,7 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 - **Carregamento assíncrono**: ao abrir, a janela exibe o esqueleto imediatamente e depois mostra um **painel de progresso centralizado** ("Carregando dados do repositório") com barra de porcentagem (0→100%) enquanto lê os dados do repositório em background; a árvore é populada apenas ao final
 - **Montagem da hierarquia otimizada**: o cálculo de parentesco entre branches usa um único `git log --all` para construir o grafo de commits em memória e determina os pais via BFS — complexidade O(commits) em vez do anterior O(N² × subprocesso), eliminando o gargalo em repositórios com dezenas ou centenas de branches
 - **Overlay nas recargas explícitas**: o painel de progresso aparece na **primeira** abertura da janela e nas recargas/mutações — botão Atualizar, checkout, nova branch, merge, rename, delete, GitFlow, Restore, Pull/Push/Commit, mudanças externas genuínas do GitExtensions e troca de repositório. **Não** aparece ao reativar a janela depois de fechar GitFlow/Restore (a árvore já foi atualizada ao vivo), nem no "eco" da própria notificação ao GitExtensions (suprimido), evitando flash desnecessário
-- **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", "Verificando alterações pendentes…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe. A lista é dimensionada para exibir todos os 8 passos de uma vez, sem barra de rolagem vertical. A contagem de alterações pendentes (`Commit (N)`) é lida **nesse mesmo carregamento em background** e reaproveitada, sem um `git status` extra na thread de UI. Após o último passo ("Concluído."), o overlay permanece visível por **1 segundo** antes de fechar, para o usuário conseguir ver a conclusão
+- **Lista de passos (somente leitura)**: o overlay exibe uma lista acumulativa de cada etapa executada ("Carregando branches locais…", "Calculando hierarquia…", "Verificando alterações pendentes…", etc.) — cada passo é adicionado à lista conforme é iniciado, permitindo acompanhar o progresso em detalhe. A lista é dimensionada para exibir todos os 8 passos de uma vez, sem barra de rolagem vertical. A contagem de alterações pendentes (`Commit (N)`) é lida **nesse mesmo carregamento em background** e reaproveitada, sem um `git status` extra na thread de UI. Após o último passo ("Concluído."), o overlay permanece visível por **1 segundo** antes de fechar nas recargas, para o usuário conseguir ver a conclusão; na **primeira abertura** o overlay fecha assim que a árvore é populada (sem esse atraso), para a janela terminar de abrir o quanto antes
 - **Botão Cancelar no overlay**: permite abortar o carregamento a qualquer momento (o cancelamento ocorre entre as etapas git, preservando os dados anteriores na árvore)
 - **Formulário bloqueado durante carregamento**: todos os campos e botões ficam desabilitados enquanto o overlay está ativo e são reativados ao término (ou ao cancelar)
 - **Botão "Fechar"** centralizado horizontalmente na parte inferior da janela (atalho: tecla **Esc**)
@@ -147,7 +147,7 @@ O checkbox **Modo Developer**, ao lado de _Show Debug_ na borda inferior da jane
 - O estado de **expansão/recolhimento** de cada nó é **salvo automaticamente** por Working Directory — incluindo os nós principais (LOCAL, REMOTES, TAGS), branches (master, develop…) e pastas (feature, release…)
 - Cada nó é identificado por um **caminho estável** (a cadeia de ancestrais, ex.: `LOCAL|master|develop|feature`), que sobrevive a reconstruções da árvore
 - O salvamento ocorre ao expandir/recolher (com **debounce de 500 ms**) e ao **fechar a janela**, gravando em `%APPDATA%\GitExtensions\ZimerfeldTree.treestate.json`
-- Na **primeira abertura** da janela, o estado salvo é restaurado assim que a árvore é exibida (após o pré-carregamento síncrono dos dados), refletindo exatamente como estava na última sessão
+- Na **primeira abertura** da janela, o estado salvo é restaurado assim que a árvore é populada (ao final do carregamento assíncrono, sob o overlay), refletindo exatamente como estava na última sessão
 - Primeira abertura de um repositório **novo** (sem estado salvo) usa o padrão: LOCAL totalmente expandido, REMOTES e TAGS com apenas a raiz expandida
 - Durante filtro ativo, todos os nós são expandidos automaticamente para mostrar os resultados
 
@@ -327,32 +327,47 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
 
-Abre ao clicar em **Restore** — janela modal posicionada ao lado de BranchHierarchy, com três operações para resgatar estados do histórico git:
+Abre ao clicar em **Restore** — janela modal posicionada ao lado de BranchHierarchy. É a central de "voltar no tempo" do código: reúne **todas** as formas de recuperar, desfazer ou descartar um estado do repositório, cada uma em sua própria **aba**. As abas estão organizadas **da mais segura para a mais destrutiva**, e os botões em **vermelho** são irreversíveis e pedem confirmação.
 
-#### Restaurar Arquivo
+> 💡 Todo o racional — incluindo a categorização por segurança e as recomendações de **trabalho em equipe** — está no link **Sobre o Restore** (canto superior direito), que abre uma janela rolável com a explicação completa.
 
-Recupera um arquivo específico do estado de um commit antigo e o coloca como staged, pronto para commit:
+#### 🟢 Seguras (não reescrevem o histórico)
 
-```
-git checkout <hash> -- "<arquivo>"
-```
+| Aba | Comando git | O que faz |
+| --- | --- | --- |
+| **Plano de Emergência** | `checkout <tag> -- .` / `reset --hard <tag>` | Leva uma branch ao estado de uma **tag** (release): restaurar (staged, histórico intacto) ou resetar (move o ponteiro). |
+| **Restaurar Arquivo** | `checkout <hash> -- "<arquivo>"` | Recupera **um arquivo** de um commit antigo, deixando-o staged. O botão **Procurar…** abre o explorador de arquivos do Windows **já na pasta do projeto** e **recusa** qualquer arquivo fora da raiz do repositório (o caminho é convertido para relativo, com `/`). |
+| **Restaurar Árvore** | `checkout <hash> -- .` | Recupera **toda** a árvore rastreada de um commit qualquer (não só de uma tag), como mudanças staged; histórico intacto. |
+| **Cherry-Pick** | `cherry-pick <hash>` | Aplica um ou mais commits sobre a branch atual. Aceita hash simples ou intervalo `<antigo>..<recente>`. |
+| **Reverter** | `revert <hash>` / `revert -m 1 <hash>` | Cria um **novo commit** que desfaz um commit anterior **sem reescrever histórico** — o jeito correto de desfazer algo **já enviado** ao remoto. O segundo botão reverte um **merge** inteiro (`-m 1`). |
+| **Nova Branch/Tag** | `branch <nome> <hash>` / `tag <nome> <hash>` | Cria uma branch ou tag apontando para um commit antigo — "bifurca" o passado sem tocar em nenhuma branch existente. |
 
-Campos: **Commit hash** + **Arquivo (caminho relativo)**. Exemplo: `src/Foo/Bar.cs`.
+#### 🔵 Inspecionar (apenas leitura)
 
-#### Cherry-Pick
+| Aba | Comando git | O que faz |
+| --- | --- | --- |
+| **Nova Branch/Tag → Inspecionar** | `checkout <hash>` | Abre o código exatamente como estava naquele commit, em **detached HEAD**. Nenhuma branch é movida; volta-se fazendo checkout de uma branch. |
 
-Aplica um ou mais commits sobre a branch atual:
+#### 🟡 Recuperação
 
-```
-git cherry-pick <hash>
-git cherry-pick <hash-antigo>..<hash-recente>   # range
-```
+| Aba | Comando git | O que faz |
+| --- | --- | --- |
+| **Recuperar (Reflog)** | `branch <nome> <entrada>` / `reset --hard <entrada>` | Lista **todos os movimentos do HEAD** (commit, reset, rebase, checkout, merge). Permite recriar uma branch numa entrada (recuperar branch deletada / commit "perdido") ou resetar a branch atual para ela — a rede de segurança para um `reset --hard` que deu errado. |
 
-Campo **Commit hash** aceita hash simples ou intervalo com `..`.
+#### 🟠 Descartar mudanças locais (working tree)
 
-#### Reset Branch
+| Aba | Comando git | O que faz |
+| --- | --- | --- |
+| **Descartar Locais** | `checkout -- .` / `reset --hard HEAD` / `clean -fd` | Joga fora alterações **não commitadas** (não mexe no histórico): descartar não staged, descartar tudo (staged + unstaged), ou remover arquivos não rastreados. |
 
-Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dropdown (por padrão, ao abrir a janela, vem **pré-selecionada a branch em checkout**; fallback: `develop` → `main` → `master`), informe o commit hash de destino e escolha o modo:
+#### 🔴 Reescrevem o histórico (avançado)
+
+| Aba | Comando git | O que faz |
+| --- | --- | --- |
+| **Reset Branch** | `reset --mixed/--soft/--hard <hash>` | Move o ponteiro de uma branch para um commit anterior. Se a branch escolhida não for a atual, o plugin faz `checkout <branch>`, aplica o reset e retorna à branch original automaticamente. |
+| **Rebase** | `rebase --onto <hash>^ <hash>` | **Remove um commit específico do histórico**, reaplicando os posteriores. Em caso de conflito, o resultado avisa para resolver (`rebase --continue`) ou usar **Abortar Rebase**. |
+
+Modos do **Reset Branch**:
 
 | Modo      | Efeito                                                                            |
 | --------- | --------------------------------------------------------------------------------- |
@@ -360,28 +375,23 @@ Move o ponteiro de uma branch para um commit anterior. Selecione a branch no dro
 | `--soft`  | Desfaz commits; mudanças voltam como **staged**                                   |
 | `--hard`  | Desfaz commits e **DESCARTA** todas as mudanças — irreversível (pede confirmação) |
 
-Se a branch selecionada não for a atual, o plugin executa `git checkout <branch>`, aplica o reset e retorna à branch original automaticamente.
+> ⚠️ **Nunca** reescreva (Reset --hard, Rebase) ou descarte o histórico de uma branch que outras pessoas já têm — isso quebra o repositório dos colegas.
+
+#### 👥 Trabalho em equipe (no Sobre o Restore)
+
+- **Vários devs na mesma branch (ex.: `main`):** para desfazer algo **já enviado**, use **Reverter** (não Reset --hard); faça `git pull` (de preferência `--rebase`) **antes** de enviar para evitar a rejeição *non-fast-forward*; Reset --hard/Rebase/Descartar só são seguros em trabalho **local** que ninguém mais tem.
+- **Várias branches a mesclar na `develop`:** use **Cherry-Pick** para trazer commits específicos; **Reverter Merge (-m 1)** para desfazer um merge problemático preservando o resto; resolva conflitos com calma (**Abortar Rebase** / `git merge --abort` volta ao estado anterior); crie uma **Nova Branch/Tag** a partir de um commit para isolar ou retomar um trabalho.
 
 #### Comportamento da janela
 
-- A janela Restore é posicionada ao lado de BranchHierarchy, ambas centralizadas na tela (mesmo comportamento da janela GitFlow)
-- Após cada operação bem-sucedida, a árvore de BranchHierarchy é atualizada em background sem perder o foco da janela Restore
-- O resultado de cada comando `git` é exibido na caixa **Resultado** em fonte monoespaçada, com fundo bege (`#EFEBD8`) idêntico ao do console nativo do GitExtensions (janelas Push/Fetch)
-- Link **About Restore** no canto superior direito descreve cada operação
-
-### Janela Restore — comportamento geral
-
-- Abre ao clicar em **Restore** na janela BranchHierarchy
-- Janela **modal**, posicionada ao lado de BranchHierarchy com ambas centralizadas na tela — mesmo comportamento da janela GitFlow
-- Contém três grupos de operações independentes: **Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**
-- Cada grupo possui campos de entrada com histórico (combobox) e botão de execução próprio
-- Os dropdowns de commit hash (**Restaurar Arquivo**, **Cherry-Pick** e **Reset Branch**) listam os commits recentes como `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  mensagem`, com a data do commit entre parênteses, depois a branch de origem, o hash e a mensagem do commit, ordenados do mais recente para o mais antigo. Cada lista suspensa é limitada à largura do campo, ficando dentro da margem direita da janela
-- Cada dropdown de hash inicia na opção **Selecione...** (português) / **Select...** (inglês) e **não** é persistido, evitando reutilizar silenciosamente um hash antigo
-- Os dois combos de **branch** (Plano de Emergência e Reset Branch) vêm **pré-selecionados com a branch em checkout** ao abrir a janela (fallback: `develop` → `main` → `master`)
+- Janela **modal**, posicionada ao lado de BranchHierarchy, ambas centralizadas na tela (mesmo comportamento da janela GitFlow). A janela foi **alargada** (980 px) e usa abas em **múltiplas linhas** para que **todas** fiquem visíveis ao mesmo tempo
+- Os dropdowns de commit hash (em todas as abas que pedem um commit) listam os commits recentes como `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  mensagem`, do mais recente para o mais antigo; cada lista é limitada à largura do campo, dentro da margem direita. O dropdown do **Reflog** lista as entradas `HEAD@{n}` do mesmo jeito
+- Cada dropdown inicia na opção **Selecione...** / **Select...** e **não** é persistido, evitando reutilizar silenciosamente um hash antigo
+- Os dois combos de **branch** (Plano de Emergência e Reset Branch) vêm **pré-selecionados com a branch em checkout** ao abrir (fallback: `develop` → `main` → `master`)
 - O resultado de cada comando `git` é exibido em tempo real no painel **Resultado** (fonte monoespaçada, fundo bege `#EFEBD8` igual ao do console nativo do GitExtensions, scroll automático para o fim)
 - Após cada operação bem-sucedida, a árvore de BranchHierarchy é **atualizada em background** sem perder o foco da janela Restore
-- **Nenhum dropdown é persistido** — todos os combos (branch/tag de emergência, dropdowns de hash e branch de reset) reabrem no padrão a cada vez. Apenas os campos que não são combo (o caminho do arquivo e o modo de reset) são lembrados entre aberturas, em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`
-- Link **About Restore** no canto superior direito descreve o propósito de cada operação
+- **Nenhum dropdown é persistido** — todos reabrem no padrão a cada vez. Apenas os campos que não são combo (o caminho do arquivo e o modo de reset) são lembrados entre aberturas, em `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` (junto do idioma e do Show Debug desta janela)
+- O link **Sobre o Restore** abre uma janela **rolável** com a explicação completa de cada aba, a categorização por segurança e as recomendações de trabalho em equipe
 - Fechar a janela (botão **Fechar** ou tecla **Esc**) salva os valores automaticamente; o fechamento **não** dispara refresh extra (a árvore já foi atualizada ao vivo) nem traz o GitExtensions para frente
 
 ### Ícones
