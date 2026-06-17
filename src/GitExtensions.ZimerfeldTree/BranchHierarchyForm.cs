@@ -184,11 +184,11 @@ public sealed class BranchHierarchyForm : Form
         _treeStateByRepo    = LoadTreeState();
         InitializeComponent();
         LoadRepositories();   // combo population only — reads the settings XML, no git subprocess
-        // FIRST LOAD: verify the repository against the GitFlow hierarchy rule and pre-fetch all
-        // data BEFORE the window is shown — synchronously, with NO overlay. The tree is fully
-        // built here, so the plugin's _form.Show() reveals an already-populated window. Subsequent
-        // refreshes (button/menu/mutations) still use the async overlay path (RefreshTreeAsync).
-        InitialLoadSync();
+        // FIRST LOAD: the constructor does NO git work, so _form.Show() reveals the window
+        // instantly with its controls rendered but empty (no branches, default labels). All
+        // repository data is then read on a background thread behind the "Carregando…" overlay
+        // and the tree is populated when it completes — kicked off from the Shown handler in
+        // InitializeComponent (FirstLoadAsync). Refreshes use the same async overlay path.
         FormClosed += (_, _) => { _saveDebounce?.Dispose(); SaveTreeState(); };
     }
 
@@ -231,7 +231,7 @@ public sealed class BranchHierarchyForm : Form
     /// Loads all branch/tag data on a background thread, optionally showing a centered
     /// progress overlay, then rebuilds the tree on the UI thread.
     /// </summary>
-    private async Task RefreshTreeAsync(bool showOverlay)
+    private async Task RefreshTreeAsync(bool showOverlay, bool finalDelay = true)
     {
         if (_isRefreshing) return;
         _isRefreshing = true;
@@ -312,7 +312,9 @@ public sealed class BranchHierarchyForm : Form
         if (showOverlay)
         {
             // Let the user see the final "Concluído." step for a moment before the overlay closes.
-            await Task.Delay(1000);
+            // The first load skips this (finalDelay: false) so the window finishes opening as soon
+            // as the tree is populated; manual refreshes keep the brief pause.
+            if (finalDelay) await Task.Delay(1000);
             _loadingOverlay.Visible = false;
             SetFormEnabled(true);
         }
@@ -329,9 +331,9 @@ public sealed class BranchHierarchyForm : Form
         int                         Pending);
 
     /// <summary>
-    /// Reads all branch/tag data and computes the parent maps. Pure git work — safe to run on a
-    /// background thread (RefreshTreeAsync) or synchronously before the window is shown
-    /// (<see cref="InitialLoadSync"/>). <paramref name="ip"/> is null when no overlay is shown.
+    /// Reads all branch/tag data and computes the parent maps. Pure git work — always run on a
+    /// background thread via <see cref="RefreshTreeAsync"/> (the first load and every refresh).
+    /// <paramref name="ip"/> is null when no overlay is shown.
     /// </summary>
     private RepoData FetchRepoData(IProgress<(int pct, string msg)>? ip, CancellationToken token)
     {
@@ -393,10 +395,10 @@ public sealed class BranchHierarchyForm : Form
             var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
             var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
             RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
-            // Restore the saved expand/collapse state ONLY when the native handle exists. During the
-            // first load (InitialLoadSync, in the constructor) there is no handle yet, so node.Expand()
-            // /CollapseAll() would not stick; the Shown handler restores it once instead. This avoids a
-            // double, partial restore (constructor without handle + Shown) that lost the saved state.
+            // Restore the saved expand/collapse state ONLY when the native handle exists — node
+            // .Expand()/CollapseAll() do not stick before it does. Every load (first load and
+            // refreshes alike) runs after the window is shown, so the handle exists; the guard is
+            // a defensive no-op should ApplyRepoData ever be reached before the window is visible.
             if (_tree.IsHandleCreated) ExpandRoots();
             UpdateStatus();
             UpdateBranchLabel();
@@ -409,24 +411,16 @@ public sealed class BranchHierarchyForm : Form
     }
 
     /// <summary>
-    /// First-time load, run synchronously in the constructor BEFORE the window is shown. Verifies
-    /// whether GitFlow is initialized and whether the hierarchy follows the GitFlow rule, pre-fetches
-    /// all repository data, and builds the populated tree — with NO overlay. Per-node checkbox hiding
-    /// and the initial scroll run later from the Shown event (they need the native tree handle).
+    /// First-time load, started from the Shown event once the window is already visible with its
+    /// controls rendered but empty. Reads all repository data on a background thread behind the
+    /// "Carregando…" overlay (RefreshTreeAsync populates the tree, verifies the GitFlow hierarchy
+    /// rule, restores expand/collapse state, hides section checkboxes, and scrolls to top), then
+    /// contacts the remote off the UI thread to refresh the current branch's ahead/behind counts.
     /// </summary>
-    private void InitialLoadSync()
+    private async Task FirstLoadAsync()
     {
-        UpdateGitFlowInitButton();   // btnGitFlowInit — is GitFlow initialized as defined?
-        try
-        {
-            var data = FetchRepoData(null, CancellationToken.None);
-            ApplyRepoData(data);     // UpdateGitFlowWarning inside verifies the hierarchy rule
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(_t.F("errLoadRepo", ex.Message),
-                _t["appTitle"], MessageBoxButtons.OK, MessageBoxIcon.Error);
-        }
+        await RefreshTreeAsync(showOverlay: true, finalDelay: false);
+        if (!IsDisposed) await RefreshRemoteStatusAsync();
     }
 
     // ── Initialization ────────────────────────────────────────────────────────
@@ -482,37 +476,20 @@ public sealed class BranchHierarchyForm : Form
         // NOTE: the GitFlow verification (UpdateGitFlowInitButton -> IsGitFlowConfigured)
         // is intentionally NOT done here. It fires ~10 synchronous git subprocesses
         // (git config --get ×8 + 2× rev-parse) which, running on the UI thread before the
-        // first WM_PAINT, freeze the window and paint the top controls as empty skeletons.
-        // It now runs later, AFTER the whole screen is drawn (Refresh() in RefreshTreeAsync)
-        // and right before the tree loads — via SetFormEnabled(false) and, after the data
-        // pass, UpdateGitFlowWarning -> UpdateGitFlowInitButton.
+        // first WM_PAINT, would freeze the window and paint the top controls as empty
+        // skeletons. It runs later instead, while the overlay is up, from the first data
+        // pass: ApplyRepoData -> UpdateGitFlowWarning -> UpdateGitFlowInitButton.
         Load += (_, _) =>
         {
             ApplyControlTooltips(_chkShowDebug.Checked);
             LayoutGitFlowButtons();
         };
 
-        // The tree is already populated synchronously in the constructor (InitialLoadSync), before
-        // this window is shown — so there is no first-time overlay. The remaining first-show work
-        // needs the native tree handle (created when the window is shown), and Shown fires once,
-        // before the first paint (so no flicker):
-        //   • ExpandRoots() re-applies the persisted expand/collapse state — node.Expand()/
-        //     CollapseAll() do NOT stick on the native control before the handle exists, so the
-        //     saved states must be restored here for them to be remembered across sessions.
-        //   • ApplyCheckBoxVisibility() hides section/folder checkboxes (native message).
-        //   • ScrollTreeToTop() resets the vertical scrollbar.
-        Shown += (_, _) =>
-        {
-            _tree.BeginUpdate();
-            try { ExpandRoots(); }
-            finally { _tree.EndUpdate(); }
-            ApplyCheckBoxVisibility();
-            ScrollTreeToTop();
-            // The synchronous open path is offline-safe and shows the LAST-KNOWN ahead/behind counts.
-            // Now that the window is visible, contact the remote off the UI thread to refresh the
-            // current branch's counts and correct the Pull/Push controls + branch label once.
-            _ = RefreshRemoteStatusAsync();
-        };
+        // The window is shown with empty controls (the constructor does no git work). Shown fires
+        // once, before the first paint, and kicks off the first data load. By the time Shown runs
+        // the native tree handle exists, so the async load can restore expand/collapse state, hide
+        // section/folder checkboxes, and scroll to top from within ApplyRepoData/RefreshTreeAsync.
+        Shown += (_, _) => _ = FirstLoadAsync();
 
         ResumeLayout(false);
         PerformLayout();

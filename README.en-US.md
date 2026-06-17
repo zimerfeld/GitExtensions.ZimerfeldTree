@@ -6,8 +6,8 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.331  
-**Updated:** 2026-06-16
+**Version:** 1.0.333  
+**Updated:** 2026-06-17
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
@@ -294,44 +294,72 @@ When a git command fails, the output is displayed in the window and a warning is
 
 ![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
 
-Opens from **Restore** and provides three operations to recover states from git history.
+Opens from **Restore** — a modal window placed next to BranchHierarchy. It is the "go back in time" hub for your code: it gathers **every** way to recover, undo or discard a repository state, each in its own **tab**. Tabs are ordered **from the safest to the most destructive**, and the **red** buttons are irreversible and ask for confirmation.
 
-#### Restore File
+> 💡 The full rationale — including the safety categorization and the **teamwork** recommendations — lives in the **About Restore** link (top-right corner), which opens a scrollable window with the complete explanation.
 
-- Restores a specific file from a selected commit.
-- Lets the user choose the commit and file path.
-- Applies the restored file to the working tree without changing branch history.
+#### 🟢 Safe (do not rewrite history)
 
-#### Cherry-Pick
+| Tab | git command | What it does |
+| --- | --- | --- |
+| **Emergency Plan** | `checkout <tag> -- .` / `reset --hard <tag>` | Takes a branch to the state of a **tag** (release): restore (staged, history untouched) or reset (moves the pointer). |
+| **Restore File** | `checkout <hash> -- "<file>"` | Recovers **one file** from an old commit, left staged. The **Browse…** button opens the Windows file picker **already in the project folder** and **rejects** any file outside the repository root (the path is converted to a repo-relative `/` path). |
+| **Restore Tree** | `checkout <hash> -- .` | Recovers the **entire** tracked tree of any commit (not only a tag), as staged changes; history untouched. |
+| **Cherry-Pick** | `cherry-pick <hash>` | Applies one or more commits onto the current branch. Accepts a single hash or a `<old>..<recent>` range. |
+| **Revert** | `revert <hash>` / `revert -m 1 <hash>` | Creates a **new commit** that undoes an earlier commit **without rewriting history** — the correct way to undo something **already pushed**. The second button reverts a whole **merge** (`-m 1`). |
+| **New Branch/Tag** | `branch <name> <hash>` / `tag <name> <hash>` | Creates a branch or tag pointing at an old commit — "forks off" the past without touching any existing branch. |
 
-- Applies a selected commit onto the current branch.
-- Useful for recovering one specific change without resetting the branch.
-- Git conflict handling remains the native git behavior.
-- The **Commit hash** field accepts a single hash or a range with `..`.
+#### 🔵 Inspect (read-only)
 
-#### Reset Branch
+| Tab | git command | What it does |
+| --- | --- | --- |
+| **New Branch/Tag → Inspect** | `checkout <hash>` | Opens the code exactly as it was at that commit, in **detached HEAD**. No branch is moved; return by checking out a branch. |
 
-- Resets a branch to a selected commit.
-- On open, both branch dropdowns (Emergency Plan and Reset Branch) default to the **currently checked-out branch** (fallback: develop → main → master).
-- If the selected branch is not the current one, the plugin checks it out, applies the reset, and returns to the original branch automatically.
-- Intended for deliberate history recovery operations.
+#### 🟡 Recovery
+
+| Tab | git command | What it does |
+| --- | --- | --- |
+| **Recover (Reflog)** | `branch <name> <entry>` / `reset --hard <entry>` | Lists **every movement of HEAD** (commit, reset, rebase, checkout, merge). Lets you recreate a branch at an entry (recover a deleted branch / "lost" commit) or reset the current branch to it — the safety net for a `reset --hard` that went wrong. |
+
+#### 🟠 Discard local changes (working tree)
+
+| Tab | git command | What it does |
+| --- | --- | --- |
+| **Discard Local** | `checkout -- .` / `reset --hard HEAD` / `clean -fd` | Throws away **uncommitted** changes (history untouched): discard unstaged, discard everything (staged + unstaged), or remove untracked files. |
+
+#### 🔴 Rewrite history (advanced)
+
+| Tab | git command | What it does |
+| --- | --- | --- |
+| **Reset Branch** | `reset --mixed/--soft/--hard <hash>` | Moves a branch pointer to an earlier commit. If the chosen branch is not the current one, the plugin `checkout <branch>`, applies the reset, and returns to the original branch automatically. |
+| **Rebase** | `rebase --onto <hash>^ <hash>` | **Removes a specific commit from history**, replaying the later ones. On conflict, the result tells you to resolve (`rebase --continue`) or use **Abort Rebase**. |
+
+**Reset Branch** modes:
+
+| Mode      | Effect                                                                       |
+| --------- | ---------------------------------------------------------------------------- |
+| `--mixed` | Undoes commits; changes return as **unstaged** (default)                     |
+| `--soft`  | Undoes commits; changes return as **staged**                                 |
+| `--hard`  | Undoes commits and **DISCARDS** all changes — irreversible (asks to confirm) |
+
+> ⚠️ **Never** rewrite (Reset --hard, Rebase) or discard the history of a branch other people already have — it breaks your teammates' repository.
+
+#### 👥 Teamwork (in About Restore)
+
+- **Multiple devs on the same branch (e.g. `main`):** to undo something **already pushed**, use **Revert** (not Reset --hard); run `git pull` (preferably `--rebase`) **before** pushing to avoid the *non-fast-forward* rejection; Reset --hard/Rebase/Discard are only safe on **local** work nobody else has.
+- **Multiple branches to merge into `develop`:** use **Cherry-Pick** to bring in specific commits; **Revert Merge (-m 1)** to undo a problematic merge while preserving the rest; resolve conflicts calmly (**Abort Rebase** / `git merge --abort` returns to the previous state); create a **New Branch/Tag** from a commit to isolate or resume work.
 
 #### Window behavior
 
-- The commit-hash dropdowns (**Restore File**, **Cherry-Pick** and **Reset Branch**) list recent commits as `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  message`, with the commit date in parentheses, then the source branch, the hash, and the commit message, ordered newest first. Each drop-down list is pinned to its field width so it stays within the window's right margin.
-- Each hash dropdown opens on a **Select...** (English) / **Selecione...** (Portuguese) prompt and is **not** persisted, so a stale hash is never silently reused.
-- The Restore window is modal and positioned next to BranchHierarchy, with both windows centered on screen.
+- **Modal** window placed next to BranchHierarchy, both centered on screen (same behavior as the GitFlow window). It was **widened** (980 px) and uses **multi-row** tabs so **all** of them are visible at once.
+- The commit-hash dropdowns (in every tab that needs a commit) list recent commits as `(YYYY-MM-dd HH:mm:ss) [branch] hash  →  message`, newest first; each list is pinned to its field width, within the right margin. The **Reflog** dropdown lists the `HEAD@{n}` entries the same way.
+- Each dropdown opens on a **Select...** / **Selecione...** prompt and is **not** persisted, so a stale hash is never silently reused.
+- On open, both **branch** dropdowns (Emergency Plan and Reset Branch) default to the **currently checked-out branch** (fallback: develop → main → master).
+- The result of each `git` command appears live in the **Result** panel (monospace font, beige `#EFEBD8` background like the GitExtensions native console, auto-scrolled to the end).
 - After successful operations, BranchHierarchy refreshes in the background without stealing focus from Restore.
-- **No dropdown is persisted** — every combo (emergency branch/tag, the hash dropdowns and the reset branch) reopens at its default each time. Only the non-combo fields (the file path and the reset mode) are remembered across opens.
-- The **About Restore** link explains each operation.
-
-### Restore window - general behavior
-
-![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
-
-- Opens when clicking **Restore** in BranchHierarchy.
-- Keeps focus while BranchHierarchy refreshes in the background.
-- Persists recent field values in `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json`.
+- **No dropdown is persisted** — every combo reopens at its default each time. Only the non-combo fields (the file path and the reset mode) are remembered across opens, in `%APPDATA%\GitExtensions\ZimerfeldRestore.settings.json` (together with this window's language and Show Debug).
+- The **About Restore** link opens a **scrollable** window with the full explanation of every tab, the safety categorization, and the teamwork guidance.
+- Closing the window (**Close** button or **Esc**) saves the values automatically; closing does **not** trigger an extra refresh (the tree was already updated live) nor bring GitExtensions to the front.
 
 ### Icons
 
