@@ -125,23 +125,39 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
     }
 }
 
-# -- 4c. Carimbar a versao na nota do Obsidian (o vault espelha o README) -------
-# O bump tambem deve refletir na nota-hub do cofre, para o vault nao ficar defasado
-# em relacao ao README -- mesma versao em README/csproj/nuspec/vault, sem sync manual.
-# Atualiza o 'versao:' do frontmatter e a linha 'Versao atual: **X**' (Versionamento).
+# -- 4c. Carimbar a versao nas notas do cofre Obsidian (o vault espelha o README) ----
+# O bump tambem deve refletir no cofre, para o vault nao ficar defasado em relacao ao
+# README -- mesma versao em README/csproj/nuspec/vault, sem sync manual. Atualiza o
+# 'versao:' do frontmatter e a linha 'Versao atual: **X**' (Versionamento).
+#
+# Lista somente as notas que carimbam a versao ATUAL do projeto (espelham o README).
+# Notas de sessao/historico e notas com versionamento proprio (ex.: "Interface...",
+# "Dependencias...") NAO entram aqui de proposito -- o 'atualizado:' delas e' um
+# changelog escrito a mao. O laco deixa trivial somar novas notas no futuro.
+#
 # Roda ANTES do pack (secao 7), entao o .nupkg permanece o arquivo mais novo e a
-# deteccao de mudancas (secao 1b) nao dispara em loop. A linha descritiva 'atualizado:'
-# do frontmatter e' um changelog escrito a mao e nao e' tocada aqui.
-$vaultNote = "$PSScriptRoot\OBSIDIAN\CLAUDE\01 - Projetos\GitExtensions.ZimerfeldTree.md"
-if (Test-Path $vaultNote) {
-    $v = Get-Content $vaultNote -Raw -Encoding UTF8
-    $v = $v -replace '(?m)^versao:\s+[\d\.]+',          "versao: $newVersion"
-    $v = $v -replace 'Versão atual: \*\*[\d\.]+\*\*',   "Versão atual: **$newVersion**"
-    # Carimba so' a DATA inicial da linha 'atualizado:', preservando o texto descritivo
-    # do changelog (ex.: '(1.0.x: ...)') que e' escrito a mao.
-    $v = $v -replace '(?m)^atualizado:\s+\d{4}-\d{2}-\d{2}', "atualizado: $today"
-    [System.IO.File]::WriteAllText($vaultNote, $v, [System.Text.Encoding]::UTF8)
-    Write-Host "Vault (nota do projeto) atualizado para $newVersion ($today)"
+# deteccao de mudancas (secao 1b) nao dispara em loop. Cada nota atualizada registra
+# uma linha no formato: "Obsidian: <arquivo> atualizado para <versao> (<data>)".
+$obsidianDocs = @(
+    "$PSScriptRoot\OBSIDIAN\CLAUDE\01 - Projetos\GitExtensions.ZimerfeldTree.md",
+    "$PSScriptRoot\OBSIDIAN\CLAUDE\02 - Conhecimento\README — Instalação, Uso e Build.md",
+    "$PSScriptRoot\OBSIDIAN\CLAUDE\Sistema\Versionamento.md",
+    "$PSScriptRoot\OBSIDIAN\CLAUDE\Sistema\Visão Geral.md"
+)
+foreach ($obsDoc in $obsidianDocs) {
+    if (Test-Path $obsDoc) {
+        $v = Get-Content $obsDoc -Raw -Encoding UTF8
+        # Frontmatter -- versao
+        $v = $v -replace '(?m)^versao:\s+[\d\.]+',          "versao: $newVersion"
+        # Carimba so' a DATA inicial da linha 'atualizado:', preservando o texto descritivo
+        # do changelog (ex.: '(1.0.x: ...)') que e' escrito a mao.
+        $v = $v -replace '(?m)^atualizado:\s+\d{4}-\d{2}-\d{2}', "atualizado: $today"
+        # Corpo -- "Versao atual: **X**" (texto corrido) e "| Versao atual | **X** |" (tabela)
+        $v = $v -replace 'Versão atual: \*\*[\d\.]+\*\*',                   "Versão atual: **$newVersion**"
+        $v = $v -replace '(\|\s*Versão atual\s*\|\s*)\*\*[\d\.]+\*\*',      ('${1}' + "**$newVersion**")
+        [System.IO.File]::WriteAllText($obsDoc, $v, [System.Text.Encoding]::UTF8)
+        Write-Host "Obsidian: $([System.IO.Path]::GetFileName($obsDoc)) atualizado para $newVersion ($today)"
+    }
 }
 
 # -- 5. Build ------------------------------------------------------------------
