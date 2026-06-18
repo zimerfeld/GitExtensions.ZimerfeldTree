@@ -73,13 +73,20 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
             };
 
             // Open the native push dialog in-process; returns true if push was completed.
-            Func<IWin32Window, bool> openPush = owner =>
+            // workingDir is the repo selected in the tree window's cboRepo: bind the commands to it via
+            // WithWorkingDirectory so the dialog pushes that repo (and its checked-out branch, shown in
+            // lblBranch) rather than the GitExtensions host's active repository — mirroring openCommit.
+            Func<IWin32Window, string, bool> openPush = (owner, workingDir) =>
             {
                 if (_commands is null) return false;
                 try
                 {
+                    var commands = string.IsNullOrEmpty(workingDir)
+                        ? _commands
+                        : _commands.WithWorkingDirectory(workingDir);
+                    if (commands is null) return false;
                     bool pushCompleted = false;
-                    _commands.StartPushDialog(owner, pushOnShow: true, forceWithLease: false, pushCompleted: out pushCompleted);
+                    commands.StartPushDialog(owner, pushOnShow: true, forceWithLease: false, pushCompleted: out pushCompleted);
                     return pushCompleted;
                 }
                 catch { return false; }
