@@ -16,7 +16,7 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-    <version>1.0.336</version>
+    <version>1.0.337</version>
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -32,14 +32,27 @@ GitExtensions plugin that displays branches hierarchically in a persistent non-m
 tree window.  Branches separated by '/' are shown as nested folder nodes under three
 fixed root sections — LOCAL, REMOTES and TAGS.
 
+Plugin do GitExtensions que exibe branches de forma hierárquica em uma janela de árvore
+persistente e não-modal.  Branches separadas por '/' são mostradas como nós de pasta
+aninhados sob três seções fixas — LOCAL, REMOTES e TAGS.
+
 Features:
   • Real-time filter across all sections
-  • Right-click context menu: Checkout, Nova branch, Mesclar, Rebase, Renomear, Excluir
+  • Right-click context menu: Checkout, New branch, Merge, Rebase, Rename, Delete
   • Double-click / Enter to checkout
   • Bold highlight for the currently checked-out branch
   • Working-directory combo populated from GitExtensions history
   • Auto-refresh on checkout and repository switch
-  • Status bar: Local N | Remoto N | Tags N
+  • Status bar: Local N | Remote N | Tags N
+
+Funcionalidades:
+  • Filtro em tempo real em todas as seções
+  • Menu de contexto (botão direito): Checkout, Nova branch, Mesclar, Rebase, Renomear, Excluir
+  • Duplo-clique / Enter para checkout
+  • Destaque em negrito para a branch atualmente em uso
+  • Combo de diretório de trabalho preenchido a partir do histórico do GitExtensions
+  • Atualização automática ao trocar de branch ou de repositório
+  • Barra de status: Local N | Remoto N | Tags N
 
 Flexible GitFlow hierarchy:
   Classic GitFlow does not provide for a feature branch as a child of another feature —
@@ -47,10 +60,19 @@ Flexible GitFlow hierarchy:
   allows a flexible hierarchy where a feature/* can derive either from develop or from another
   feature/* above it. When that happens, finishing a feature must cascade all its changes up to
   the parent feature/* node, successively re-applying "finish feature" until it reaches develop.
+
+Hierarquia flexível do GitFlow:
+  O GitFlow clássico não prevê uma branch de feature como filha de outra feature —
+  todas as branches feature/* derivam de develop e são irmãs entre si. Já o ZimerfeldTree GitFlow
+  permite uma hierarquia flexível onde uma feature/* pode derivar tanto de develop quanto de outra
+  feature/* acima dela. Quando isso acontece, finalizar uma feature deve cascatear todas as suas
+  mudanças até o nó feature/* pai, reaplicando sucessivamente o "finish feature" até chegar em develop.
     </description>
     <summary>
       Hierarchical branch tree viewer plugin for GitExtensions — groups branches by path
       prefix under LOCAL, REMOTES and TAGS sections with filtering and context menu.
+      Plugin visualizador de árvore hierárquica de branches para o GitExtensions — agrupa branches
+      por prefixo de caminho sob as seções LOCAL, REMOTES e TAGS, com filtro e menu de contexto.
     </summary>
     <!-- ── Project metadata ──────────────────────────────────────────── -->
     <projectUrl>https://github.com/zimerfeld/ZimerfeldTree</projectUrl>
@@ -64,6 +86,7 @@ Flexible GitFlow hierarchy:
     <!-- ── Release notes ─────────────────────────────────────────────── -->
     <releaseNotes>
 1.0.18 — Initial public release.
+1.0.18 — Primeiro lançamento público.
     </releaseNotes>
     <!-- ── GitExtensions plugin marker ───────────────────────────────────
          The GitExtensions Plugin Manager filters the nuget.org feed to packages
