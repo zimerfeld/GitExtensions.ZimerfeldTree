@@ -4,9 +4,10 @@
     Atualiza a DLL do plugin no GitExtensions.
 
 .DESCRIPTION
-    Atalho de desenvolvimento: valida a saida em bin\<Config>, chama build.ps1
-    -Force quando ela estiver ausente ou defasada, fecha o GitExtensions se
-    necessario e copia a DLL final para a pasta Plugins.
+    Atalho de desenvolvimento: valida a saida em bin\<Config>, recompila a DLL
+    (dotnet build, SEM incrementar a versao) quando ela estiver ausente ou
+    defasada, fecha o GitExtensions se necessario e copia a DLL final para a
+    pasta Plugins. O bump de versao + pack continua a cargo do build.ps1.
 #>
 
 param(
@@ -18,13 +19,13 @@ $ErrorActionPreference = "Stop"
 
 $dllName     = "GitExtensions.Plugins.ZimerfeldTree.dll"
 $repoRoot    = Resolve-Path (Join-Path $PSScriptRoot "..")
-$buildScript = Join-Path $repoRoot "build.ps1"
 $projectRoot = Join-Path $repoRoot "src\GitExtensions.ZimerfeldTree"
+$csproj      = Join-Path $projectRoot "GitExtensions.ZimerfeldTree.csproj"
 $buildDll    = Join-Path $projectRoot "bin\$Config\net9.0-windows\$dllName"
 $toolsDll    = Join-Path $PSScriptRoot "net9.0-windows\$dllName"
 
-if (-not (Test-Path $buildScript)) {
-    Write-Error "build.ps1 nao encontrado: $buildScript"
+if (-not (Test-Path $csproj)) {
+    Write-Error "csproj nao encontrado: $csproj"
     exit 1
 }
 
@@ -76,16 +77,15 @@ else {
 }
 
 if ($shouldBuild) {
-    Write-Host "Build necessario: $buildReason" -ForegroundColor Yellow
-    Write-Host "Executando: $buildScript -Force"
-    & $buildScript -Force
+    Write-Warning "DLL em bin\$Config esta mais antiga que as fontes/recursos em tools\net9.0-windows."
+    Write-Host "Executando build...ignorando verificacao incremental." -ForegroundColor Yellow
 
-    if (-not $?) {
-        Write-Error "build.ps1 -Force falhou."
-        exit 1
-    }
-    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        Write-Error "build.ps1 -Force falhou com codigo $LASTEXITCODE."
+    # Compila diretamente (sem build.ps1) para NAO incrementar a versao: apenas
+    # regenera a DLL na versao atual e a copia adiante. O bump de versao + pack
+    # continua sendo responsabilidade exclusiva do build.ps1.
+    & dotnet build $csproj -c $Config --nologo -v minimal
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "dotnet build falhou com codigo $LASTEXITCODE."
         exit $LASTEXITCODE
     }
 }
