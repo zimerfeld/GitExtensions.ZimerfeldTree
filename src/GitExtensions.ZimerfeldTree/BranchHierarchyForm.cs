@@ -26,9 +26,12 @@ public sealed class BranchHierarchyForm : Form
     private readonly Func<IWin32Window, string, bool?>? _openCommitDialog;
     /// <summary>
     /// Delegate provided by the plugin that opens the native GitExtensions push dialog in-process.
+    /// The string argument is the working directory to push — passed so the dialog targets the
+    /// repository currently selected in cboRepo (and thus its checked-out branch shown in lblBranch),
+    /// not the GitExtensions host's active repository (matches <see cref="_openCommitDialog"/>).
     /// Returns true if push was completed, false otherwise.
     /// </summary>
-    private readonly Func<IWin32Window, bool>? _openPushDialog;
+    private readonly Func<IWin32Window, string, bool>? _openPushDialog;
 
     // ── Cached data ───────────────────────────────────────────────────────────
     private List<BranchInfo>             _localBranches  = [];
@@ -175,7 +178,7 @@ public sealed class BranchHierarchyForm : Form
     // ─────────────────────────────────────────────────────────────────────────
     public BranchHierarchyForm(string workingDir, Action? notifyRepoChanged = null,
         Func<IWin32Window, string, bool?>? openCommitDialog = null,
-        Func<IWin32Window, bool>? openPushDialog = null)
+        Func<IWin32Window, string, bool>? openPushDialog = null)
     {
         _svc = new BranchHierarchyService(workingDir);
         _notifyRepoChanged  = notifyRepoChanged;
@@ -2267,7 +2270,9 @@ public sealed class BranchHierarchyForm : Form
     {
         if (_openPushDialog != null)
         {
-            _openPushDialog(this);
+            // Pass _svc.WorkingDir (the repo selected in cboRepo) so the native dialog pushes that
+            // repository and its checked-out branch (shown in lblBranch), not the host's repo.
+            _openPushDialog(this, _svc.WorkingDir);
             RefreshTree();
             NotifyRepoChanged();
             return;
