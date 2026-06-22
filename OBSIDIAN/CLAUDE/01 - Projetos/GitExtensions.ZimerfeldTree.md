@@ -1,7 +1,7 @@
 ﻿---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-18 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
+atualizado: 2026-06-21 (financiamento: FUNDING.yml com github+ko_fi, badges NuGet versão/downloads e frase "por que doar" nos READMEs) | 2026-06-18 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
@@ -14,8 +14,11 @@ repo: C:\GitExtensions\ZimerfeldTree
 > [!info] Esta nota espelha o `README.md` do repositório
 > O conteúdo do README (funcionalidades, dependências, instalação, estrutura e limitações) vive aqui no cofre. Os **fluxos detalhados de cada janela** estão em [[Interface ZimerfeldTree — botões e fluxos]], [[Interface GitFlow — botões e fluxos]] e [[Interface Restore — botões e fluxos]].
 
-## 💜 Apoie o projeto
-Ajude a manter este projeto sempre atualizado: **[GitHub Sponsors → zimerfeld](https://github.com/sponsors/zimerfeld)** · **[Ko-fi → Buy me a coffee ☕](https://ko-fi.com/C0D621FCGD)**
+## 💜 Apoie o projeto / Financiamento
+Canais de doação (botão **Sponsor** + badges no topo dos READMEs):
+- **GitHub Sponsors:** [zimerfeld](https://github.com/sponsors/zimerfeld) · **Ko-fi:** [C0D621FCGD ☕](https://ko-fi.com/C0D621FCGD)
+- **`.github/FUNDING.yml`:** declara `github: zimerfeld` **e** `ko_fi: C0D621FCGD` (exibe o botão nativo Sponsor com ambos).
+- **Prova social no README:** badges de versão + **downloads do NuGet** (`shields.io/nuget/v` e `/dt` do pacote `GitExtensions.ZimerfeldTree`) + frase curta de "por que doar" (manutenção no tempo livre + compatibilidade com novas versões do GitExtensions).
 
 ## 🎯 Objetivo
 Plugin para **[GitExtensions](https://gitextensions.github.io/)** que exibe as branches do repositório **hierarquicamente** em árvore (mostrando branches filhas), em vez da lista plana padrão. Tem ícone próprio "Árvore da Vida" desenhado/embutido (GDI+ / `Resources/ico.png`).
