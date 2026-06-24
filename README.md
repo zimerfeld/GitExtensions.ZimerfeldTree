@@ -4,30 +4,27 @@
 
 [![NuGet version](https://img.shields.io/nuget/v/GitExtensions.ZimerfeldTree?style=for-the-badge&logo=nuget&label=NuGet)](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/) &nbsp; [![NuGet downloads](https://img.shields.io/nuget/dt/GitExtensions.ZimerfeldTree?style=for-the-badge&logo=nuget&label=Downloads)](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/)
 
-This plugin is built and maintained in my free time. If it saves you time managing branches, a sponsorship helps keep it updated for new GitExtensions versions. 💜
-Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo gerenciando branches, um patrocínio ajuda a mantê-lo atualizado para as novas versões do GitExtensions. 💜
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) This plugin is built and maintained in my free time. If it saves you time managing branches, a sponsorship helps keep it updated for new GitExtensions versions. 💜
+
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo gerenciando branches, um patrocínio ajuda a mantê-lo atualizado para as novas versões do GitExtensions. 💜
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.342  
-**Updated:** 2026-06-22
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) **Version:** 1.0.342 — **Updated:** 2026-06-22
 
-**Versão:** 1.0.342  
-**Atualizado em:** 2026-06-22
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) **Versão:** 1.0.342 — **Atualizado em:** 2026-06-22
 
-Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
-Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches em uma arvore hierarquica e disponibiliza o uso da metodologia GitFlow de maneira visual muito fácil, intuitiva e agradável de aplicar em projetos de qualquer tamanho.
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches em uma arvore hierarquica e disponibiliza o uso da metodologia GitFlow de maneira visual muito fácil, intuitiva e agradável de aplicar em projetos de qualquer tamanho.
 
 ![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
 
-### GitFlow flexible hierarchy — feature under feature
+### GitFlow flexible hierarchy — feature under feature / Hierarquia flexível do GitFlow — feature filha de feature
 
-Classic GitFlow does not provide for a feature branch as a child of another feature. GitFlow defines a fixed hierarchy where all `feature/*` branches derive from `develop` and are siblings of one another. Sub-features are usually handled with separate commits on the same branch or with sibling branches sharing a common prefix. **ZimerfeldTree GitFlow**, however, allows a flexible hierarchy where `feature/*` branches can derive either from `develop` or from another `feature/*` above them. In that case, finishing a feature must necessarily **cascade** all its changes up to the parent `feature/*` node, successively re-applying *finish feature* until it reaches `develop`.
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) Classic GitFlow does not provide for a feature branch as a child of another feature. GitFlow defines a fixed hierarchy where all `feature/*` branches derive from `develop` and are siblings of one another. Sub-features are usually handled with separate commits on the same branch or with sibling branches sharing a common prefix. **ZimerfeldTree GitFlow**, however, allows a flexible hierarchy where `feature/*` branches can derive either from `develop` or from another `feature/*` above them. In that case, finishing a feature must necessarily **cascade** all its changes up to the parent `feature/*` node, successively re-applying *finish feature* until it reaches `develop`.
 
-### Hierarquia flexível do GitFlow — feature filha de feature
-
-O GitFlow conhecido não prevê feature filha de feature. O GitFlow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são irmãs entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum. Porém o **ZimerfeldTree GitFlow** permite uma hierarquia flexível onde as branches `feature/*` podem tanto derivar de `develop` quanto de uma outra `feature/*` acima dela. Nesse caso o *finish feature* deve obrigatoriamente **cascatear** todas as mudanças para a branch `feature/*` nó pai sucessivamente, aplicando *finish feature* novamente até chegar em `develop`.
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) O GitFlow conhecido não prevê feature filha de feature. O GitFlow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são irmãs entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum. Porém o **ZimerfeldTree GitFlow** permite uma hierarquia flexível onde as branches `feature/*` podem tanto derivar de `develop` quanto de uma outra `feature/*` acima dela. Nesse caso o *finish feature* deve obrigatoriamente **cascatear** todas as mudanças para a branch `feature/*` nó pai sucessivamente, aplicando *finish feature* novamente até chegar em `develop`.
 
 GitFlow — Start and Finish rules per branch type / Regras de Start e Finish por tipo de branch:
 
@@ -43,7 +40,7 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 ## Highlights / Destaques
 
-**English**
+**![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) English**
 
 - **Hierarchical branch tree** — LOCAL, REMOTES and TAGS sections combining real commit ancestry with `/` path grouping; current branch in bold, live counters and a real-time filter.
 - **One-click GitFlow** — start/publish/track/update/finish for feature, release, hotfix, bugfix and support, with a flexible hierarchy that even allows a *feature under a feature* (finish cascades up to `develop`).
@@ -51,7 +48,7 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 - **Restore — your "go back in time" hub** — a dedicated window gathering **every** safe way to recover or undo history: restore a file/tree/tag, cherry-pick, **revert** (the safe undo for shared branches), create a branch/tag from any commit, **reflog recovery** of lost commits or deleted branches, discard local changes, and an advanced rebase to drop a commit — each with a clear, built-in explanation and teamwork guidance.
 - **Localized (English / Portuguese)** — every window picks its language independently and remembers it.
 
-**Português**
+**![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) Português**
 
 - **Árvore hierárquica de branches** — seções LOCAL, REMOTES e TAGS combinando ancestralidade real de commits com agrupamento por caminho `/`; branch atual em negrito, contadores ao vivo e filtro em tempo real.
 - **GitFlow num clique** — start/publish/track/update/finish para feature, release, hotfix, bugfix e support, com hierarquia flexível que permite até *feature filha de feature* (o finish cascateia até a `develop`).
@@ -71,9 +68,9 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 ## NuGet
 
-This README is intentionally short so it works both on GitHub and NuGet. Use the language links above for the full documentation.
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) This README is intentionally short so it works both on GitHub and NuGet. Use the language links above for the full documentation.
 
-Este README é propositalmente curto para funcionar tanto no GitHub quanto no NuGet. Use os links de idioma acima para acessar a documentação completa.
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) Este README é propositalmente curto para funcionar tanto no GitHub quanto no NuGet. Use os links de idioma acima para acessar a documentação completa.
 
 ## License / Licença
 
