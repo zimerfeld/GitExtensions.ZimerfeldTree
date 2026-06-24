@@ -2292,8 +2292,12 @@ public sealed class BranchHierarchyForm : Form
             bool? result = _openCommitDialog(this, _svc.WorkingDir);
             if (result.HasValue)
             {
-                if (result.Value) { RefreshTree(); NotifyRepoChanged(); }
-                else RestoreFocus();
+                // Refresh and notify GitExtensions when commits were actually made.
+                if (result.Value) { RefreshTree(); _notifyRepoChanged?.Invoke(); }
+                // The GitExtensions Commit window has now closed: re-show the Branch Hierarchy
+                // window with focus, on top of the GitExtensions main window that the repo-change
+                // notification may have raised to the foreground.
+                BringToForeground();
                 return;
             }
         }
@@ -3093,6 +3097,33 @@ public sealed class BranchHierarchyForm : Form
     {
         if (!IsDisposed && Visible)
             BeginInvoke(() => { if (!IsDisposed && Visible) Activate(); });
+    }
+
+    /// <summary>
+    /// Re-shows this window in the foreground with focus after a modal GitExtensions dialog
+    /// (e.g. Commit) closes. Stronger than <see cref="RestoreFocus"/>: it restores the window
+    /// if minimized and uses a brief TopMost toggle to pull it past the Windows foreground lock,
+    /// which can otherwise leave a plain Activate() merely flashing the taskbar when the
+    /// GitExtensions main window grabbed the foreground via the repo-change notification.
+    /// BeginInvoke ensures this runs after any pending window-activation messages.
+    /// </summary>
+    private void BringToForeground()
+    {
+        if (IsDisposed) return;
+        BeginInvoke(() =>
+        {
+            if (IsDisposed) return;
+            if (!Visible) Show();
+            if (WindowState == FormWindowState.Minimized)
+                WindowState = FormWindowState.Normal;
+
+            bool wasTopMost = TopMost;
+            TopMost = true;
+            TopMost = wasTopMost;
+
+            BringToFront();
+            Activate();
+        });
     }
 
     /// <summary>Notifies GitExtensions to refresh its UI, then restores focus to this window.</summary>
