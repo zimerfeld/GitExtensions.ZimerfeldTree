@@ -161,6 +161,11 @@ foreach ($obsDoc in $obsidianDocs) {
 }
 
 # -- 5. Build ------------------------------------------------------------------
+# Garante que o SDK esteja disponivel antes de tentar compilar, com erro claro.
+if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+    Write-Error "dotnet.exe nao encontrado no PATH. Instale o .NET 9 SDK e tente novamente."
+    exit 1
+}
 Write-Host "Compilando..."
 $buildOutput = & dotnet build $csproj -c Release --nologo -v minimal 2>&1
 $buildExit   = $LASTEXITCODE

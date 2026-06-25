@@ -4,7 +4,6 @@
 using System.ComponentModel.Composition;
 using GitExtensions.Extensibility.Git;
 using GitExtensions.Extensibility.Plugins;
-using GitExtensions.Extensibility.Settings;
 
 namespace GitExtensions.ZimerfeldTree;
 
@@ -166,19 +165,5 @@ public sealed class ZimerfeldTreePlugin : GitPluginBase
                 $"{DateTime.Now:HH:mm:ss.fff}  {message}{Environment.NewLine}");
         }
         catch { /* logging must never break the plugin */ }
-    }
-}
-
-// ── Thread-marshal helper extension ──────────────────────────────────────────
-
-internal static class ControlExtensions
-{
-    /// <summary>Marshals <paramref name="action"/> to the UI thread if needed.</summary>
-    public static void InvokeIfRequired(this Control control, Action action)
-    {
-        if (control.InvokeRequired)
-            control.BeginInvoke(action);
-        else
-            action();
     }
 }

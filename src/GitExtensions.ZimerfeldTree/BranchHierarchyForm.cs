@@ -1848,6 +1848,43 @@ public sealed class BranchHierarchyForm : Form
         UpdateBranchLabel();
     }
 
+    /// <summary>
+    /// Fast, silent re-check of just the Pull / Push / Commit button values — no tree rebuild and no
+    /// "Carregando…" overlay. Reads the ahead/behind tracking of every local branch and the pending-
+    /// changes count (all cheap, offline, local git probes) on a background thread, then updates the
+    /// action buttons and the branch label. Used when the GitFlow / Restore child dialogs close: the
+    /// tree was already kept current by their live <see cref="RefreshTree"/> calls (RepoMutated), so
+    /// the close only needs to verify these counts, keeping the operation responsive.
+    /// </summary>
+    private async Task SilentRefreshActionButtonsAsync()
+    {
+        Dictionary<string, (bool hasUpstream, int ahead, int behind)> tracking;
+        int pending;
+        try
+        {
+            (tracking, pending) = await Task.Run(
+                () => (_svc.GetBranchTrackingInfo(), _svc.GetPendingChangesCount()));
+        }
+        catch
+        {
+            return;   // best-effort: a probe failure leaves the last-known counts in place
+        }
+
+        if (IsDisposed) return;
+
+        foreach (var b in _localBranches)
+            if (tracking.TryGetValue(b.FullName, out var ti))
+            {
+                b.HasUpstream = ti.hasUpstream;
+                b.AheadCount  = ti.ahead;
+                b.BehindCount = ti.behind;
+            }
+
+        UpdatePullPushButtons();          // ↓N / ↑N on the Pull/Push buttons (checked-out branch)
+        UpdateBranchLabel();              // "Branch: X  ↓N"
+        UpdateCommitActionTexts(pending); // commit button + context-menu count
+    }
+
     private BranchInfo? SelectedBranch()
         => _tree.SelectedNode?.Tag as BranchInfo;
 
@@ -2273,7 +2310,10 @@ public sealed class BranchHierarchyForm : Form
             // Pass _svc.WorkingDir (the repo selected in cboRepo) so the native dialog pushes that
             // repository and its checked-out branch (shown in lblBranch), not the host's repo.
             _openPushDialog(this, _svc.WorkingDir);
-            RefreshTree();
+            // A push only zeroes the current branch's ahead count, so silently re-check the
+            // Pull/Push/Commit values instead of a full reload. (A first-time push of a brand-new
+            // branch adds an origin/* ref the tree won't show until the next manual refresh.)
+            _ = SilentRefreshActionButtonsAsync();
             NotifyRepoChanged();
             return;
         }
@@ -2292,8 +2332,10 @@ public sealed class BranchHierarchyForm : Form
             bool? result = _openCommitDialog(this, _svc.WorkingDir);
             if (result.HasValue)
             {
-                // Refresh and notify GitExtensions when commits were actually made.
-                if (result.Value) { RefreshTree(); _notifyRepoChanged?.Invoke(); }
+                // A commit doesn't change the tree's branch/tag structure, only the pending + ahead
+                // counts — so silently re-check the Pull/Push/Commit values instead of a full reload,
+                // and notify GitExtensions, when commits were actually made.
+                if (result.Value) { _ = SilentRefreshActionButtonsAsync(); _notifyRepoChanged?.Invoke(); }
                 // The GitExtensions Commit window has now closed: re-show the Branch Hierarchy
                 // window with focus, on top of the GitExtensions main window that the repo-change
                 // notification may have raised to the foreground.
@@ -2595,14 +2637,14 @@ public sealed class BranchHierarchyForm : Form
             wa.Left + (wa.Width  - Width)  / 2,
             wa.Top  + (wa.Height - Height) / 2);
 
+        // The tree was already kept current by the live RepoMutated refreshes during the session, so
+        // closing only needs a fast, silent re-check of the Pull/Push/Commit button values — not a
+        // full reload behind the "Carregando…" overlay, which made the close feel slow.
+        _postRefreshAction = null;   // drop any pending reveal; the silent path does not run it
         if (dlg.LastFinishedReleaseTag is string tag)
-            _postRefreshAction = () => FocusTagNode(tag);
-
-        // Always refresh (showing the loading overlay) when the GitFlow dialog closes, so the tree
-        // reflects any repo state the dialog left behind; a freshly finished release tag is focused.
-        RefreshTree();
-        // No NotifyRepoChanged on close: the refresh already keeps the tree current, and notifying
-        // GitExtensions would only pull its (minimized) window forward.
+            FocusTagNode(tag);       // tag is already in the tree from the live refresh on finish
+        _ = SilentRefreshActionButtonsAsync();
+        // No NotifyRepoChanged on close: it would only pull the (minimized) GitExtensions window forward.
     }
 
     private void DoRestore()
@@ -2644,9 +2686,11 @@ public sealed class BranchHierarchyForm : Form
             wa.Left + (wa.Width  - Width)  / 2,
             wa.Top  + (wa.Height - Height) / 2);
 
-        // Always refresh (showing the loading overlay) when the Restore dialog closes, so the tree
-        // reflects any repo state the dialog left behind. GitExtensions is not notified here.
-        RefreshTree();
+        // The tree was already kept current by the live RepoMutated refreshes during the session, so
+        // closing only needs a fast, silent re-check of the Pull/Push/Commit button values — not a
+        // full reload behind the "Carregando…" overlay. GitExtensions is not notified here.
+        _postRefreshAction = null;
+        _ = SilentRefreshActionButtonsAsync();
     }
 
     private void FocusTagNode(string tagName)
