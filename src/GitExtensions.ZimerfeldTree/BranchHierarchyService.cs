@@ -248,17 +248,6 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
-    public (bool ok, string error) CreateBranch(string newName, string fromRef)
-    {
-        try
-        {
-            var (_, err, code) = RunGitFull(
-                $"branch \"{EscapeArg(newName)}\" \"{EscapeArg(fromRef)}\"");
-            return code == 0 ? (true, string.Empty) : (false, err.Trim());
-        }
-        catch (Exception ex) { return (false, ex.Message); }
-    }
-
     /// <summary>
     /// Creates a new local branch from <paramref name="fromRef"/> and immediately checks it out
     /// using a single <c>git checkout -b</c> command.
@@ -313,35 +302,6 @@ public sealed class BranchHierarchyService
         {
             var (_, err, code) = RunGitFull($"branch -D \"{EscapeArg(branchName)}\"");
             return code == 0 ? (true, string.Empty) : (false, err.Trim());
-        }
-        catch (Exception ex) { return (false, ex.Message); }
-    }
-
-    /// <summary>
-    /// Deletes a tag locally (<c>git tag -d</c>) and, when a remote is configured, also from the
-    /// remote (<c>git push &lt;remote&gt; --delete &lt;tag&gt;</c>). A remote that doesn't have the tag
-    /// is treated as success — the goal (tag gone from the remote) is already met. Local deletion is
-    /// authoritative: if it fails, no remote push is attempted.
-    /// </summary>
-    public (bool ok, string error) DeleteTag(string tagName)
-    {
-        try
-        {
-            var (_, err, code) = RunGitFull($"tag -d \"{EscapeArg(tagName)}\"");
-            if (code != 0) return (false, err.Trim());
-
-            string remote = GetDefaultRemote();
-            if (remote.Length == 0) return (true, string.Empty);
-
-            var (_, rerr, rcode) = RunGitFull($"push {remote} --delete \"{EscapeArg(tagName)}\"");
-            if (rcode == 0) return (true, string.Empty);
-
-            // The tag simply isn't on the remote — local deletion still succeeded, nothing to push.
-            if (rerr.Contains("remote ref does not exist", StringComparison.OrdinalIgnoreCase))
-                return (true, string.Empty);
-
-            // Local deletion worked but the remote push failed for another reason (e.g. no network).
-            return (false, $"Tag removida localmente, mas falhou ao remover do remoto '{remote}':\n{rerr.Trim()}");
         }
         catch (Exception ex) { return (false, ex.Message); }
     }
@@ -497,17 +457,6 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
-    /// <summary>Runs <c>git push</c> for the current branch.</summary>
-    public (bool ok, string error) Push()
-    {
-        try
-        {
-            var (_, err, code) = RunGitFull("push");
-            return code == 0 ? (true, string.Empty) : (false, err.Trim());
-        }
-        catch (Exception ex) { return (false, ex.Message); }
-    }
-
     /// <summary>
     /// Removes stale remote-tracking refs (<c>refs/remotes/&lt;remote&gt;/*</c>) for branches that no
     /// longer exist on the default remote, so they stop appearing in the tree. Runs
@@ -581,42 +530,6 @@ public sealed class BranchHierarchyService
             return (combined, code);
         }
         catch (Exception ex) { return (ex.Message, -1); }
-    }
-
-    /// <summary>
-    /// Clears git-flow-next's persistent operation state (<c>.git/gitflow/state/*.json</c>).
-    /// <para>
-    /// git-flow-next records an in-progress finish/merge in a state file that survives even
-    /// when git itself has no merge in progress (no MERGE_HEAD). This produces a deadlock:
-    /// "a merge is already in progress" keeps firing, but neither <c>git merge --abort</c>
-    /// nor <c>git flow ... finish --abort</c> can clear it — both depend on a real MERGE_HEAD
-    /// that does not exist. Deleting the stale state file is the only reliable recovery.
-    /// </para>
-    /// Returns true when at least one state file was removed.
-    /// </summary>
-    public bool ClearGitFlowState()
-    {
-        try
-        {
-            string gitDir = RunGit("rev-parse --git-dir", out int code).Trim();
-            if (code != 0 || gitDir.Length == 0) return false;
-
-            // git-dir may be relative to WorkingDir — resolve to an absolute path.
-            if (!Path.IsPathRooted(gitDir))
-                gitDir = Path.GetFullPath(Path.Combine(WorkingDir, gitDir));
-
-            string stateDir = Path.Combine(gitDir, "gitflow", "state");
-            if (!Directory.Exists(stateDir)) return false;
-
-            bool removed = false;
-            foreach (var file in Directory.GetFiles(stateDir, "*.json"))
-            {
-                try { File.Delete(file); removed = true; }
-                catch { /* file may be locked; ignore */ }
-            }
-            return removed;
-        }
-        catch { return false; }
     }
 
     /// <summary>Returns the full symbolic HEAD ref (e.g. "refs/heads/develop").</summary>
