@@ -1,8 +1,8 @@
 ﻿---
 tipo: sistema
 tags: [build, versão, nupkg, deploy]
-atualizado: 2026-06-24
-versao: 1.0.344
+atualizado: 2026-06-25
+versao: 1.0.345
 ---
 
 # Versionamento e Build
@@ -11,7 +11,7 @@ versao: 1.0.344
 
 `major.minor.build` — somente o `build` é incrementado automaticamente pelo `build.ps1`. Major e minor são alterados manualmente.
 
-Versão atual: **1.0.344** *(fonte da verdade: `.nuspec` / `.csproj`)*
+Versão atual: **1.0.345** *(fonte da verdade: `.nuspec` / `.csproj`)*
 
 > [!note] Detecção incremental por timestamp
 > O `build.ps1` só incrementa a versão (e recompila/empacota) se alguma **entrada do pacote** for mais nova que o último `.nupkg` gerado. Entradas = fontes (`*.cs`/`*.csproj`/`*.nuspec`/`*.resx`/`*.png`), **qualquer `*.md`** do repositório e os textos empacotados (`LICENSE`, scripts de `tools\`). A comparação é feita contra o `.nupkg` (e não a DLL) de propósito — quando só um texto muda, o build incremental do dotnet pode não regravar a DLL, o que dispararia a detecção em loop. Use `-Force` para empacotar mesmo sem mudanças.
