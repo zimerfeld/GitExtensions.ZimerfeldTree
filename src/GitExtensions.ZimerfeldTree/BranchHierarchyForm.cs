@@ -2286,6 +2286,9 @@ public sealed class BranchHierarchyForm : Form
             BeginInvoke(() =>
             {
                 _btnPull.Enabled = true;
+                // A pull fetches from the remote and can add/remove remote branches and move refs, so
+                // do a full reload behind the "Carregando…" overlay (not just a silent count re-check)
+                // — otherwise new remote branches wouldn't appear until the next manual refresh.
                 RefreshTree();
                 NotifyRepoChanged();
                 if (!ok && !string.IsNullOrEmpty(err))
