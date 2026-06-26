@@ -2313,10 +2313,11 @@ public sealed class BranchHierarchyForm : Form
             // Pass _svc.WorkingDir (the repo selected in cboRepo) so the native dialog pushes that
             // repository and its checked-out branch (shown in lblBranch), not the host's repo.
             _openPushDialog(this, _svc.WorkingDir);
-            // A push only zeroes the current branch's ahead count, so silently re-check the
-            // Pull/Push/Commit values instead of a full reload. (A first-time push of a brand-new
-            // branch adds an origin/* ref the tree won't show until the next manual refresh.)
-            _ = SilentRefreshActionButtonsAsync();
+            // A push can add a remote ref (a first-time push of a brand-new branch creates an
+            // origin/* ref), so do a full reload behind the "Carregando…" overlay (not just a
+            // silent count re-check) — otherwise the new remote branch wouldn't appear until the
+            // next manual refresh.
+            RefreshTree();
             NotifyRepoChanged();
             return;
         }
