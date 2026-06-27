@@ -8,8 +8,8 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.348  
-**Atualizado em:** 2026-06-25
+**Versão:** 1.0.350  
+**Atualizado em:** 2026-06-27
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -66,6 +66,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
 - **Push** / **Push ↑N** — abre o diálogo nativo de Push do GitExtensions (remote, URL, branch destino e opções avançadas); o botão mostra um **ícone de seta para cima** (verde) que substitui o antigo caractere `↑`, e `↑N` mostra quantos commits locais ainda não foram enviados ao remoto
   - Quando a branch em checkout está **atrás** do remoto (`↓N > 0`), o Push é **bloqueado** por um aviso ("sua branch está N commit(s) atrás — faça Baixar primeiro") que oferece fazer o Baixar na hora, evitando a rejeição `non-fast-forward`
 - **Commit** / **Commit (N)** — abre a janela de Commit nativa do GitExtensions; o contador `(N)` só aparece quando há alterações pendentes; sem alterações o botão e o item do menu de contexto mostram apenas `Commit`
+- **Contador de Commit ao vivo** — a janela **monitora a pasta do working directory** (`FileSystemWatcher`, incluindo subpastas) e atualiza o `(N)` do botão Commit **silenciosamente** conforme você cria, edita ou apaga arquivos — sem recarregar a árvore e sem o overlay "Carregando…". As rajadas de eventos de um mesmo salvamento são agrupadas (debounce de 600 ms) e então um único `git status` roda em segundo plano. Mudanças dentro de `.git` são ignoradas (irrelevantes para a contagem e fonte de eco); `.gitignore`/`.gitattributes` continuam contando normalmente. O watcher é reapontado automaticamente ao trocar de repositório
 - **Verificação do remoto ao abrir** — ao abrir a janela, um `git fetch` da upstream da branch atual roda **em segundo plano** (a abertura permanece rápida e offline-safe) e atualiza os contadores Pull/Push; o label `Branch: <nome>` também ganha o sufixo `↓N` quando há commits a baixar
 - Após cada Push, Pull ou Commit (seja pelos botões ou pela janela principal do GitExtensions), a árvore é **atualizada automaticamente** e os contadores dos botões (`↑N`, `↓N`, `(N)`) são recalculados
 - **GitFlow** — abre a janela de operações GitFlow; disponível a qualquer momento, independentemente do estado do painel de aviso

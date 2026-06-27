@@ -1,11 +1,11 @@
 ﻿---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-25 (financiamento: FUNDING.yml com github+ko_fi, badges NuGet versão/downloads e frase "por que doar" nos READMEs) | 2026-06-18 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
+atualizado: 2026-06-27 (contador de Commit ao vivo: FileSystemWatcher na pasta do working directory atualiza o `(N)` do botão Commit silenciosamente, com debounce e ignorando `.git`) | 2026-06-26 (financiamento: FUNDING.yml com github+ko_fi, badges NuGet versão/downloads e frase "por que doar" nos READMEs) | 2026-06-18 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.348
+versao: 1.0.350
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -89,6 +89,7 @@ C:\GitExtensions\ZimerfeldTree\
 - Seletor de **Working Directory** (combo lido de `%APPDATA%\GitExtensions\GitExtensions\GitExtensions.settings`) e **branch atual em negrito** + cor de destaque
 - **Filtro em tempo real** em todas as seções (substring case-insensitive), preservando nós-pai com filhos correspondentes
 - **Botões Pull / Push / Commit / Excluir / GitFlow / Restore** acima da árvore (quando há branch em checkout); contadores `↓N` / `↑N` / `(N)`. **Pull/Push exibem ícones de seta** (↓ azul / ↑ verde) no lugar dos antigos caracteres `↓`/`↑`. Agem no **HEAD**
+- **Contador de Commit ao vivo** — um `FileSystemWatcher` sobre a pasta do working directory (com subpastas) atualiza o `(N)` do botão Commit **silenciosamente** ao criar/editar/apagar arquivos, sem rebuild da árvore nem overlay. Rajadas agrupadas por debounce de 600 ms → um único `git status` em background; mudanças em `.git` são ignoradas (evita eco; `.gitignore`/`.gitattributes` contam). Reapontado ao trocar de repo. Detalhe em [[Interface ZimerfeldTree — botões e fluxos]]
 - **Verificação do remoto ao abrir** — `git fetch` da upstream da branch atual roda em segundo plano após a janela aparecer (offline-safe na abertura); corrige os contadores Pull/Push e adiciona `↓N` ao label `Branch:`
 - **Push protegido contra divergência** — se a branch a enviar está **atrás** do remoto, o Push é bloqueado com aviso "faça Baixar primeiro" (oferece baixar na hora), evitando rejeição `non-fast-forward`
 - **Seleção múltipla por checkbox** — cada branch (local/remota) e tag tem checkbox (seções e pastas não); marcar 2+ habilita exclusão em lote. O botão **Excluir** muda para `Excluir (N)` e o menu de contexto reduz para **Excluir + Atualizar**
@@ -257,7 +258,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.348** (README + csproj + nuspec + vault em sincronia)
+- Versão atual: **1.0.350** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
