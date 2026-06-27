@@ -100,6 +100,13 @@ public sealed class BranchHierarchyForm : Form
     // ── Tooltip engine ────────────────────────────────────────────────────────
     private readonly ToolTip _mainTooltip = new ToolTip();
 
+    // ── Working-directory watcher (live commit count) ─────────────────────────
+    /// <summary>Watches the selected repo's working tree so the commit button's pending-changes
+    /// count updates live as files are edited/created/deleted. Null when no repo is being watched.</summary>
+    private FileSystemWatcher? _wdWatcher;
+    /// <summary>Coalesces the burst of watcher events from a single save into one git status re-check.</summary>
+    private System.Windows.Forms.Timer? _wdDebounce;
+
     // ── Tree expand/collapse state persistence ────────────────────────────────
     /// <summary>Per-repo set of expanded node paths (key = workingDir, value = stable path strings).</summary>
     private Dictionary<string, HashSet<string>> _treeStateByRepo = [];
@@ -192,7 +199,13 @@ public sealed class BranchHierarchyForm : Form
         // repository data is then read on a background thread behind the "Carregando…" overlay
         // and the tree is populated when it completes — kicked off from the Shown handler in
         // InitializeComponent (FirstLoadAsync). Refreshes use the same async overlay path.
-        FormClosed += (_, _) => { _saveDebounce?.Dispose(); SaveTreeState(); };
+        FormClosed += (_, _) =>
+        {
+            StopWorkingDirWatcher();
+            _wdDebounce?.Dispose();
+            _saveDebounce?.Dispose();
+            SaveTreeState();
+        };
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -304,6 +317,10 @@ public sealed class BranchHierarchyForm : Form
         if (IsDisposed) { _isRefreshing = false; return; }
 
         ApplyRepoData(data);
+
+        // Keep the working-directory watcher pointed at the repo that was just loaded (no-op when
+        // unchanged), so the commit button's count stays live after first load and after repo switches.
+        EnsureWorkingDirWatcher();
 
         var postAction = _postRefreshAction;
         _postRefreshAction = null;
@@ -1883,6 +1900,133 @@ public sealed class BranchHierarchyForm : Form
         UpdatePullPushButtons();          // ↓N / ↑N on the Pull/Push buttons (checked-out branch)
         UpdateBranchLabel();              // "Branch: X  ↓N"
         UpdateCommitActionTexts(pending); // commit button + context-menu count
+    }
+
+    // ── Working-directory watcher ─────────────────────────────────────────────
+    // Keeps the commit button's pending-changes count live: as the user edits, creates or deletes
+    // files in the working tree, a FileSystemWatcher fires, the burst is debounced, and a cheap
+    // `git status` re-check updates only the commit button text — no tree rebuild and no overlay.
+
+    /// <summary>
+    /// (Re)points the watcher at the currently selected repository's working tree if it is not already
+    /// watching it. A no-op when the repo is unchanged, so it is safe to call after every refresh.
+    /// </summary>
+    private void EnsureWorkingDirWatcher()
+    {
+        if (_wdWatcher != null &&
+            string.Equals(_wdWatcher.Path, _svc.WorkingDir, StringComparison.OrdinalIgnoreCase))
+            return;   // already watching this repo
+        RestartWorkingDirWatcher();
+    }
+
+    /// <summary>Tears down any existing watcher and starts a fresh one over <see cref="_svc"/>.WorkingDir.</summary>
+    private void RestartWorkingDirWatcher()
+    {
+        StopWorkingDirWatcher();
+
+        string dir = _svc.WorkingDir;
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return;
+
+        try
+        {
+            _wdWatcher = new FileSystemWatcher(dir)
+            {
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName
+                             | NotifyFilters.LastWrite | NotifyFilters.Size,
+            };
+            _wdWatcher.Changed += OnWorkingDirChanged;
+            _wdWatcher.Created += OnWorkingDirChanged;
+            _wdWatcher.Deleted += OnWorkingDirChanged;
+            _wdWatcher.Renamed += OnWorkingDirChanged;
+            _wdWatcher.Error   += OnWorkingDirWatcherError;
+            _wdWatcher.EnableRaisingEvents = true;
+        }
+        catch
+        {
+            // Best-effort only (e.g. the path became inaccessible) — manual Refresh still works.
+            StopWorkingDirWatcher();
+        }
+    }
+
+    private void StopWorkingDirWatcher()
+    {
+        if (_wdWatcher == null) return;
+        _wdWatcher.EnableRaisingEvents = false;
+        _wdWatcher.Changed -= OnWorkingDirChanged;
+        _wdWatcher.Created -= OnWorkingDirChanged;
+        _wdWatcher.Deleted -= OnWorkingDirChanged;
+        _wdWatcher.Renamed -= OnWorkingDirChanged;
+        _wdWatcher.Error   -= OnWorkingDirWatcherError;
+        _wdWatcher.Dispose();
+        _wdWatcher = null;
+    }
+
+    private void OnWorkingDirChanged(object sender, FileSystemEventArgs e)
+    {
+        // Ignore git's internal churn (index/lock writes under .git): it is irrelevant to the
+        // working-tree count and a source of feedback, since `git status` itself refreshes the
+        // index stat cache. .gitignore / .gitattributes are real working-tree files and pass through.
+        if (IsUnderGitDir(e.FullPath)) return;
+
+        // Watcher events fire on a thread-pool thread; hop to the UI thread to (re)start the debounce.
+        if (IsDisposed) return;
+        try { BeginInvoke((Action)RestartCommitCountDebounce); }
+        catch (ObjectDisposedException)    { /* form closing */ }
+        catch (InvalidOperationException)  { /* handle not created yet */ }
+    }
+
+    private void OnWorkingDirWatcherError(object sender, ErrorEventArgs e)
+    {
+        // Internal-buffer overflow (or the path went away): rebuild the watcher and re-check once.
+        if (IsDisposed) return;
+        try { BeginInvoke((Action)(() => { RestartWorkingDirWatcher(); RestartCommitCountDebounce(); })); }
+        catch (ObjectDisposedException)   { }
+        catch (InvalidOperationException) { }
+    }
+
+    /// <summary>True when <paramref name="fullPath"/> is the repo's <c>.git</c> folder or lives inside it.</summary>
+    private bool IsUnderGitDir(string fullPath)
+    {
+        string dir = _svc.WorkingDir;
+        if (string.IsNullOrEmpty(dir) ||
+            !fullPath.StartsWith(dir, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        string rel = fullPath.Substring(dir.Length).TrimStart('\\', '/');
+        return rel.StartsWith(".git", StringComparison.OrdinalIgnoreCase)
+            && (rel.Length == 4 || rel[4] == '\\' || rel[4] == '/');   // ".git" or ".git\..."
+    }
+
+    /// <summary>Restarts the 600 ms debounce timer; one git status re-check fires after the events settle.</summary>
+    private void RestartCommitCountDebounce()
+    {
+        if (_wdDebounce == null)
+        {
+            _wdDebounce = new System.Windows.Forms.Timer { Interval = 600 };
+            _wdDebounce.Tick += (_, _) =>
+            {
+                _wdDebounce!.Stop();
+                _ = SilentRefreshCommitCountAsync();
+            };
+        }
+        _wdDebounce.Stop();
+        _wdDebounce.Start();
+    }
+
+    /// <summary>
+    /// Cheapest silent refresh: re-reads only the pending-changes count off the UI thread and updates
+    /// the commit button + context-menu text. Driven by the working-directory watcher, so the count
+    /// stays current as the user edits files — without a tree rebuild or the "Carregando…" overlay.
+    /// </summary>
+    private async Task SilentRefreshCommitCountAsync()
+    {
+        int pending;
+        try { pending = await Task.Run(_svc.GetPendingChangesCount); }
+        catch { return; }   // best-effort: leave the last-known count in place on a probe failure
+
+        if (IsDisposed) return;
+        UpdateCommitActionTexts(pending);
     }
 
     private BranchInfo? SelectedBranch()
