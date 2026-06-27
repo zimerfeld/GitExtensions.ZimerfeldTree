@@ -1,5 +1,5 @@
 // GitFlowForm.cs — Git Flow operations window for ZimerfeldTree plugin
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 namespace GitExtensions.ZimerfeldTree;
 

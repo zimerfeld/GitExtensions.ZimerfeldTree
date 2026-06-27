@@ -21,10 +21,12 @@
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
     <!-- ── Licensing — per NuGet authoring best practices ────────────── -->
-    <!--  https://learn.microsoft.com/pt-br/nuget/create-packages/package-authoring-best-practices#licensing  -->
-    <license type="expression">MIT</license>
-    <!-- licenseUrl is deprecated but kept for older clients -->
-    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <!--  https://learn.microsoft.com/pt-br/nuget/create-packages/package-authoring-best-practices#licensing
+         CC BY-NC-ND 4.0 is a valid SPDX id but is NOT OSI/FSF-approved, so NuGet does not
+         host it on licenses.nuget.org and the type="expression" form is discouraged for it.
+         The full license text is embedded instead via type="file" (LICENSE.txt is packed at
+         the package root below). licenseUrl is omitted — it cannot coexist with <license>. -->
+    <license type="file">LICENSE.txt</license>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <!-- ── Description ───────────────────────────────────────────────── -->
     <description>

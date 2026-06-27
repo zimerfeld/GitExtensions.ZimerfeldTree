@@ -1,5 +1,5 @@
 // BranchHierarchyForm.cs — Main WinForms window for ZimerfeldTree plugin
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;

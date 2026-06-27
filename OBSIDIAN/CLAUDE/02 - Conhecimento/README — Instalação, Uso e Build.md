@@ -102,7 +102,7 @@ Ver [[Versionamento e Build]].
 Ajude a manter este projeto sempre atualizado: **[GitHub Sponsors → zimerfeld](https://github.com/sponsors/zimerfeld)** · **[Ko-fi → Buy me a coffee ☕](https://ko-fi.com/C0D621FCGD)**.
 
 ## 📄 Licença
-[MIT](LICENSE.txt)
+[CC BY-NC-ND 4.0](LICENSE.txt)
 
 ## 🔗 Relacionado
 - [[GitExtensions.ZimerfeldTree]]

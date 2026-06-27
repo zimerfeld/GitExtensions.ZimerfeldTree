@@ -1,5 +1,5 @@
 // BranchHierarchyService.cs — Git operations for ZimerfeldTree plugin
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.Diagnostics;
 using System.Text.Json;
