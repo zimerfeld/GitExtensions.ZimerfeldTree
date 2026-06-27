@@ -1,5 +1,5 @@
 // TreeOfLifeIcon.cs — Programmatically-rendered "Árvore da Vida" icon for ZimerfeldTree.
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;

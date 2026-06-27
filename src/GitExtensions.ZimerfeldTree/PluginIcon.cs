@@ -1,5 +1,5 @@
 // PluginIcon.cs — Loads the embedded ZimerfeldTree icon (Resources\ico.png).
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 namespace GitExtensions.ZimerfeldTree;
 

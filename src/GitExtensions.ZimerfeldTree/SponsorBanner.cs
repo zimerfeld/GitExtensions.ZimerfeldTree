@@ -1,5 +1,5 @@
 // SponsorBanner.cs — top-of-window GitHub Sponsors badge shared by all ZimerfeldTree windows
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.Diagnostics;
 

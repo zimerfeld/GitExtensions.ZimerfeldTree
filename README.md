@@ -74,4 +74,4 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 ## License / Licença
 
-[MIT](LICENSE.txt)
+[CC BY-NC-ND 4.0](LICENSE.txt)

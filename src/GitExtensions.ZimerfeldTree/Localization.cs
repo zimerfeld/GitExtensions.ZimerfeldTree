@@ -1,5 +1,5 @@
 // Localization.cs — runtime language dictionaries for the ZimerfeldTree windows
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.Globalization;
 using System.Text.Json;

@@ -1,5 +1,5 @@
 // RestoreForm.cs — Git restore/cherry-pick/reset window for ZimerfeldTree plugin
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.Text.Json;
 

@@ -1,5 +1,5 @@
 // NodeIcons.cs — 16×16 GDI+ icons for the ZimerfeldTree branch hierarchy.
-// MIT License — Copyright (c) 2026 Zimerfeld
+// Licensed under CC BY-NC-ND 4.0 — Copyright (c) 2026 Zimerfeld
 
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
