@@ -8,8 +8,8 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.348  
-**Updated:** 2026-06-25
+**Version:** 1.0.350  
+**Updated:** 2026-06-27
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
@@ -62,6 +62,7 @@ Shown above the tree when a branch is checked out:
 - **Push** / **Push ↑N** opens the native GitExtensions Push dialog. The button shows a green **up-arrow icon** (replaces the old `↑` character); `↑N` is the number of local commits not yet pushed.
   - When the checked-out branch is **behind** the remote (`↓N > 0`), Push is **blocked** by a warning ("your branch is N commit(s) behind — pull first") that offers to Pull right away, preventing the `non-fast-forward` rejection.
 - **Commit** / **Commit (N)** opens the native GitExtensions Commit window. `(N)` is shown only when there are pending changes.
+- **Live Commit counter** — the window **watches the working-directory folder** (`FileSystemWatcher`, subfolders included) and updates the Commit button's `(N)` **silently** as you create, edit, or delete files — no tree rebuild and no "Loading…" overlay. The burst of events from a single save is debounced (600 ms) and then a single background `git status` runs. Changes under `.git` are ignored (irrelevant to the count and a feedback source); `.gitignore`/`.gitattributes` still count normally. The watcher is automatically repointed when you switch repositories.
 - On window open, a background `git fetch` of the current branch's upstream refreshes the counts off the UI thread (the window stays fast/offline-safe), and the `Branch: <name>` label gains a `↓N` suffix when there are commits to pull.
 - After Push, Pull, or Commit, the tree refreshes automatically and the button counters are recalculated.
 - **GitFlow** opens the GitFlow operation window.

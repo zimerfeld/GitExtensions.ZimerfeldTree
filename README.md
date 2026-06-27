@@ -44,7 +44,7 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 - **Hierarchical branch tree** — LOCAL, REMOTES and TAGS sections combining real commit ancestry with `/` path grouping; current branch in bold, live counters and a real-time filter.
 - **One-click GitFlow** — start/publish/track/update/finish for feature, release, hotfix, bugfix and support, with a flexible hierarchy that even allows a *feature under a feature* (finish cascades up to `develop`).
-- **Pull / Push / Commit at hand** — arrow-icon buttons with ahead/behind counters, a background remote check on open, and a guard that blocks a push when the branch is behind.
+- **Pull / Push / Commit at hand** — arrow-icon buttons with ahead/behind counters, a background remote check on open, and a guard that blocks a push when the branch is behind. The Commit `(N)` counter updates **live** as you edit files (a working-directory watcher refreshes it silently).
 - **Restore — your "go back in time" hub** — a dedicated window gathering **every** safe way to recover or undo history: restore a file/tree/tag, cherry-pick, **revert** (the safe undo for shared branches), create a branch/tag from any commit, **reflog recovery** of lost commits or deleted branches, discard local changes, and an advanced rebase to drop a commit — each with a clear, built-in explanation and teamwork guidance.
 - **Localized (English / Portuguese)** — every window picks its language independently and remembers it.
 
@@ -52,7 +52,7 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 - **Árvore hierárquica de branches** — seções LOCAL, REMOTES e TAGS combinando ancestralidade real de commits com agrupamento por caminho `/`; branch atual em negrito, contadores ao vivo e filtro em tempo real.
 - **GitFlow num clique** — start/publish/track/update/finish para feature, release, hotfix, bugfix e support, com hierarquia flexível que permite até *feature filha de feature* (o finish cascateia até a `develop`).
-- **Pull / Push / Commit à mão** — botões com ícones de seta e contadores adiante/atrás, verificação do remoto em segundo plano ao abrir e um aviso que bloqueia o push quando a branch está atrás.
+- **Pull / Push / Commit à mão** — botões com ícones de seta e contadores adiante/atrás, verificação do remoto em segundo plano ao abrir e um aviso que bloqueia o push quando a branch está atrás. O contador `(N)` do Commit atualiza **ao vivo** conforme você edita arquivos (um watcher do working directory o atualiza silenciosamente).
 - **Restore — sua central de "voltar no tempo"** — uma janela dedicada reunindo **todas** as formas seguras de recuperar ou desfazer histórico: restaurar arquivo/árvore/tag, cherry-pick, **reverter** (o desfazer seguro para branches compartilhadas), criar branch/tag a partir de qualquer commit, **recuperação via reflog** de commits perdidos ou branches deletadas, descartar mudanças locais e um rebase avançado para remover um commit — cada um com explicação embutida e orientações de trabalho em equipe.
 - **Localizado (Inglês / Português)** — cada janela escolhe seu idioma de forma independente e o memoriza.
 
