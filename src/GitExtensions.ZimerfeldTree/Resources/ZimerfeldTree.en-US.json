@@ -81,6 +81,7 @@
   "violLocalMasterRoot": "LOCAL '{0}' should be a root, but has parent '{1}'.",
   "violLocalDevelopChild": "LOCAL 'develop' should be a child of '{0}', it is under '{1}'.",
   "violLocalFeature": "LOCAL '{0}' should be a child of 'develop'.",
+  "violLocalBugfix": "LOCAL '{0}' should be a child of a release (a bugfix can only exist tied to a release).",
   "violRemoteMasterRoot": "REMOTE '{0}/master' should be a root, but has parent '{1}'.",
   "violRemoteDevelopChild": "REMOTE '{0}/develop' should be a child of '{1}/{2}', it is under '{3}'.",
   "violRemoteFeature": "REMOTE '{0}' should be a child of '{1}/develop'.",

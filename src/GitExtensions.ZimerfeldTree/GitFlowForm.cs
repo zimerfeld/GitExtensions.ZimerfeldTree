@@ -651,9 +651,12 @@ public sealed class GitFlowForm : Form
                 break;
 
             case "bugfix":
+                // Project rule: a bugfix may only exist tied to a release, so a release base is
+                // required (checkbox checked, like support) and the list is limited to release/*.
                 foreach (var r in FullNamesWithPrefix(_svc.GetGitFlowPrefix("release")))
                     _cboBasedOn.Items.Add(r);
                 if (_cboBasedOn.Items.Count > 0) _cboBasedOn.SelectedIndex = 0;
+                _chkBasedOn.Checked = true;
                 _chkBasedOn.Enabled = true;
                 break;
 
@@ -770,6 +773,28 @@ public sealed class GitFlowForm : Form
             MessageBox.Show(_t["informBranchName"], _t["gitFlowTitle"],
                 MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
+        }
+
+        // Project rule: a bugfix may only exist tied to a release. Reject the start unless an
+        // existing release/* branch is chosen as the base, so the bugfix nests under it.
+        if (string.Equals(type, "bugfix", StringComparison.OrdinalIgnoreCase))
+        {
+            string releasePrefix = _svc.GetGitFlowPrefix("release");
+            var releases = FullNamesWithPrefix(releasePrefix).ToList();
+            if (releases.Count == 0)
+            {
+                MessageBox.Show(_t["bugfixNeedsRelease"], _t["gitFlowTitle"],
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string chosenBase = Clean(_cboBasedOn.Text);
+            if (!_chkBasedOn.Checked || !releases.Contains(chosenBase))
+            {
+                MessageBox.Show(_t["bugfixSelectRelease"], _t["gitFlowTitle"],
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
         }
 
         _txtResult.Clear();
@@ -910,21 +935,41 @@ public sealed class GitFlowForm : Form
 
         string fullBranch   = _svc.GetGitFlowPrefix(type) + name;
         string remote       = _svc.GetDefaultRemote();
-        // Parent branch: hotfix/support branch from main; everything else from develop.
-        string parentBranch = (string.Equals(type, "hotfix",  StringComparison.OrdinalIgnoreCase) ||
-                               string.Equals(type, "support", StringComparison.OrdinalIgnoreCase))
-            ? _svc.GetGitFlowBranchName("main")
-            : _svc.GetGitFlowBranchName("develop");
+        // Parent branch: hotfix/support from main; bugfix from the release it belongs to; else develop.
+        // mergeLocalParent forces merging the local ref (releases are often local-only, so a
+        // remote-tracking origin/release/* may not exist).
+        bool mergeLocalParent = false;
+        string parentBranch;
+        if (string.Equals(type, "hotfix",  StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(type, "support", StringComparison.OrdinalIgnoreCase))
+        {
+            parentBranch = _svc.GetGitFlowBranchName("main");
+        }
+        else if (string.Equals(type, "bugfix", StringComparison.OrdinalIgnoreCase))
+        {
+            var releases = _svc.GetLocalBranches()
+                .Select(b => b.FullName)
+                .Where(n => n.StartsWith(_svc.GetGitFlowPrefix("release"), StringComparison.Ordinal))
+                .ToList();
+            string release = _svc.ResolveBugfixRelease(fullBranch, releases);
+            parentBranch     = release.Length > 0 ? release : _svc.GetGitFlowBranchName("develop");
+            mergeLocalParent = release.Length > 0;
+        }
+        else
+        {
+            parentBranch = _svc.GetGitFlowBranchName("develop");
+        }
 
         _txtResult.Clear();
         bool fetchRan = !_chkNoFetch.Checked && remote.Length > 0;
         if (fetchRan)
             RunFlow($"fetch \"{remote}\"", suppressError: true);
 
-        // Switch to the branch, then merge the parent (remote-tracking when available).
+        // Switch to the branch, then merge the parent (remote-tracking when available, except a
+        // release parent which is merged from its local ref).
         if (!RunFlow($"checkout \"{fullBranch}\"")) return;
 
-        bool ok = fetchRan
+        bool ok = (fetchRan && !mergeLocalParent)
             ? RunFlow($"merge \"{remote}/{parentBranch}\"")
             : RunFlow($"merge \"{parentBranch}\"");
 
@@ -976,9 +1021,25 @@ public sealed class GitFlowForm : Form
         }
         else
         {
-            // feature / bugfix → merge into its based-on parent when it has one (so the work lands
-            // in the parent node shown in the tree), otherwise into develop as usual.
-            string? parent = _svc.GetBasedOnParent(fullBranch);
+            // feature / bugfix → merge into the parent node shown in the tree, so the work lands there.
+            //   bugfix: into the release it belongs to (diagram + project rule) — based-on link, else
+            //           the nearest release ancestor; develop only when no release qualifies.
+            //   feature: into its based-on parent when it has one, otherwise develop.
+            string? parent;
+            if (string.Equals(type, "bugfix", StringComparison.OrdinalIgnoreCase))
+            {
+                var releases = _svc.GetLocalBranches()
+                    .Select(b => b.FullName)
+                    .Where(n => n.StartsWith(_svc.GetGitFlowPrefix("release"), StringComparison.Ordinal))
+                    .ToList();
+                string release = _svc.ResolveBugfixRelease(fullBranch, releases);
+                parent = release.Length > 0 ? release : null;
+            }
+            else
+            {
+                parent = _svc.GetBasedOnParent(fullBranch);
+            }
+
             bool parentUsable = !string.IsNullOrEmpty(parent)
                 && !string.Equals(parent, mainBranch, StringComparison.Ordinal)
                 && !string.Equals(parent, devBranch,  StringComparison.Ordinal)

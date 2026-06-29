@@ -39,6 +39,7 @@ public sealed class BranchHierarchyForm : Form
     private List<BranchInfo>             _tags           = [];
     private Dictionary<string, string?>  _localParentMap  = []; // real git ancestry
     private Dictionary<string, string?>  _remoteParentMap = [];
+    private Dictionary<string, string>   _bugfixReleaseMap = []; // local bugfix → its release (project rule)
     private bool                         _gitFlowForced   = false;
     private bool                         _gitFlowUserToggled = false; // user clicked the button → stop auto-organizing
     private Action?                      _postRefreshAction;          // runs once after the next RefreshTreeAsync completes
@@ -348,6 +349,7 @@ public sealed class BranchHierarchyForm : Form
         List<BranchInfo>            Tags,
         Dictionary<string, string?> LMap,
         Dictionary<string, string?> RMap,
+        Dictionary<string, string>  BugfixRelease,
         int                         Pending);
 
     /// <summary>
@@ -377,6 +379,18 @@ public sealed class BranchHierarchyForm : Form
         ip?.Report((80, _t["progRemoteHierarchy"]));
         var rMap = _svc.BuildRemoteParentMap(remote);
         token.ThrowIfCancellationRequested();
+        // Project rule: a bugfix exists only tied to a release. Resolve each local bugfix's release
+        // here (background thread, runs git) so the tree can nest it and the warning can flag a
+        // bugfix with no release — without touching git on the UI thread.
+        string bugfixPrefix  = _svc.GetGitFlowPrefix("bugfix");
+        string releasePrefix = _svc.GetGitFlowPrefix("release");
+        var localReleases = local.Where(b => b.FullName.StartsWith(releasePrefix, StringComparison.Ordinal))
+                                 .Select(b => b.FullName).ToList();
+        var bugfixRelease = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var b in local)
+            if (b.FullName.StartsWith(bugfixPrefix, StringComparison.Ordinal))
+                bugfixRelease[b.FullName] = _svc.ResolveBugfixRelease(b.FullName, localReleases);
+        token.ThrowIfCancellationRequested();
         ip?.Report((92, _t["progSync"]));
         var tracking = _svc.GetBranchTrackingInfo();
         foreach (var b in local)
@@ -390,7 +404,7 @@ public sealed class BranchHierarchyForm : Form
         ip?.Report((96, _t["progPending"]));
         int pending = _svc.GetPendingChangesCount();
         ip?.Report((100, _t["progDone"]));
-        return new RepoData(local, remote, tags, lMap, rMap, pending);
+        return new RepoData(local, remote, tags, lMap, rMap, bugfixRelease, pending);
     }
 
     /// <summary>
@@ -405,6 +419,7 @@ public sealed class BranchHierarchyForm : Form
         _tags            = data.Tags;
         _localParentMap  = data.LMap;
         _remoteParentMap = data.RMap;
+        _bugfixReleaseMap = data.BugfixRelease;
 
         _tree.BeginUpdate();
         try
@@ -412,8 +427,8 @@ public sealed class BranchHierarchyForm : Form
             UpdateGitFlowWarning();   // verifies whether the real hierarchy follows the GitFlow rule
             // Even in forced-GitFlow mode, based-on links override the rigid map so the
             // visual hierarchy is honored in every mode.
-            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
-            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
+            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches, _bugfixReleaseMap)) : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches, _remoteParentMap)               : _remoteParentMap;
             RebuildAllSections(_txtFilter?.Text.Trim() ?? string.Empty, localMap, remoteMap);
             // Restore the saved expand/collapse state ONLY when the native handle exists — node
             // .Expand()/CollapseAll() do not stick before it does. Every load (first load and
@@ -1221,6 +1236,17 @@ public sealed class BranchHierarchyForm : Form
                 violations.Add(_t.F("violLocalFeature", b.FullName));
         }
 
+        // Project rule: a bugfix may only exist tied to a release. When no release could be resolved
+        // (no based-on link and no release ancestor), flag it — this also auto-switches to the
+        // GitFlow view that nests each bugfix under its release.
+        foreach (var b in _localBranches)
+        {
+            if (!b.FullName.StartsWith("bugfix/")) continue;
+            _bugfixReleaseMap.TryGetValue(b.FullName, out var rel);
+            if (string.IsNullOrEmpty(rel))
+                violations.Add(_t.F("violLocalBugfix", b.FullName));
+        }
+
         // ── Remotes (por grupo) ───────────────────────────────────────────────
         foreach (var grp in _remoteBranches.GroupBy(b => b.RemoteName ?? "origin"))
         {
@@ -1251,7 +1277,8 @@ public sealed class BranchHierarchyForm : Form
         return violations;
     }
 
-    private static Dictionary<string, string?> BuildGitFlowRemoteParentMap(List<BranchInfo> branches)
+    private static Dictionary<string, string?> BuildGitFlowRemoteParentMap(
+        List<BranchInfo> branches, IReadOnlyDictionary<string, string?> ancestry)
     {
         var result = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var grp in branches.GroupBy(b => b.RemoteName ?? "origin"))
@@ -1267,6 +1294,7 @@ public sealed class BranchHierarchyForm : Form
                 else if (b.FullName == develop)                  parent = master;
                 else if (b.DisplayName.StartsWith("feature/"))   parent = develop;
                 else if (b.DisplayName.StartsWith("release/"))   parent = develop;
+                else if (b.DisplayName.StartsWith("bugfix/"))    parent = ReleaseAncestorOr(ancestry, b.FullName, develop);
                 else if (b.DisplayName.StartsWith("hotfix/"))    parent = master;
                 else                                             parent = null;
                 result[b.FullName] = parent;
@@ -1275,7 +1303,8 @@ public sealed class BranchHierarchyForm : Form
         return result;
     }
 
-    private static Dictionary<string, string?> BuildGitFlowParentMap(List<BranchInfo> branches)
+    private static Dictionary<string, string?> BuildGitFlowParentMap(
+        List<BranchInfo> branches, IReadOnlyDictionary<string, string> bugfixRelease)
     {
         string? master  = branches.FirstOrDefault(b => b.FullName is "master" or "main")?.FullName;
         string? develop = branches.FirstOrDefault(b => b.FullName == "develop")?.FullName;
@@ -1289,11 +1318,37 @@ public sealed class BranchHierarchyForm : Form
             else if (name == develop)                parent = master;
             else if (name.StartsWith("feature/"))   parent = develop;
             else if (name.StartsWith("release/"))   parent = develop;
+            // Project rule: a bugfix nests under the release it belongs to (resolved off-thread in
+            // FetchRepoData). Falls back to develop only when no release qualifies. A based-on link
+            // still wins, since OverlayBasedOn runs after this map is built.
+            else if (name.StartsWith("bugfix/"))
+                parent = bugfixRelease.TryGetValue(name, out var rel) && rel.Length > 0 ? rel : develop;
             else if (name.StartsWith("hotfix/"))    parent = master;
             else                                     parent = null;
             result[name] = parent;
         }
         return result;
+    }
+
+    /// <summary>
+    /// Project rule: a bugfix exists only tied to a release, so it nests under the release it
+    /// descends from. Returns that release when real git ancestry resolves the bugfix's parent to a
+    /// <c>release/*</c> branch; otherwise <paramref name="fallback"/> (develop). An explicit based-on
+    /// link still wins, since <see cref="BranchHierarchyService.OverlayBasedOn"/> runs afterwards.
+    /// </summary>
+    private static string? ReleaseAncestorOr(
+        IReadOnlyDictionary<string, string?> ancestry, string branch, string? fallback)
+    {
+        if (ancestry.TryGetValue(branch, out var anc) && anc != null)
+        {
+            // The remote ancestry map keys/values are full refs (e.g. "origin/release/x"); the local
+            // one is short names ("release/x"). Matching on the "release/" segment covers both.
+            string tail = anc.Contains('/') ? anc[(anc.IndexOf('/') + 1)..] : anc;
+            if (anc.StartsWith("release/", StringComparison.Ordinal) ||
+                tail.StartsWith("release/", StringComparison.Ordinal))
+                return anc;
+        }
+        return fallback;
     }
 
     // ── Repository combo ──────────────────────────────────────────────────────
@@ -1587,8 +1642,8 @@ public sealed class BranchHierarchyForm : Form
         _tree.BeginUpdate();
         try
         {
-            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches)) : _localParentMap;
-            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches)               : _remoteParentMap;
+            var localMap  = _gitFlowForced ? _svc.OverlayBasedOn(BuildGitFlowParentMap(_localBranches, _bugfixReleaseMap)) : _localParentMap;
+            var remoteMap = _gitFlowForced ? BuildGitFlowRemoteParentMap(_remoteBranches, _remoteParentMap)               : _remoteParentMap;
             RebuildAllSections(filter, localMap, remoteMap);
             ExpandRoots();
         }

@@ -8,8 +8,8 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.350  
-**Atualizado em:** 2026-06-27
+**Versão:** 1.0.351  
+**Atualizado em:** 2026-06-29
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -254,7 +254,7 @@ O diagrama resume, para cada tipo de branch, a **base usada no Start**, o **bran
 ![Regras de Start e Finish por tipo](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)
 
 - **feature** — nasce de `develop` (ou de outra `feature/*`, opcional); finaliza em `develop` ou no branch pai (based-on)
-- **bugfix** — nasce de uma `release/*` (escolha obrigatória); finaliza em `develop` ou no pai
+- **bugfix** — nasce de uma `release/*` (**obrigatório** — um bugfix só pode existir vinculado a uma release, então o Start é bloqueado quando nenhuma é escolhida ou não existe nenhuma) e fica **aninhado sob essa release** na árvore; finaliza na própria **release (seu pai)** — ou em `develop` se a release não existir mais
 - **release** — nasce de `develop` (base fixa); finaliza em `main` (`merge --no-ff` + tag) e em `develop`, com push de main/develop/tag
 - **hotfix** — nasce de `main` (base fixa); finaliza em `main` (`merge --no-ff` + tag) e em `develop`
 - **support** — nasce de uma **tag** de produção (escolha obrigatória); finaliza apenas em `main`, sem tag e sem tocar em `develop`
@@ -280,8 +280,9 @@ O git guarda apenas o commit-tip de cada branch, não a origem. Para aninhar o n
 No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opção **based on:**:
 
 - Por padrão o dropdown fica **desabilitado** e usa a base padrão do tipo:
-  - `develop` para feature, bugfix e release
+  - `develop` para feature e release
   - `main` para hotfix e support
+- Para **bugfix** e **support** o checkbox já vem **marcado e obrigatório**: o bugfix lista as `release/*` existentes (um bugfix só pode existir vinculado a uma release) e o support lista as tags de produção; o Start é bloqueado se a base correta não for escolhida
 - Ao marcar o checkbox **based on:**, o dropdown é habilitado e lista as branches locais, permitindo iniciar a nova branch a partir de outra — por exemplo, uma **feature filha de outra feature pai**
 - O comando executado é: `git checkout -b <prefixo><nome> <base>`
 - **Nome padrão de release**: ao selecionar o tipo **release**, o campo de nome é preenchido automaticamente com a convenção `yyyyMMddHHmm` (ex.: `202605311230`), gerando branches como `release/202605311230`; o preenchimento só ocorre quando o campo está vazio, nunca sobrescrevendo digitação manual
@@ -292,9 +293,10 @@ O plugin executa **git nativo** diretamente — **não requer o binário `git-fl
 
 - **Publish** — `git push --set-upstream <remote> <prefixo><nome>`: envia a branch para o remoto e define o upstream local
 - **Track** — `git fetch <remote>` + `git checkout -b <prefixo><nome> --track <remote>/<prefixo><nome>`: cria uma branch local rastreando a branch remota correspondente (útil para branches iniciadas por outra pessoa)
-- **Update** — `git fetch <remote>` + `git checkout <branch>` + `git merge <remote>/<pai>`: traz as mudanças da branch **pai** (develop ou main) para a branch. Com **No fetch** marcado, o merge é feito contra a referência local
+- **Update** — `git fetch <remote>` + `git checkout <branch>` + `git merge <remote>/<pai>`: traz as mudanças da branch **pai** para a branch. O pai é `develop` (feature/release), `main` (hotfix/support) ou **a release** à qual o bugfix pertence; para bugfix a release é mesclada do ref local (releases costumam ser locais). Com **No fetch** marcado, o merge é feito contra a referência local
 - **Finish** — mescla de volta, exclui a branch local (se **Keep** desmarcado) e **remove a branch do remoto** (se existir); o checkbox **No fetch** omite o fetch inicial
-  - **feature / bugfix**: `git checkout develop` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
+  - **feature**: `git checkout <develop ou pai based-on>` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
+  - **bugfix**: `git checkout <release (pai), ou develop se a release não existir>` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
   - **release / hotfix**: `git checkout main` → `git merge --no-ff` → `git tag -a <nome> -m "<nome>"` → `git checkout develop` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
   - **support**: `git checkout main` → `git merge --no-ff` → `git branch -d` → `git push <remote> --delete`
   - A remoção remota só ocorre se a branch existir no remoto (verificado com `ls-remote`); caso contrário, uma nota é exibida no painel de resultado

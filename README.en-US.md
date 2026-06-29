@@ -8,8 +8,8 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.350  
-**Updated:** 2026-06-27
+**Version:** 1.0.351  
+**Updated:** 2026-06-29
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
@@ -242,7 +242,7 @@ The diagram summarizes, for each branch type, the **base used on Start**, the **
 ![Start and Finish rules per type](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png)
 
 - **feature** — starts from `develop` (or another `feature/*`, optional); finishes into `develop` or the based-on parent
-- **bugfix** — starts from a `release/*` (required pick); finishes into `develop` or the parent
+- **bugfix** — starts from a `release/*` (**required** — a bugfix can only exist tied to a release, so Start is blocked when none is chosen or none exists) and is **nested under that release** in the tree; finishes into that **release (its parent)** — or `develop` if the release no longer exists
 - **release** — starts from `develop` (fixed base); finishes into `main` (`merge --no-ff` + tag) and `develop`, pushing main/develop/tag
 - **hotfix** — starts from `main` (fixed base); finishes into `main` (`merge --no-ff` + tag) and `develop`
 - **support** — starts from a production **tag** (required pick); finishes into `main` only, with no tag and without touching `develop`

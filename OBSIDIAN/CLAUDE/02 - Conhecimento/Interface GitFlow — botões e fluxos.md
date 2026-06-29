@@ -22,7 +22,7 @@ Diagrama-resumo: para cada tipo, a **base do Start**, o **branch criado** e o **
 | Tipo | Start — base | Finish — destino |
 | --- | --- | --- |
 | **feature** | `develop` ou `feature/*` (opcional) | `develop` ou pai based-on (`merge --no-ff`) |
-| **bugfix** | `release/*` (obrigatório) | `develop` ou pai (`merge --no-ff`) |
+| **bugfix** | `release/*` (obrigatório) | a própria **release (pai)** — ou `develop` se a release não existir (`merge --no-ff`) |
 | **release** | `develop` (fixo) | `main` (`merge --no-ff` + tag) + `develop`; push de main/develop/tag |
 | **hotfix** | `main` (fixo) | `main` (`merge --no-ff` + tag) + `develop` |
 | **support** | tag de produção (obrigatório) | só `main` (`merge --no-ff`, sem tag, sem develop) |
@@ -89,18 +89,20 @@ Toda ação passa por aqui:
 | **hotfix**  | `main` (base fixa)                                | **desabilitado** |
 | **release** | `develop` (base fixa)                             | **desabilitado** |
 | **feature** | `develop` (1º item) + branches `feature/*` locais | **habilitado** |
-| **bugfix**  | apenas branches `release/*` locais                | **habilitado** |
+| **bugfix**  | apenas branches `release/*` locais                | **marcado + habilitado (obrigatório)** |
 | *outros (support)* | `develop` + todas as branches locais       | **habilitado** |
 
 - O combo só fica **utilizável** quando o checkbox está **habilitado E marcado** (`_cboBasedOn.Enabled = _chkBasedOn.Enabled && _chkBasedOn.Checked`).
 - hotfix/release: o checkbox é desmarcado e desabilitado → base fixa; o combo só exibe `main`/`develop`. O fallback de `DoStart` (sem "based on") já resolve para o mesmo `main`/`develop`, mantendo coerência.
-- feature/bugfix: marque o checkbox para escolher a base no combo filtrado (feature filha de feature, bugfix sobre release).
+- **bugfix (regra do projeto)**: um bugfix **só pode existir vinculado a uma release**. O checkbox já vem **marcado** e o combo lista só as `release/*`; o `DoStart` **bloqueia** o Start se não houver nenhuma release ou se a base escolhida não for uma `release/*`. A base release (não-raiz) faz o `DoStart` gravar um **based-on override** → o bugfix fica **aninhado sob a release** na árvore.
+- feature: marque o checkbox para escolher a base no combo filtrado (feature filha de feature).
 - Nomes de branch no combo são **completos** (ex.: `feature/x`, `release/2026`).
 
 ### Botão Start (`_btnStart`) → `DoStart`
 1. Lê tipo e nome; se nome vazio → `MessageBox` e aborta.
+1b. **bugfix**: se não houver nenhuma `release/*` → `MessageBox` (`bugfixNeedsRelease`) e aborta; se o checkbox não estiver marcado ou a base não for uma `release/*` existente → `MessageBox` (`bugfixSelectRelease`) e aborta.
 2. Limpa `_txtResult`.
-3. `git checkout -b <prefixo><nome> <base>` (base padrão: develop para feature/bugfix/release; main para hotfix/support; ou a branch escolhida em "based on").
+3. `git checkout -b <prefixo><nome> <base>` (base padrão: develop para feature/release; main para hotfix/support; **release para bugfix (obrigatório)**; ou a branch escolhida em "based on").
 4. Limpa a caixa de nome.
 5. Sucesso: pré-seleciona a nova branch no painel **Manage** e revela na ZimerfeldTree (`RevealInTree(prefixo+nome, checkout:false)` — o checkout já foi feito pelo `-b`).
 6. Falha → reativa o modal.
@@ -123,7 +125,7 @@ Toda ação passa por aqui:
 2. Limpa `_txtResult`.
 3. Se No fetch desmarcado e remoto existir: `git fetch <remote>`.
 4. `git checkout <prefixo+nome>`.
-5. `git merge <remote>/<pai>` (ou `<pai>` local se No fetch). Pai = develop para feature/bugfix/release; main para hotfix/support.
+5. `git merge <remote>/<pai>` (ou `<pai>` local se No fetch). Pai = develop para feature/release; main para hotfix/support; **a release (pai)** para bugfix — mesclada sempre do ref local da release (releases costumam ser locais), com fallback para develop se nenhuma release for resolvida.
 6. Sucesso → reveal.
 
 ### Botão Finish (`_btnFinish`) → `DoFinish` ⚠️ fluxo composto
@@ -131,7 +133,8 @@ Toda ação passa por aqui:
 2. Limpa `_txtResult`.
 3. Se No fetch desmarcado e remoto existir: `git fetch <remote>`.
 4. **Merge sequence** (git puro, sem binário git-flow):
-   - feature/bugfix: `checkout develop` → `merge --no-ff`.
+   - feature: `checkout <develop ou pai based-on>` → `merge --no-ff`.
+   - bugfix: `checkout <release (pai based-on), ou develop se a release não existir>` → `merge --no-ff` (o pai based-on é a release escolhida no Start; só não é usado se tiver sido finalizada/apagada).
    - hotfix/release: `checkout main` → `merge --no-ff` → `tag -a <nome> -m <nome>` → `checkout develop` → `merge --no-ff`.
    - support: `checkout main` → `merge --no-ff`.
 5. Se **Keep** desmarcado: `git branch -d <prefixo+nome>`.

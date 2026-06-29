@@ -888,6 +888,35 @@ public sealed class BranchHierarchyService
         => LoadBasedOnOverrides().TryGetValue(branch, out var parent) ? parent : null;
 
     /// <summary>
+    /// Resolves the release a bugfix belongs to. Project rule: a bugfix exists only tied to a
+    /// release, so the tree nests it under that release and Finish merges back into it. Prefers the
+    /// based-on link recorded at Start; otherwise returns the nearest release in
+    /// <paramref name="releases"/> whose tip is an ancestor of the bugfix (fewest commits between the
+    /// two tips). Returns an empty string when no release qualifies. Runs git — call off the UI thread.
+    /// </summary>
+    public string ResolveBugfixRelease(string bugfixFullName, IReadOnlyCollection<string> releases)
+    {
+        // 1. Explicit based-on link wins when it points to one of the known releases.
+        string? linked = GetBasedOnParent(bugfixFullName);
+        if (!string.IsNullOrEmpty(linked) && releases.Contains(linked))
+            return linked;
+
+        // 2. Nearest release ancestor: among releases whose tip is an ancestor of the bugfix, the one
+        //    with the smallest commit distance to the bugfix tip.
+        string best        = string.Empty;
+        int    bestDistance = int.MaxValue;
+        foreach (var r in releases)
+        {
+            var (_, _, isAnc) = RunGitFull($"merge-base --is-ancestor \"{EscapeArg(r)}\" \"{EscapeArg(bugfixFullName)}\"");
+            if (isAnc != 0) continue; // the release tip is not an ancestor of this bugfix
+            var (cnt, _, c) = RunGitFull($"rev-list --count {EscapeArg(r)}..{EscapeArg(bugfixFullName)}");
+            if (c != 0) continue;
+            if (int.TryParse(cnt.Trim(), out int d) && d < bestDistance) { bestDistance = d; best = r; }
+        }
+        return best;
+    }
+
+    /// <summary>
     /// Cleanup after <paramref name="finished"/> is finished/deleted: drops its own based-on link
     /// and re-points any branches that were based on it to <paramref name="newParent"/> (the branch
     /// it was merged into), so the visual tree stays connected.

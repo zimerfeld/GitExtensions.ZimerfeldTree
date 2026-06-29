@@ -39,7 +39,7 @@
 <line x1="229" y1="148" x2="229" y2="156" stroke="#888780" marker-end="url(#d)"/>
 <line x1="229" y1="190" x2="229" y2="198" stroke="#888780" marker-end="url(#d)"/>
 <rect x="159" y="72" width="140" height="34" rx="4" fill="#EEEDFE" stroke="#534AB7"/><text x="229" y="87" font-size="10.5" font-weight="500" fill="#26215C">checkout -b</text><text x="229" y="100" font-size="9.5" fill="#534AB7">bugfix/x &lt;- release/*</text>
-<rect x="159" y="114" width="140" height="34" rx="4" fill="#E6F1FB" stroke="#185FA5"/><text x="229" y="129" font-size="10.5" font-weight="500" fill="#042C53">checkout + merge --no-ff</text><text x="229" y="142" font-size="9.5" fill="#185FA5">para develop | parent</text>
+<rect x="159" y="114" width="140" height="34" rx="4" fill="#EAF3DE" stroke="#3B6D11"/><text x="229" y="129" font-size="10.5" font-weight="500" fill="#173404">checkout + merge --no-ff</text><text x="229" y="142" font-size="9.5" fill="#3B6D11">para a release (parent)</text>
 <rect x="159" y="156" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="229" y="171" font-size="10.5" font-weight="500" fill="#4A1B0C">branch -d</text><text x="229" y="184" font-size="9.5" fill="#993C1D">bugfix/x</text>
 <rect x="159" y="198" width="140" height="34" rx="4" fill="#FAECE7" stroke="#993C1D"/><text x="229" y="213" font-size="10.5" font-weight="500" fill="#4A1B0C">push --delete</text><text x="229" y="226" font-size="9.5" fill="#993C1D">origin bugfix/x</text>
 

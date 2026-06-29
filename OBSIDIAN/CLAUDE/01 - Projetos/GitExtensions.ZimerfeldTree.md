@@ -1,11 +1,11 @@
 ﻿---
 tipo: projeto
 criado: 2026-06-01
-atualizado: 2026-06-27 (contador de Commit ao vivo: FileSystemWatcher na pasta do working directory atualiza o `(N)` do botão Commit silenciosamente, com debounce e ignorando `.git`) | 2026-06-26 (financiamento: FUNDING.yml com github+ko_fi, badges NuGet versão/downloads e frase "por que doar" nos READMEs) | 2026-06-18 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
+atualizado: 2026-06-29 (contador de Commit ao vivo: FileSystemWatcher na pasta do working directory atualiza o `(N)` do botão Commit silenciosamente, com debounce e ignorando `.git`) | 2026-06-26 (financiamento: FUNDING.yml com github+ko_fi, badges NuGet versão/downloads e frase "por que doar" nos READMEs) | 2026-06-18 (doc: GitFlow flexível — feature filha de feature; finish em cascata até develop. 1.0.323: ícones Pull/Push nos botões e menu; verificação do remoto ao abrir via fetch da branch atual; menu Baixar/Enviar age na branch clicada; aviso bloqueia push quando a branch está atrás; cabeçalho com a branch em checkout no menu de contexto)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.350
+versao: 1.0.351
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -116,10 +116,12 @@ Cada botão da janela GitFlow dispara a sequência abaixo:
 ### Start
 | Tipo | Comando git |
 |------|-------------|
-| `feature`, `bugfix`, `release` | `git checkout -b <prefixo><nome> develop` |
+| `feature`, `release` | `git checkout -b <prefixo><nome> develop` |
+| `bugfix` | `git checkout -b <prefixo><nome> <release/*>` — **base release obrigatória** |
 | `hotfix`, `support` | `git checkout -b <prefixo><nome> main` |
 | qualquer (based on marcado) | `git checkout -b <prefixo><nome> <base escolhida>` |
 
+> **Regra do bugfix:** um bugfix **só pode existir vinculado a uma release**. O `DoStart` bloqueia o Start se não houver release ou se a base escolhida não for uma `release/*`; a base release grava um *based-on override* → o bugfix fica **aninhado sob a release** na árvore (também via `BuildGitFlowParentMap`, que usa a ancestralidade real para achar a release pai). Bugfix fora dessa regra vira uma **violação** (`violLocalBugfix`) que aciona a auto-organização GitFlow.
 > **based on:** permite feature-filha-de-feature; nesse caso o plugin executa também `git commit --allow-empty -m "chore: start <prefixo><nome>"` para a hierarquia ficar visível (ver Limitações).
 > **Nome padrão de release:** ao escolher tipo `release`, o nome é pré-preenchido com `yyyyMMddHHmm` (só se o campo estiver vazio).
 
@@ -140,12 +142,13 @@ git fetch <remote>                                     # (se No fetch desmarcado
 git checkout <prefixo><nome>
 git merge <remote>/<pai>                               # (ou git merge <pai> se No fetch)
 ```
-> Pai = `develop` para feature/bugfix/release; `main` para hotfix/support
+> Pai = `develop` para feature/release; `main` para hotfix/support; **a release (pai)** para bugfix (do ref local; fallback develop)
 
 ### Finish — feature / bugfix
 ```
 git fetch <remote>                                     # (se No fetch desmarcado)
-git checkout develop
+git checkout <destino>                                 # feature: develop ou pai based-on
+                                                       # bugfix: release (pai based-on), ou develop se a release não existir
 git merge --no-ff <prefixo><nome>
 git branch -d <prefixo><nome>                          # (se Keep desmarcado)
 git push <remote> --delete <prefixo><nome>             # (somente se a branch remota existir)
@@ -258,7 +261,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.350** (README + csproj + nuspec + vault em sincronia)
+- Versão atual: **1.0.351** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
