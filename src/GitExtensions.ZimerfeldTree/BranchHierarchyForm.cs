@@ -2459,9 +2459,11 @@ public sealed class BranchHierarchyForm : Form
     }
 
     /// <summary>
-    /// Blocks a push when <paramref name="branch"/> is behind its upstream — the exact cause of a
-    /// non-fast-forward rejection. Warns that a Pull is needed first and offers to run it now; either
-    /// way the push is aborted. Returns true (push may proceed) only when the branch is not behind.
+    /// Guards a push when <paramref name="branch"/> is behind its upstream — the exact cause of a
+    /// non-fast-forward rejection. Offers to integrate the remote commits with a rebase pull
+    /// (<c>git pull --rebase</c>) and, once that succeeds, push automatically. Returns true (the caller
+    /// may push directly) only when the branch is already not behind; when behind it returns false and
+    /// the push, if confirmed, is driven by the rebase continuation instead.
     /// </summary>
     private bool EnsureNotBehindBeforePush(BranchInfo branch)
     {
@@ -2472,8 +2474,42 @@ public sealed class BranchHierarchyForm : Form
             _t["pushBehindTitle"],
             MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
         if (choice == DialogResult.Yes)
-            DoPull();   // branch is already HEAD here, so this pulls the right branch
-        return false;   // never push while behind
+            DoPullRebaseThenPush(branch);   // branch is already HEAD here, so this rebases the right branch
+        return false;   // never push directly while behind — the continuation pushes after the rebase
+    }
+
+    /// <summary>
+    /// Integrates the remote commits the branch is behind by, using a rebase pull
+    /// (<c>git pull --rebase</c> — replays the local commits on top of the remote ones, no merge commit),
+    /// and on success proceeds with the push. The network op runs off the UI thread; a failed rebase
+    /// (e.g. conflicts) is surfaced and the push is skipped, since it would still be rejected.
+    /// </summary>
+    private void DoPullRebaseThenPush(BranchInfo branch)
+    {
+        _btnPull.Enabled = false;
+        _btnPush.Enabled = false;
+        _ = Task.Run(() => _svc.PullRebase(branch.FullName)).ContinueWith(t =>
+        {
+            var (ok, err) = t.Result;
+            BeginInvoke(() =>
+            {
+                _btnPull.Enabled = true;
+                _btnPush.Enabled = true;
+                if (!ok)
+                {
+                    // Rebase couldn't complete (conflicts, network, …) — reload so the tree reflects the
+                    // current state, report it, and do NOT push: the branch is still behind.
+                    RefreshTree();
+                    NotifyRepoChanged();
+                    if (!string.IsNullOrEmpty(err))
+                        ShowError(_t["pullRebaseFailedTitle"], err);
+                    return;
+                }
+                // Local commits now sit on top of the remote → the branch is fast-forward; push it.
+                // PushCurrent refreshes the tree afterwards, so no extra reload here.
+                PushCurrent();
+            });
+        });
     }
 
     private void DoPull()

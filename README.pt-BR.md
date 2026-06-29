@@ -8,8 +8,13 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
+<<<<<<< HEAD
 **Versão:** 1.0.352  
 **Atualizado em:** 2026-06-29
+=======
+**Versão:** 1.0.353  
+**Atualizado em:** 2026-06-28
+>>>>>>> develop
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -64,7 +69,7 @@ Exibidos acima da árvore quando há uma branch em checkout:
 
 - **Pull** / **Pull ↓N** — executa `git pull --tags`: traz commits da branch rastreada **e** todas as tags do remoto, garantindo que tags de releases criadas em outras máquinas apareçam na seção TAGS; o botão mostra um **ícone de seta para baixo** (azul) que substitui o antigo caractere `↓`, e `↓N` é a quantidade de commits do remoto ainda não baixados
 - **Push** / **Push ↑N** — abre o diálogo nativo de Push do GitExtensions (remote, URL, branch destino e opções avançadas); o botão mostra um **ícone de seta para cima** (verde) que substitui o antigo caractere `↑`, e `↑N` mostra quantos commits locais ainda não foram enviados ao remoto
-  - Quando a branch em checkout está **atrás** do remoto (`↓N > 0`), o Push é **bloqueado** por um aviso ("sua branch está N commit(s) atrás — faça Baixar primeiro") que oferece fazer o Baixar na hora, evitando a rejeição `non-fast-forward`
+  - Quando a branch em checkout está **atrás** do remoto (`↓N > 0`), um aviso ("sua branch está N commit(s) atrás — é preciso integrar primeiro") oferece **Baixar com rebase e então enviar automaticamente** — o `git pull --rebase` reaplica seus commits locais por cima dos remotos (sem commit de merge), deixando a branch fast-forward para o push ser aceito. Um rebase que falha (conflitos) é reportado e o push é pulado; uma branch já em dia é enviada direto
 - **Commit** / **Commit (N)** — abre a janela de Commit nativa do GitExtensions; o contador `(N)` só aparece quando há alterações pendentes; sem alterações o botão e o item do menu de contexto mostram apenas `Commit`
 - **Contador de Commit ao vivo** — a janela **monitora a pasta do working directory** (`FileSystemWatcher`, incluindo subpastas) e atualiza o `(N)` do botão Commit **silenciosamente** conforme você cria, edita ou apaga arquivos — sem recarregar a árvore e sem o overlay "Carregando…". As rajadas de eventos de um mesmo salvamento são agrupadas (debounce de 600 ms) e então um único `git status` roda em segundo plano. Mudanças dentro de `.git` são ignoradas (irrelevantes para a contagem e fonte de eco); `.gitignore`/`.gitattributes` continuam contando normalmente. O watcher é reapontado automaticamente ao trocar de repositório
 - **Verificação do remoto ao abrir** — ao abrir a janela, um `git fetch` da upstream da branch atual roda **em segundo plano** (a abertura permanece rápida e offline-safe) e atualiza os contadores Pull/Push; o label `Branch: <nome>` também ganha o sufixo `↓N` quando há commits a baixar
@@ -177,7 +182,7 @@ Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.pn
 | Ícone                                                                                                                                                          | Item                    | Disponível para                                                                     |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-pull.png" width="16" height="16">       | Baixar (N)              | Branch local — `N` = commits atrás; faz checkout da branch clicada e então o pull   |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-push.png" width="16" height="16">       | Enviar (N)              | Branch local — `N` = commits à frente; faz checkout da branch clicada e então o push (bloqueado se estiver atrás) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-push.png" width="16" height="16">       | Enviar (N)              | Branch local — `N` = commits à frente; faz checkout da branch clicada e então o push (Baixar com rebase e então enviar quando estiver atrás) |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                | Local, remota, tag                                                                  |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…      | Local, tag                                                                          |
@@ -191,7 +196,7 @@ Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.pn
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Recolher tudo           | Sempre                                                                              |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Atualizar               | Sempre                                                                              |
 
-Os itens **Baixar/Enviar do menu de contexto agem na branch em que você clicou** (não no HEAD): a branch clicada é colocada em checkout primeiro e então o pull/push é executado sobre ela, e os contadores `(N)` refletem o atrás/à frente **daquela** branch. O Enviar sobre uma branch atrás é bloqueado pelo mesmo aviso "faça Baixar primeiro" do botão. Esses itens aparecem só para branches locais e ficam logo **antes do Commit**. O popup também exibe, no **topo**, um **cabeçalho com a branch em checkout** (`Branch: <nome>`).
+Os itens **Baixar/Enviar do menu de contexto agem na branch em que você clicou** (não no HEAD): a branch clicada é colocada em checkout primeiro e então o pull/push é executado sobre ela, e os contadores `(N)` refletem o atrás/à frente **daquela** branch. O Enviar sobre uma branch atrás dispara o mesmo aviso de Baixar-com-rebase-e-então-enviar do botão. Esses itens aparecem só para branches locais e ficam logo **antes do Commit**. O popup também exibe, no **topo**, um **cabeçalho com a branch em checkout** (`Branch: <nome>`).
 
 O item **Commit** mostra entre parênteses a quantidade de mudanças pendentes na working tree (arquivos staged, modificados e não rastreados), recalculada toda vez que o menu é aberto. Ao clicar, abre a janela de Commit nativa do GitExtensions **no processo já em execução**, de modo que todos os plugins de Commit Templates (ex.: _Zimerfeld: Auto-resumo_) já estejam carregados e visíveis no dropdown. Quando o repositório exibido no BranchHierarchy divergir do repositório ativo no GitExtensions, a janela é aberta via novo processo como fallback.
 

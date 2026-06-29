@@ -16,7 +16,11 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
+<<<<<<< HEAD
     <version>1.0.352</version>
+=======
+    <version>1.0.353</version>
+>>>>>>> develop
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>

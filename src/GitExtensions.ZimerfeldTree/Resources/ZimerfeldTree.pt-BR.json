@@ -48,7 +48,8 @@
   "pullCount": "Baixar ({0})",
   "pushCount": "Enviar ({0})",
   "pushBehindTitle": "Envio bloqueado",
-  "pushBehindWarn": "Sua branch está {0} commit(s) atrás do remoto — faça Baixar primeiro.\n\nDeseja Baixar agora?",
+  "pushBehindWarn": "Sua branch está {0} commit(s) atrás do remoto — é preciso integrar primeiro.\n\nFazer Baixar (rebase) e depois enviar?",
+  "pullRebaseFailedTitle": "Baixar (rebase) falhou",
 
   "loadingTitle": "Carregando dados do repositório",
   "abortOperation": "Abortar Operação",
