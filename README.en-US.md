@@ -300,55 +300,103 @@ When a git command fails, the output is displayed in the window and a warning is
 
 ### Restore window
 
-![Restore window](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
-
 Opens from **Restore** — a modal window placed next to BranchHierarchy. It is the "go back in time" hub for your code: it gathers **every** way to recover, undo or discard a repository state, each in its own **tab**. Tabs are ordered **from the safest to the most destructive**, and the **red** buttons are irreversible and ask for confirmation.
 
 > 💡 The full rationale — including the safety categorization and the **teamwork** recommendations — lives in the **About Restore** link (top-right corner), which opens a scrollable window with the complete explanation.
 
+The **10 tabs** are ordered **from the safest to the most destructive** — below, the image and the **fields of each tab**. **Red** buttons are irreversible and ask for confirmation.
+
+> Common to every tab: the top shows the current **HEAD**; the **Commit hash** / **Entry** fields are dropdowns listing recent commits/movements as `(YYYY-MM-DD HH:mm:ss) [branch] hash  →  message` (you can also type a hash manually); the **Result** panel (beige background) shows the live `git` output.
+
 #### 🟢 Safe (do not rewrite history)
 
-| Tab | git command | What it does |
-| --- | --- | --- |
-| **Emergency Plan** | `checkout <tag> -- .` / `reset --hard <tag>` | Takes a branch to the state of a **tag** (release): restore (staged, history untouched) or reset (moves the pointer). |
-| **Restore File** | `checkout <hash> -- "<file>"` | Recovers **one file** from an old commit, left staged. The **Browse…** button opens the Windows file picker **already in the project folder** and **rejects** any file outside the repository root (the path is converted to a repo-relative `/` path). |
-| **Restore Tree** | `checkout <hash> -- .` | Recovers the **entire** tracked tree of any commit (not only a tag), as staged changes; history untouched. |
-| **Cherry-Pick** | `cherry-pick <hash>` | Applies one or more commits onto the current branch. Accepts a single hash or a `<old>..<recent>` range. |
-| **Revert** | `revert <hash>` / `revert -m 1 <hash>` | Creates a **new commit** that undoes an earlier commit **without rewriting history** — the correct way to undo something **already pushed**. The second button reverts a whole **merge** (`-m 1`). |
-| **New Branch/Tag** | `branch <name> <hash>` / `tag <name> <hash>` | Creates a branch or tag pointing at an old commit — "forks off" the past without touching any existing branch. |
+##### Emergency Plan — takes a branch to the state of a tag (release)
 
-#### 🔵 Inspect (read-only)
+![Emergency Plan](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreEmergencyPlan.png)
 
-| Tab | git command | What it does |
-| --- | --- | --- |
-| **New Branch/Tag → Inspect** | `checkout <hash>` | Opens the code exactly as it was at that commit, in **detached HEAD**. No branch is moved; return by checking out a branch. |
+- **Branch:** dropdown of the branch to restore/reset — **defaults to the checked-out branch** (fallback `develop` → `main` → `master`)
+- **Tag:** dropdown of the reference tag
+- **Restore to Tag** → `git checkout <tag> -- .` — brings the tag content in as *staged* changes; history untouched
+- **Reset to Tag** (red) → `git reset --hard <tag>` — moves the branch pointer and **discards** everything after it
+
+##### Restore File — recovers ONE file from an old commit
+
+![Restore File](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreFile.png)
+
+- **Commit hash:** dropdown of the source commit
+- **File (relative path):** path of the file inside the repo; the **Browse…** button opens the Windows file picker **already in the project folder** and **rejects** files outside the repo root (converted to a repo-relative `/` path)
+- **Restore File** → `git checkout <hash> -- "<file>"` — the recovered file is left *staged*
+
+##### Restore Tree — recovers the ENTIRE tracked content of a commit
+
+![Restore Tree](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreTree.png)
+
+- **Commit hash:** dropdown of the source commit
+- **Restore Tree** → `git checkout <hash> -- .` — brings the whole tracked tree in as *staged* changes; history untouched
+
+##### Cherry-Pick — applies one or more commits onto the current branch
+
+![Cherry-Pick](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreCherry-Pick.png)
+
+- **Commit hash:** dropdown; accepts a single hash **or a range** `<old>..<recent>`
+- **Apply Cherry-Pick** → `git cherry-pick <hash>`
+
+##### Revert — undoes a commit by creating a new commit
+
+![Revert](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreRevert.png)
+
+- **Commit hash:** dropdown of the commit to undo
+- **Revert Commit** → `git revert <hash>` — creates a **new commit** that undoes the chosen one **without rewriting history** (the correct way to undo something **already pushed**)
+- **Revert Merge (-m 1)** → `git revert -m 1 <hash>` — undoes a whole **merge**
+
+##### New Branch/Tag — creates a branch/tag (or inspects) from an old commit
+
+![New Branch/Tag](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreNewBranchTag.png)
+
+- **Commit hash:** dropdown of the target commit
+- **Name:** name of the new branch/tag
+- **Inspect** → `git checkout <hash>` — opens the code at that commit in **detached HEAD** (read-only; return by checking out a branch)
+- **Create Tag** → `git tag <name> <hash>`  ·  **Create Branch** → `git branch <name> <hash>` — "forks off" the past without touching any existing branch
 
 #### 🟡 Recovery
 
-| Tab | git command | What it does |
-| --- | --- | --- |
-| **Recover (Reflog)** | `branch <name> <entry>` / `reset --hard <entry>` | Lists **every movement of HEAD** (commit, reset, rebase, checkout, merge). Lets you recreate a branch at an entry (recover a deleted branch / "lost" commit) or reset the current branch to it — the safety net for a `reset --hard` that went wrong. |
+##### Recover (Reflog) — lists every movement of HEAD
+
+![Recover (Reflog)](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreRecoverReflog.png)
+
+- **Entry:** dropdown of the `HEAD@{n}` entries (commit, reset, rebase, checkout, merge)
+- **Name:** name of the branch to create
+- **Create Branch Here** → `git branch <name> <entry>` — recovers a deleted branch / "lost" commit
+- **Reset Current Here** (red) → `git reset --hard <entry>` — the safety net for a `reset --hard` that went wrong
 
 #### 🟠 Discard local changes (working tree)
 
-| Tab | git command | What it does |
-| --- | --- | --- |
-| **Discard Local** | `checkout -- .` / `reset --hard HEAD` / `clean -fd` | Throws away **uncommitted** changes (history untouched): discard unstaged, discard everything (staged + unstaged), or remove untracked files. |
+##### Discard Local — throws away uncommitted changes (history untouched)
+
+![Discard Local](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreDiscarLocal.png)
+
+- **Discard unstaged changes (tracked)** → `git checkout -- .`
+- **Reset --hard HEAD (discards staged + unstaged)** (red) → `git reset --hard HEAD`
+- **Remove untracked files (clean -fd)** (red) → `git clean -fd`
 
 #### 🔴 Rewrite history (advanced)
 
-| Tab | git command | What it does |
-| --- | --- | --- |
-| **Reset Branch** | `reset --mixed/--soft/--hard <hash>` | Moves a branch pointer to an earlier commit. If the chosen branch is not the current one, the plugin `checkout <branch>`, applies the reset, and returns to the original branch automatically. |
-| **Rebase** | `rebase --onto <hash>^ <hash>` | **Removes a specific commit from history**, replaying the later ones. On conflict, the result tells you to resolve (`rebase --continue`) or use **Abort Rebase**. |
+##### Reset Branch — moves a branch pointer to an earlier commit
 
-**Reset Branch** modes:
+![Reset Branch](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreResetBranch.png)
 
-| Mode      | Effect                                                                       |
-| --------- | ---------------------------------------------------------------------------- |
-| `--mixed` | Undoes commits; changes return as **unstaged** (default)                     |
-| `--soft`  | Undoes commits; changes return as **staged**                                 |
-| `--hard`  | Undoes commits and **DISCARDS** all changes — irreversible (asks to confirm) |
+- **Branch:** dropdown of the branch to reset (defaults to the checked-out branch). If it is not the current one, the plugin `checkout`s it, applies the reset, and **returns to the original branch automatically**
+- **Commit hash:** dropdown of the target commit
+- **Mode** (radio): `--mixed` undoes commits and keeps changes as **unstaged** (default) · `--soft` keeps them as **staged** · `--hard` **DISCARDS EVERYTHING** (irreversible, asks to confirm)
+- **Reset Branch** (red) → `git reset --<mode> <hash>`
+
+##### Rebase — removes a specific commit from history
+
+![Rebase](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreRebase.png)
+
+- **Commit hash:** dropdown of the commit to remove
+- **Remove Commit from History** (red) → `git rebase --onto <hash>^ <hash>` — replays the later commits onto the parent; on conflict, resolve and `git rebase --continue`
+- **Abort Rebase** → `git rebase --abort` — returns to the previous state
 
 > ⚠️ **Never** rewrite (Reset --hard, Rebase) or discard the history of a branch other people already have — it breaks your teammates' repository.
 
