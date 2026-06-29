@@ -8,17 +8,10 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-<<<<<<< HEAD
-**Versão:** 1.0.352  
+**Versão:** 1.0.354  
 **Atualizado em:** 2026-06-29
-=======
-**Versão:** 1.0.353  
-**Atualizado em:** 2026-06-28
->>>>>>> develop
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
-
-![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
 
 [English](README.en-US.md) | [Português](README.pt-BR.md)
 
@@ -29,6 +22,8 @@ Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches
 ## Funcionalidades
 
 ### Visualização hierárquica de branches
+
+![ZimerfeldTree - BranchHierarchy](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png)
 
 - Janela não-modal que permanece aberta em paralelo ao GitExtensions. O título da barra é **`ZimerfeldTree - BranchHierarchy`** (as janelas auxiliares são `ZimerfeldTree - GitFlow` e `ZimerfeldTree - Restore`) — o prefixo **ZimerfeldTree** é mantido sempre, seguido do nome específico da janela. `BranchHierarchyForm` é apenas o nome interno da classe C# (exibido no tooltip de debug)
 - Árvore dividida em três seções fixas: **LOCAL**, **REMOTES** e **TAGS**
@@ -179,22 +174,22 @@ O checkbox **Modo Developer**, ao lado de _Show Debug_ na borda inferior da jane
 
 Cada item possui um ícone 16×16 embutido na DLL (gerado em `Resources/ctx-*.png`):
 
-| Ícone                                                                                                                                                          | Item                    | Disponível para                                                                     |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-pull.png" width="16" height="16">       | Baixar (N)              | Branch local — `N` = commits atrás; faz checkout da branch clicada e então o pull   |
+| Ícone                                                                                                                                                          | Item                    | Disponível para                                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-pull.png" width="16" height="16">       | Baixar (N)              | Branch local — `N` = commits atrás; faz checkout da branch clicada e então o pull                                                            |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-push.png" width="16" height="16">       | Enviar (N)              | Branch local — `N` = commits à frente; faz checkout da branch clicada e então o push (Baixar com rebase e então enviar quando estiver atrás) |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                | Local, remota, tag                                                                  |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…      | Local, tag                                                                          |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16">      | Mesclar na branch atual | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16">     | Rebase na branch atual  | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16">     | Renomear…               | Local                                                                               |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16">     | Excluir…                | Local, remota, tag                                                                  |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16">    | GitFlow…                | Branch (local/remota/tag)                                                           |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16">    | Restore…                | Quando branch atual ≠ `develop` — abre a janela Restore                             |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16">     | Expandir tudo           | Sempre                                                                              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Recolher tudo           | Sempre                                                                              |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Atualizar               | Sempre                                                                              |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)              | Sempre — abre a janela de Commit do GitExtensions; `N` = nº de alterações pendentes                                                          |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                | Local, remota, tag                                                                                                                           |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | Nova branch daqui…      | Local, tag                                                                                                                                   |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-merge.png" width="16" height="16">      | Mesclar na branch atual | Local                                                                                                                                        |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rebase.png" width="16" height="16">     | Rebase na branch atual  | Local                                                                                                                                        |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-rename.png" width="16" height="16">     | Renomear…               | Local                                                                                                                                        |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-delete.png" width="16" height="16">     | Excluir…                | Local, remota, tag                                                                                                                           |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-gitflow.png" width="16" height="16">    | GitFlow…                | Branch (local/remota/tag)                                                                                                                    |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-restore.png" width="16" height="16">    | Restore…                | Quando branch atual ≠ `develop` — abre a janela Restore                                                                                      |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-expand.png" width="16" height="16">     | Expandir tudo           | Sempre                                                                                                                                       |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Recolher tudo           | Sempre                                                                                                                                       |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Atualizar               | Sempre                                                                                                                                       |
 
 Os itens **Baixar/Enviar do menu de contexto agem na branch em que você clicou** (não no HEAD): a branch clicada é colocada em checkout primeiro e então o pull/push é executado sobre ela, e os contadores `(N)` refletem o atrás/à frente **daquela** branch. O Enviar sobre uma branch atrás dispara o mesmo aviso de Baixar-com-rebase-e-então-enviar do botão. Esses itens aparecem só para branches locais e ficam logo **antes do Commit**. O popup também exibe, no **topo**, um **cabeçalho com a branch em checkout** (`Branch: <nome>`).
 
@@ -351,7 +346,7 @@ As **10 abas** estão organizadas **da mais segura para a mais destrutiva** — 
 
 - **Branch:** combo da branch a restaurar/resetar — vem **pré-selecionada com a branch em checkout** (fallback `develop` → `main` → `master`)
 - **Tag:** combo da tag de referência
-- **Restaurar para a Tag** → `git checkout <tag> -- .` — traz o conteúdo da tag como mudanças *staged*; histórico intacto
+- **Restaurar para a Tag** → `git checkout <tag> -- .` — traz o conteúdo da tag como mudanças _staged_; histórico intacto
 - **Resetar para a Tag** (vermelho) → `git reset --hard <tag>` — move o ponteiro da branch e **descarta** o que veio depois
 
 ##### Restaurar Arquivo — recupera UM arquivo de um commit antigo
@@ -360,14 +355,14 @@ As **10 abas** estão organizadas **da mais segura para a mais destrutiva** — 
 
 - **Commit hash:** combo do commit de origem
 - **Arquivo (caminho relativo):** caminho do arquivo dentro do repo; o botão **Procurar…** abre o explorador do Windows **já na pasta do projeto** e **recusa** arquivos fora da raiz (converte para caminho relativo com `/`)
-- **Restaurar Arquivo** → `git checkout <hash> -- "<arquivo>"` — o arquivo recuperado fica *staged*
+- **Restaurar Arquivo** → `git checkout <hash> -- "<arquivo>"` — o arquivo recuperado fica _staged_
 
 ##### Restaurar Árvore — recupera TODO o conteúdo rastreado de um commit
 
 ![Restaurar Árvore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreTree.png)
 
 - **Commit hash:** combo do commit de origem
-- **Restaurar Árvore** → `git checkout <hash> -- .` — traz toda a árvore rastreada como mudanças *staged*; histórico intacto
+- **Restaurar Árvore** → `git checkout <hash> -- .` — traz toda a árvore rastreada como mudanças _staged_; histórico intacto
 
 ##### Cherry-Pick — aplica um ou mais commits sobre a branch atual
 
@@ -391,7 +386,7 @@ As **10 abas** estão organizadas **da mais segura para a mais destrutiva** — 
 - **Commit hash:** combo do commit-alvo
 - **Nome:** nome da nova branch/tag
 - **Inspecionar** → `git checkout <hash>` — abre o código naquele commit em **detached HEAD** (apenas leitura; volte fazendo checkout de uma branch)
-- **Criar Tag** → `git tag <nome> <hash>`  ·  **Criar Branch** → `git branch <nome> <hash>` — "bifurca" o passado sem tocar em nenhuma branch existente
+- **Criar Tag** → `git tag <nome> <hash>` · **Criar Branch** → `git branch <nome> <hash>` — "bifurca" o passado sem tocar em nenhuma branch existente
 
 #### 🟡 Recuperação
 
@@ -437,7 +432,7 @@ As **10 abas** estão organizadas **da mais segura para a mais destrutiva** — 
 
 #### 👥 Trabalho em equipe (no Sobre o Restore)
 
-- **Vários devs na mesma branch (ex.: `main`):** para desfazer algo **já enviado**, use **Reverter** (não Reset --hard); faça `git pull` (de preferência `--rebase`) **antes** de enviar para evitar a rejeição *non-fast-forward*; Reset --hard/Rebase/Descartar só são seguros em trabalho **local** que ninguém mais tem.
+- **Vários devs na mesma branch (ex.: `main`):** para desfazer algo **já enviado**, use **Reverter** (não Reset --hard); faça `git pull` (de preferência `--rebase`) **antes** de enviar para evitar a rejeição _non-fast-forward_; Reset --hard/Rebase/Descartar só são seguros em trabalho **local** que ninguém mais tem.
 - **Várias branches a mesclar na `develop`:** use **Cherry-Pick** para trazer commits específicos; **Reverter Merge (-m 1)** para desfazer um merge problemático preservando o resto; resolva conflitos com calma (**Abortar Rebase** / `git merge --abort` volta ao estado anterior); crie uma **Nova Branch/Tag** a partir de um commit para isolar ou retomar um trabalho.
 
 #### Comportamento da janela
@@ -678,7 +673,7 @@ Isso ocorre porque `feature/login` seria simultaneamente um **arquivo** (a branc
 
 O GitFlow conhecido **não prevê feature filha de feature**. O GitFlow define uma hierarquia fixa onde todas as branches `feature/*` derivam de `develop` e são **irmãs** entre si. Sub-features são geralmente tratadas com commits separados na mesma branch ou com branches irmãs de prefixo comum.
 
-Porém o **ZimerfeldTree GitFlow** permite uma hierarquia **flexível** onde as branches `feature/*` podem tanto derivar de `develop` quanto de uma outra `feature/*` acima dela (use **based on:** em GitFlow → Start). Nesse caso o *finish feature* deve obrigatoriamente **cascatear** todas as mudanças para a branch `feature/*` nó pai sucessivamente, aplicando *finish feature* novamente até chegar em `develop`.
+Porém o **ZimerfeldTree GitFlow** permite uma hierarquia **flexível** onde as branches `feature/*` podem tanto derivar de `develop` quanto de uma outra `feature/*` acima dela (use **based on:** em GitFlow → Start). Nesse caso o _finish feature_ deve obrigatoriamente **cascatear** todas as mudanças para a branch `feature/*` nó pai sucessivamente, aplicando _finish feature_ novamente até chegar em `develop`.
 
 ### Duas branches no mesmo commit não formam hierarquia pai-filho
 

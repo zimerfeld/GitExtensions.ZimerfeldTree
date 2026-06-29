@@ -1,13 +1,8 @@
 ﻿---
 tipo: sistema
 tags: [sistema, overview, plugin, gitextensions, winforms, gitflow]
-<<<<<<< HEAD
 atualizado: 2026-06-29
-versao: 1.0.352
-=======
-atualizado: 2026-06-28
-versao: 1.0.353
->>>>>>> develop
+versao: 1.0.354
 ---
 
 # Visão Geral
@@ -27,11 +22,7 @@ Plugin para **[GitExtensions](https://gitextensions.github.io/)** (Windows) que 
 | Assembly de saída | `GitExtensions.Plugins.ZimerfeldTree.dll` |
 | Namespace raiz | `GitExtensions.ZimerfeldTree` |
 | Plugin model | MEF (`System.ComponentModel.Composition`) — ver [[Plugin MEF para GitExtensions]] |
-<<<<<<< HEAD
-| Versão atual | **1.0.352** |
-=======
-| Versão atual | **1.0.353** |
->>>>>>> develop
+| Versão atual | **1.0.354** |
 | Idiomas | Inglês / Português (por janela, persistido individualmente) |
 | Autor | Zimerfeld |
 

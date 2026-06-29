@@ -10,11 +10,7 @@
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
     <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
-<<<<<<< HEAD
-    <Version>1.0.305</Version>
-=======
     <Version>1.0.311</Version>
->>>>>>> 6aba1aee19b63d7d2fb25f5976aa98655fd234a7
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 
