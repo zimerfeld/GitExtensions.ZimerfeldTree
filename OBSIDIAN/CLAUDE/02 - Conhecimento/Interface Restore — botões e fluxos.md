@@ -11,31 +11,40 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 > [!abstract] Resumo
 > Janela **modal** (`RestoreForm`) — a central de "voltar no tempo" do código. Reúne **todas** as formas de recuperar, desfazer ou descartar um estado do repositório, cada uma em sua **aba**, organizadas da mais segura à mais destrutiva. Acessível via botão **Restore** da [[Interface ZimerfeldTree — botões e fluxos]]. Projeto: [[GitExtensions.ZimerfeldTree]].
 
-![[ScreenShots/ScreenshotRestore.png]]
-
 ## 🧭 Layout
 - Janela **980 px** de largura, `TabControl` com **Multiline = true** (abas em múltiplas linhas — todas visíveis de uma vez). Header `HEAD: <ref>` + link **"Sobre o Restore"**. Caixa **Resultado** (Consolas, fundo bege `#EFEBD8`) preenche abaixo das abas. Rodapé: **Fechar** (centro, = `CancelButton`/Esc), **Show Debug** (esq.), **Idioma** (dir.).
 - **Layout responsivo** (`LayoutResponsive`) — combos/campos esticados e botões realinhados à direita em runtime, **margem direita = esquerda** (`SideMargin = 14`); recalculado no `Load` e em `_tabs.ClientSizeChanged`.
 
-## 🗂️ Abas (ordem segura → destrutiva)
+## 🗂️ Abas (ordem segura → destrutiva) — campos de cada aba
 
 🟢 **Seguras (não reescrevem histórico)**
-- **Plano de Emergência** — branch ← **tag**: `checkout <tag> -- .` (restaurar, staged) / `reset --hard <tag>` (resetar, confirma).
-- **Restaurar Arquivo** — `checkout <hash> -- "<arquivo>"`. Botão **Procurar…** (`_btnBrowseFile`) abre `OpenFileDialog` em `_svc.WorkingDir`; valida que o arquivo está **dentro da raiz** (rejeita fora, com aviso) e grava o caminho **relativo** com `/`.
-- **Restaurar Árvore** (`_cboTreeHash`) — `checkout <hash> -- .` (toda a árvore rastreada de qualquer commit, staged).
-- **Cherry-Pick** — `cherry-pick <hash>` (aceita range `antigo..recente`).
-- **Reverter** (`_cboRevertHash`) — `DoRevert(merge)`: `revert --no-edit <hash>` / `revert -m 1 --no-edit <hash>`. Desfazer **seguro** (novo commit) para branch compartilhada.
-- **Nova Branch/Tag** (`_cboNewRefHash` + `_txtNewRefName`) — `DoNewRef(tag)`: `branch <nome> <hash>` / `tag <nome> <hash>`.
 
-🔵 **Inspecionar** — botão **Inspecionar** na aba Nova Branch/Tag: `checkout <hash>` (detached HEAD, só leitura; confirma).
+- **Plano de Emergência** — **Branch:** (combo, pré-selec. branch atual) + **Tag:** (combo). Botões **Restaurar para a Tag** `checkout <tag> -- .` (staged) / **Resetar para a Tag** (vermelho) `reset --hard <tag>` (confirma).
+  ![[ScreenShots/ScreenshotRestoreEmergencyPlan.png]]
+- **Restaurar Arquivo** — **Commit hash:** (combo) + **Arquivo (caminho relativo):** (textbox) + **Procurar…** (`_btnBrowseFile`, `OpenFileDialog` em `_svc.WorkingDir`, valida dentro da raiz, grava relativo com `/`). Botão **Restaurar Arquivo** `checkout <hash> -- "<arquivo>"`.
+  ![[ScreenShots/ScreenshotRestoreFile.png]]
+- **Restaurar Árvore** — **Commit hash:** (`_cboTreeHash`). Botão **Restaurar Árvore** `checkout <hash> -- .` (toda a árvore rastreada, staged).
+  ![[ScreenShots/ScreenshotRestoreTree.png]]
+- **Cherry-Pick** — **Commit hash:** (combo, aceita range `antigo..recente`). Botão **Aplicar Cherry-Pick** `cherry-pick <hash>`.
+  ![[ScreenShots/ScreenshotRestoreCherry-Pick.png]]
+- **Reverter** — **Commit hash:** (`_cboRevertHash`). Botões **Reverter Commit** `revert --no-edit <hash>` / **Reverter Merge (-m 1)** `revert -m 1 --no-edit <hash>` (desfazer **seguro**, novo commit, p/ branch compartilhada).
+  ![[ScreenShots/ScreenshotRestoreRevert.png]]
+- **Nova Branch/Tag** — **Commit hash:** (`_cboNewRefHash`) + **Nome:** (`_txtNewRefName`). Botões **Inspecionar** `checkout <hash>` (🔵 detached HEAD, só leitura, confirma) / **Criar Tag** `tag <nome> <hash>` / **Criar Branch** `branch <nome> <hash>`.
+  ![[ScreenShots/ScreenshotRestoreNewBranchTag.png]]
 
-🟡 **Recuperação** — **Recuperar (Reflog)** (`_cboReflog` + `_txtReflogBranch`): combo populado por `git log -g -150 ...` (selector `%gd` = `HEAD@{n}`, subject `%gs`). `branch <nome> <sha>` (recriar/recuperar) ou `reset --hard <sha>` (confirma).
+🟡 **Recuperação**
+- **Recuperar (Reflog)** — **Entrada:** (`_cboReflog`, populado por `git log -g -150`, selector `%gd`=`HEAD@{n}`, subject `%gs`) + **Nome:** (`_txtReflogBranch`). Botões **Criar Branch Aqui** `branch <nome> <sha>` / **Resetar Atual p/ Aqui** (vermelho) `reset --hard <sha>` (confirma).
+  ![[ScreenShots/ScreenshotRestoreRecoverReflog.png]]
 
-🟠 **Descartar locais** — **Descartar Locais**: `checkout -- .` / `reset --hard HEAD` / `clean -fd` (todos confirmam; os dois últimos em vermelho).
+🟠 **Descartar locais**
+- **Descartar Locais** — botões **Descartar não staged (tracked)** `checkout -- .` / **Reset --hard HEAD** (vermelho) / **Remover não rastreados (clean -fd)** (vermelho); todos confirmam.
+  ![[ScreenShots/ScreenshotRestoreDiscarLocal.png]]
 
 🔴 **Reescrevem histórico**
-- **Reset Branch** (`_cboBranch` pré-selec. branch atual + `_cboResetHash`) — `reset --mixed/--soft/--hard <hash>`; se a branch ≠ atual, faz `checkout <branch>` → reset → volta. `--hard` confirma.
-- **Rebase** (`_cboRebaseHash`) — `rebase --onto <hash>^ <hash>` (remove o commit, reaplica posteriores; confirma). Em conflito, anexa `rebaseConflictHint` ao resultado; botão **Abortar Rebase** → `rebase --abort`.
+- **Reset Branch** — **Branch:** (`_cboBranch`, pré-selec. atual) + **Commit hash:** (`_cboResetHash`) + **Modo** (radio `--mixed`/`--soft`/`--hard`). Botão **Resetar Branch** (vermelho) `reset --<modo> <hash>`; se a branch ≠ atual, faz `checkout <branch>` → reset → volta. `--hard` confirma.
+  ![[ScreenShots/ScreenshotRestoreResetBranch.png]]
+- **Rebase** — **Commit hash:** (`_cboRebaseHash`). Botões **Remover Commit do Histórico** (vermelho) `rebase --onto <hash>^ <hash>` (remove o commit, reaplica posteriores, confirma; em conflito anexa `rebaseConflictHint`) / **Abortar Rebase** `rebase --abort`.
+  ![[ScreenShots/ScreenshotRestoreRebase.png]]
 
 > **Dropdowns de commit** (`HashCombos`: Restaurar Arquivo, Árvore, Cherry-Pick, Reverter, Reset, Nova Branch/Tag, Rebase) populados por `git log --all --source -200 ... %h␟%S␟%cd␟%s`; item `(YYYY-MM-dd HH:mm:ss) [branch] hash → mensagem`, mais novo primeiro, prompt **Selecione...**, **não** persistidos. O combo do Reflog usa fonte própria (`LoadReflogRefs`).
 
