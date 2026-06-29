@@ -112,9 +112,7 @@ Passos (com % no overlay):
 
 ### Botão Restore (`_btnRestore`) → `DoRestore`
 
-![[ScreenShots/ScreenshotRestore.png]]
-
-> Renomeado de **Voltar Versão** (`_btnVoltar`) para **Restore** (`_btnRestore`).
+> Renomeado de **Voltar Versão** (`_btnVoltar`) para **Restore** (`_btnRestore`). Campos e imagens de cada uma das 10 abas em [[Interface Restore — botões e fluxos]].
 
 1. Cria `RestoreForm` (modal) e posiciona **lado a lado** com a BranchHierarchy, ambas centralizadas — mesmo posicionamento da janela GitFlow.
 2. Assina `RepoMutated`: após cada operação bem-sucedida, chama `RefreshTree()` **por trás do modal** (sem roubar foco).

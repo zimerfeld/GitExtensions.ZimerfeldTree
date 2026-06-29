@@ -114,7 +114,6 @@ C:\GitExtensions\ZimerfeldTree\
 > Detalhes controle-a-controle: [[Interface ZimerfeldTree — botões e fluxos]] · [[Interface GitFlow — botões e fluxos]] · [[Interface Restore — botões e fluxos]].
 
 ![[ScreenShots/ScreenshotGitFlow.png]]
-![[ScreenShots/ScreenshotRestore.png]]
 
 ## 🔄 Comandos GitFlow → git puro
 

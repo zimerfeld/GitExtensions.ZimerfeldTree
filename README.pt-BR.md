@@ -335,55 +335,103 @@ Quando um comando git falha, o resultado é exibido na janela e um aviso é most
 
 ### Janela Restore
 
-![Janela Restore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestore.png)
-
 Abre ao clicar em **Restore** — janela modal posicionada ao lado de BranchHierarchy. É a central de "voltar no tempo" do código: reúne **todas** as formas de recuperar, desfazer ou descartar um estado do repositório, cada uma em sua própria **aba**. As abas estão organizadas **da mais segura para a mais destrutiva**, e os botões em **vermelho** são irreversíveis e pedem confirmação.
 
 > 💡 Todo o racional — incluindo a categorização por segurança e as recomendações de **trabalho em equipe** — está no link **Sobre o Restore** (canto superior direito), que abre uma janela rolável com a explicação completa.
 
+As **10 abas** estão organizadas **da mais segura para a mais destrutiva** — abaixo, a imagem e os **campos de cada aba**. Botões em **vermelho** são irreversíveis e pedem confirmação.
+
+> Comum a todas as abas: o topo exibe o **HEAD** atual; os campos **Commit hash** / **Entrada** são dropdowns que listam os commits/movimentos recentes como `(AAAA-MM-DD HH:mm:ss) [branch] hash  →  mensagem` (também aceitam digitar um hash manualmente); o painel **Resultado** (fundo bege) mostra a saída do `git` em tempo real.
+
 #### 🟢 Seguras (não reescrevem o histórico)
 
-| Aba | Comando git | O que faz |
-| --- | --- | --- |
-| **Plano de Emergência** | `checkout <tag> -- .` / `reset --hard <tag>` | Leva uma branch ao estado de uma **tag** (release): restaurar (staged, histórico intacto) ou resetar (move o ponteiro). |
-| **Restaurar Arquivo** | `checkout <hash> -- "<arquivo>"` | Recupera **um arquivo** de um commit antigo, deixando-o staged. O botão **Procurar…** abre o explorador de arquivos do Windows **já na pasta do projeto** e **recusa** qualquer arquivo fora da raiz do repositório (o caminho é convertido para relativo, com `/`). |
-| **Restaurar Árvore** | `checkout <hash> -- .` | Recupera **toda** a árvore rastreada de um commit qualquer (não só de uma tag), como mudanças staged; histórico intacto. |
-| **Cherry-Pick** | `cherry-pick <hash>` | Aplica um ou mais commits sobre a branch atual. Aceita hash simples ou intervalo `<antigo>..<recente>`. |
-| **Reverter** | `revert <hash>` / `revert -m 1 <hash>` | Cria um **novo commit** que desfaz um commit anterior **sem reescrever histórico** — o jeito correto de desfazer algo **já enviado** ao remoto. O segundo botão reverte um **merge** inteiro (`-m 1`). |
-| **Nova Branch/Tag** | `branch <nome> <hash>` / `tag <nome> <hash>` | Cria uma branch ou tag apontando para um commit antigo — "bifurca" o passado sem tocar em nenhuma branch existente. |
+##### Plano de Emergência — leva uma branch ao estado de uma tag (release)
 
-#### 🔵 Inspecionar (apenas leitura)
+![Plano de Emergência](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreEmergencyPlan.png)
 
-| Aba | Comando git | O que faz |
-| --- | --- | --- |
-| **Nova Branch/Tag → Inspecionar** | `checkout <hash>` | Abre o código exatamente como estava naquele commit, em **detached HEAD**. Nenhuma branch é movida; volta-se fazendo checkout de uma branch. |
+- **Branch:** combo da branch a restaurar/resetar — vem **pré-selecionada com a branch em checkout** (fallback `develop` → `main` → `master`)
+- **Tag:** combo da tag de referência
+- **Restaurar para a Tag** → `git checkout <tag> -- .` — traz o conteúdo da tag como mudanças *staged*; histórico intacto
+- **Resetar para a Tag** (vermelho) → `git reset --hard <tag>` — move o ponteiro da branch e **descarta** o que veio depois
+
+##### Restaurar Arquivo — recupera UM arquivo de um commit antigo
+
+![Restaurar Arquivo](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreFile.png)
+
+- **Commit hash:** combo do commit de origem
+- **Arquivo (caminho relativo):** caminho do arquivo dentro do repo; o botão **Procurar…** abre o explorador do Windows **já na pasta do projeto** e **recusa** arquivos fora da raiz (converte para caminho relativo com `/`)
+- **Restaurar Arquivo** → `git checkout <hash> -- "<arquivo>"` — o arquivo recuperado fica *staged*
+
+##### Restaurar Árvore — recupera TODO o conteúdo rastreado de um commit
+
+![Restaurar Árvore](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreTree.png)
+
+- **Commit hash:** combo do commit de origem
+- **Restaurar Árvore** → `git checkout <hash> -- .` — traz toda a árvore rastreada como mudanças *staged*; histórico intacto
+
+##### Cherry-Pick — aplica um ou mais commits sobre a branch atual
+
+![Cherry-Pick](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreCherry-Pick.png)
+
+- **Commit hash:** combo; aceita um hash simples **ou um intervalo** `<antigo>..<recente>`
+- **Aplicar Cherry-Pick** → `git cherry-pick <hash>`
+
+##### Reverter — desfaz um commit criando um novo commit
+
+![Reverter](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreRevert.png)
+
+- **Commit hash:** combo do commit a desfazer
+- **Reverter Commit** → `git revert <hash>` — cria um **novo commit** que desfaz o escolhido **sem reescrever histórico** (o jeito correto de desfazer algo **já enviado** ao remoto)
+- **Reverter Merge (-m 1)** → `git revert -m 1 <hash>` — desfaz um **merge** inteiro
+
+##### Nova Branch/Tag — cria branch/tag (ou inspeciona) a partir de um commit antigo
+
+![Nova Branch/Tag](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreNewBranchTag.png)
+
+- **Commit hash:** combo do commit-alvo
+- **Nome:** nome da nova branch/tag
+- **Inspecionar** → `git checkout <hash>` — abre o código naquele commit em **detached HEAD** (apenas leitura; volte fazendo checkout de uma branch)
+- **Criar Tag** → `git tag <nome> <hash>`  ·  **Criar Branch** → `git branch <nome> <hash>` — "bifurca" o passado sem tocar em nenhuma branch existente
 
 #### 🟡 Recuperação
 
-| Aba | Comando git | O que faz |
-| --- | --- | --- |
-| **Recuperar (Reflog)** | `branch <nome> <entrada>` / `reset --hard <entrada>` | Lista **todos os movimentos do HEAD** (commit, reset, rebase, checkout, merge). Permite recriar uma branch numa entrada (recuperar branch deletada / commit "perdido") ou resetar a branch atual para ela — a rede de segurança para um `reset --hard` que deu errado. |
+##### Recuperar (Reflog) — lista todos os movimentos do HEAD
+
+![Recuperar (Reflog)](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreRecoverReflog.png)
+
+- **Entrada:** combo das entradas `HEAD@{n}` (commit, reset, rebase, checkout, merge)
+- **Nome:** nome da branch a criar
+- **Criar Branch Aqui** → `git branch <nome> <entrada>` — recupera branch deletada / commit "perdido"
+- **Resetar Atual p/ Aqui** (vermelho) → `git reset --hard <entrada>` — a rede de segurança para um `reset --hard` que deu errado
 
 #### 🟠 Descartar mudanças locais (working tree)
 
-| Aba | Comando git | O que faz |
-| --- | --- | --- |
-| **Descartar Locais** | `checkout -- .` / `reset --hard HEAD` / `clean -fd` | Joga fora alterações **não commitadas** (não mexe no histórico): descartar não staged, descartar tudo (staged + unstaged), ou remover arquivos não rastreados. |
+##### Descartar Locais — joga fora alterações não commitadas (não mexe no histórico)
+
+![Descartar Locais](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreDiscarLocal.png)
+
+- **Descartar mudanças não staged (tracked)** → `git checkout -- .`
+- **Reset --hard HEAD (descarta staged + unstaged)** (vermelho) → `git reset --hard HEAD`
+- **Remover arquivos não rastreados (clean -fd)** (vermelho) → `git clean -fd`
 
 #### 🔴 Reescrevem o histórico (avançado)
 
-| Aba | Comando git | O que faz |
-| --- | --- | --- |
-| **Reset Branch** | `reset --mixed/--soft/--hard <hash>` | Move o ponteiro de uma branch para um commit anterior. Se a branch escolhida não for a atual, o plugin faz `checkout <branch>`, aplica o reset e retorna à branch original automaticamente. |
-| **Rebase** | `rebase --onto <hash>^ <hash>` | **Remove um commit específico do histórico**, reaplicando os posteriores. Em caso de conflito, o resultado avisa para resolver (`rebase --continue`) ou usar **Abortar Rebase**. |
+##### Reset Branch — move o ponteiro da branch para um commit anterior
 
-Modos do **Reset Branch**:
+![Reset Branch](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreResetBranch.png)
 
-| Modo      | Efeito                                                                            |
-| --------- | --------------------------------------------------------------------------------- |
-| `--mixed` | Desfaz commits; mudanças voltam como **unstaged** (padrão)                        |
-| `--soft`  | Desfaz commits; mudanças voltam como **staged**                                   |
-| `--hard`  | Desfaz commits e **DESCARTA** todas as mudanças — irreversível (pede confirmação) |
+- **Branch:** combo da branch a resetar (pré-selecionada com a branch em checkout). Se não for a atual, o plugin faz `checkout`, aplica o reset e **retorna à branch original automaticamente**
+- **Commit hash:** combo do commit-alvo
+- **Modo** (radio): `--mixed` desfaz commits e mantém mudanças como **unstaged** (padrão) · `--soft` mantém como **staged** · `--hard` **DESCARTA TUDO** (irreversível, pede confirmação)
+- **Resetar Branch** (vermelho) → `git reset --<modo> <hash>`
+
+##### Rebase — remove um commit específico do histórico
+
+![Rebase](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotRestoreRebase.png)
+
+- **Commit hash:** combo do commit a remover
+- **Remover Commit do Histórico** (vermelho) → `git rebase --onto <hash>^ <hash>` — reaplica os commits posteriores sobre o pai; em conflito, resolva e `git rebase --continue`
+- **Abortar Rebase** → `git rebase --abort` — volta ao estado anterior
 
 > ⚠️ **Nunca** reescreva (Reset --hard, Rebase) ou descarte o histórico de uma branch que outras pessoas já têm — isso quebra o repositório dos colegas.
 
