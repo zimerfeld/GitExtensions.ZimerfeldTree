@@ -1,7 +1,7 @@
 ---
 tipo: conhecimento
 criado: 2026-06-01
-atualizado: 2026-06-16 (ícones Pull/Push nos botões e menu; fetch da branch atual ao abrir; menu Baixar/Enviar agindo na branch clicada; aviso que bloqueia push atrás; cabeçalho com branch em checkout no menu)
+atualizado: 2026-06-28 (push atrás agora oferece Baixar-com-rebase-e-então-enviar via `DoPullRebaseThenPush`/`PullRebase`, em vez de só bloquear) | 2026-06-16 (ícones Pull/Push nos botões e menu; fetch da branch atual ao abrir; menu Baixar/Enviar agindo na branch clicada; aviso que bloqueia push atrás; cabeçalho com branch em checkout no menu)
 tags: [conhecimento, gitextensions, plugin, winforms, ui, fluxos, zimerfeldtree]
 fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 ---
@@ -85,7 +85,7 @@ Passos (com % no overlay):
 - O label do topo `Branch: <nome>` ganha o sufixo `↓M` quando há commits a baixar (`UpdateBranchLabel`).
 
 ### Botão Push (`_btnPush`) → `DoPush` → `PushCurrent` — age no **HEAD**
-1. **Guarda de divergência** (`EnsureNotBehindBeforePush`): se a branch atual está **atrás** (`behind > 0`), exibe aviso "Sua branch está N commit(s) atrás do remoto — faça Baixar primeiro. Deseja Baixar agora?" — **Sim** roda `DoPull`, **Não** cancela; em ambos o push é **bloqueado** (evita `non-fast-forward`).
+1. **Guarda de divergência** (`EnsureNotBehindBeforePush`): se a branch atual está **atrás** (`behind > 0`), exibe aviso "Sua branch está N commit(s) atrás do remoto — é preciso integrar primeiro. Fazer Baixar (rebase) e depois enviar?" — **Sim** roda `DoPullRebaseThenPush` (serviço `PullRebase` → `git pull --rebase <remoto> <branch>` em background; sucesso → `PushCurrent`; falha/conflito → `RefreshTree` + erro `pullRebaseFailedTitle`, push pulado), **Não** cancela. O método retorna sempre `false` quando atrás: o push, se houver, é disparado pela continuação do rebase, não pelo chamador.
 2. **Preferencial:** abre o **diálogo nativo de Push do GitExtensions in-process** (`StartPushDialog`, `pushOnShow: true` — dispara o push automaticamente ao abrir).
    - Ao fechar: `RefreshTree()` + `NotifyRepoChanged()` — **sempre**, independentemente do valor de retorno (`pushCompleted` não é confiável com `pushOnShow`).
 3. **Fallback** (sem `_openPushDialog`): lança `GitExtensions.exe push` como novo processo (fire-and-forget — sem refresh possível). Erro ao iniciar → `MessageBox`.
@@ -182,7 +182,7 @@ Definida em `CtxMenu_Opening`: `branch` = local|remote; `local`/`remote`/`tag` e
 | Item | Visível para | Ação (passo a passo) |
 |------|--------------|----------------------|
 | **Baixar (N)** | branch local | `DoPullForSelected`: faz **checkout da branch clicada** (`EnsureCurrentBranch`) e então `DoPull`. Ícone `ctx-pull.png`. `N` = commits atrás **daquela** branch. |
-| **Enviar (N)** | branch local | `DoPushForSelected`: checkout da branch clicada + guarda de divergência (`EnsureNotBehindBeforePush`, bloqueia/oferece Baixar se atrás) + `PushCurrent`. Ícone `ctx-push.png`. `N` = commits à frente **daquela** branch. |
+| **Enviar (N)** | branch local | `DoPushForSelected`: checkout da branch clicada + guarda de divergência (`EnsureNotBehindBeforePush`: se atrás, oferece Baixar-com-rebase-e-então-enviar via `DoPullRebaseThenPush`) + `PushCurrent`. Ícone `ctx-push.png`. `N` = commits à frente **daquela** branch. |
 | **Commit (n)** | sempre | Igual ao botão Commit → `DoCommit`. Mostra contagem de pendências. |
 | **Checkout** | branch (local/remote) | `DoCheckout`: local → `git checkout "<nome>"`; remote → `CheckoutRemoteAsLocal` = `git checkout -b "<local>" --track "<origin/...>"`. Sucesso → `RefreshTree` + `NotifyRepoChanged`; erro → `MessageBox`. |
 | **Nova branch daqui…** | local ou tag | `DoNewBranch`: pede nome (`InputDialog`) → `git checkout -b "<novo>" "<ref>"`. Sucesso → refresh + notify. |

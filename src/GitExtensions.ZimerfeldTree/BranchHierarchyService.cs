@@ -512,6 +512,27 @@ public sealed class BranchHierarchyService
         catch (Exception ex) { return (false, ex.Message); }
     }
 
+    /// <summary>
+    /// Baixa os commits remotos e reaplica os seus por cima deles (sem criar commit de merge).
+    /// Runs <c>git pull --rebase &lt;remote&gt; &lt;branch&gt;</c> for the given branch (the explicit form),
+    /// falling back to a bare <c>git pull --rebase</c> against the configured upstream when the remote or
+    /// branch name is unknown. Used before a push so a branch that is behind becomes fast-forward,
+    /// avoiding the non-fast-forward rejection without introducing a merge commit.
+    /// </summary>
+    public (bool ok, string error) PullRebase(string branchName)
+    {
+        try
+        {
+            string remote = GetDefaultRemote();
+            string args = (remote.Length > 0 && !string.IsNullOrWhiteSpace(branchName))
+                ? $"pull --rebase {remote} \"{EscapeArg(branchName)}\""
+                : "pull --rebase";
+            var (_, err, code) = RunGitFull(args);
+            return code == 0 ? (true, string.Empty) : (false, err.Trim());
+        }
+        catch (Exception ex) { return (false, ex.Message); }
+    }
+
     // ── Git Flow ───────────────────────────────────────────────────────────────
 
     /// <summary>The branch types supported by git flow, in display order.</summary>

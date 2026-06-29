@@ -8,8 +8,8 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.350  
-**Updated:** 2026-06-27
+**Version:** 1.0.353  
+**Updated:** 2026-06-28
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
@@ -60,7 +60,7 @@ Shown above the tree when a branch is checked out:
 
 - **Pull** / **Pull ↓N** runs `git pull --tags`, fetching tracked branch commits and all remote tags. The button shows a blue **down-arrow icon** (it replaces the old `↓` character); `↓N` is the number of remote commits not yet pulled.
 - **Push** / **Push ↑N** opens the native GitExtensions Push dialog. The button shows a green **up-arrow icon** (replaces the old `↑` character); `↑N` is the number of local commits not yet pushed.
-  - When the checked-out branch is **behind** the remote (`↓N > 0`), Push is **blocked** by a warning ("your branch is N commit(s) behind — pull first") that offers to Pull right away, preventing the `non-fast-forward` rejection.
+  - When the checked-out branch is **behind** the remote (`↓N > 0`), a warning ("your branch is N commit(s) behind — integrate first") offers to **pull with rebase and then push automatically** — `git pull --rebase` replays your local commits on top of the remote ones (no merge commit), making the branch fast-forward so the push is accepted. A failed rebase (conflicts) is reported and the push is skipped; an already up-to-date branch pushes directly.
 - **Commit** / **Commit (N)** opens the native GitExtensions Commit window. `(N)` is shown only when there are pending changes.
 - **Live Commit counter** — the window **watches the working-directory folder** (`FileSystemWatcher`, subfolders included) and updates the Commit button's `(N)` **silently** as you create, edit, or delete files — no tree rebuild and no "Loading…" overlay. The burst of events from a single save is debounced (600 ms) and then a single background `git status` runs. Changes under `.git` are ignored (irrelevant to the count and a feedback source); `.gitignore`/`.gitattributes` still count normally. The watcher is automatically repointed when you switch repositories.
 - On window open, a background `git fetch` of the current branch's upstream refreshes the counts off the UI thread (the window stays fast/offline-safe), and the `Branch: <name>` label gains a `↓N` suffix when there are commits to pull.
@@ -168,7 +168,7 @@ Each item has an embedded 16 x 16 icon generated from `Resources/ctx-*.png`:
 | Icon                                                                                                                                                           | Item                       | Available for                                                                        |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-pull.png" width="16" height="16">       | Pull (N)                   | Local branch - `N` = commits behind; checks out the clicked branch first, then pulls |
-| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-push.png" width="16" height="16">       | Push (N)                   | Local branch - `N` = commits ahead; checks out the clicked branch first, then pushes (blocked when behind) |
+| <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-push.png" width="16" height="16">       | Push (N)                   | Local branch - `N` = commits ahead; checks out the clicked branch first, then pushes (pull-rebase then push when behind) |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-commit.png" width="16" height="16">     | Commit (N)                 | Always - opens the GitExtensions Commit window; `N` is the number of pending changes |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-checkout.png" width="16" height="16">   | Checkout                   | Local, remote, tag                                                                   |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-new-branch.png" width="16" height="16"> | New branch from here...    | Local, tag                                                                           |
@@ -182,7 +182,7 @@ Each item has an embedded 16 x 16 icon generated from `Resources/ctx-*.png`:
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-collapse.png" width="16" height="16">   | Collapse all               | Always                                                                               |
 | <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/ctx-refresh.png" width="16" height="16">    | Refresh                    | Always                                                                               |
 
-The context-menu **Pull/Push act on the branch you right-clicked** (not on HEAD): the clicked branch is checked out first, then pulled/pushed, and their `(N)` counters show that branch's own behind/ahead. Push on a behind branch is blocked by the same "pull first" warning as the button. They appear only for local branches and sit just before **Commit**. The popup also shows, at the very top, a **header with the currently checked-out branch** (`Branch: <name>`).
+The context-menu **Pull/Push act on the branch you right-clicked** (not on HEAD): the clicked branch is checked out first, then pulled/pushed, and their `(N)` counters show that branch's own behind/ahead. Push on a behind branch triggers the same pull-rebase-then-push warning as the button. They appear only for local branches and sit just before **Commit**. The popup also shows, at the very top, a **header with the currently checked-out branch** (`Branch: <name>`).
 
 The **Commit** item recalculates the pending working tree count every time the menu opens. It opens the native Commit window in the already running GitExtensions process when possible, so Commit Template plugins are already loaded. If the repository shown in BranchHierarchy differs from the active GitExtensions repository, it opens through a new process as a fallback.
 
