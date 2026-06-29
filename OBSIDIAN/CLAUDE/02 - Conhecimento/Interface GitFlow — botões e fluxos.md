@@ -78,7 +78,7 @@ Toda ação passa por aqui:
 
 ### Combo Type — Start
 1. `SelectedIndexChanged`: atualiza o label de prefixo (`git config gitflow.prefix.<tipo>`).
-2. Se o tipo for **release** e o nome estiver vazio → preenche automaticamente com a convenção **`yyyyMMddHHmm`** (ex.: `202606011230`). Não sobrescreve entrada manual.
+2. Se o tipo for **release** ou **hotfix** e o nome estiver vazio → preenche automaticamente com a convenção **`yyyyMMddHHmm`** (ex.: `202606011230`). Não sobrescreve entrada manual.
 3. Chama `ApplyStartTypeRule()` — ver abaixo.
 
 ### Regra "based on" por tipo (Start)

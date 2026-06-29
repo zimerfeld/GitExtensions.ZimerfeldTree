@@ -5,7 +5,7 @@ atualizado: 2026-06-29 (contador de Commit ao vivo: FileSystemWatcher na pasta d
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.351
+versao: 1.0.352
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -123,7 +123,7 @@ Cada botão da janela GitFlow dispara a sequência abaixo:
 
 > **Regra do bugfix:** um bugfix **só pode existir vinculado a uma release**. O `DoStart` bloqueia o Start se não houver release ou se a base escolhida não for uma `release/*`; a base release grava um *based-on override* → o bugfix fica **aninhado sob a release** na árvore (também via `BuildGitFlowParentMap`, que usa a ancestralidade real para achar a release pai). Bugfix fora dessa regra vira uma **violação** (`violLocalBugfix`) que aciona a auto-organização GitFlow.
 > **based on:** permite feature-filha-de-feature; nesse caso o plugin executa também `git commit --allow-empty -m "chore: start <prefixo><nome>"` para a hierarquia ficar visível (ver Limitações).
-> **Nome padrão de release:** ao escolher tipo `release`, o nome é pré-preenchido com `yyyyMMddHHmm` (só se o campo estiver vazio).
+> **Nome padrão de release/hotfix:** ao escolher tipo `release` ou `hotfix`, o nome é pré-preenchido com `yyyyMMddHHmm` (só se o campo estiver vazio).
 
 ### Publish
 ```
@@ -261,7 +261,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.351** (README + csproj + nuspec + vault em sincronia)
+- Versão atual: **1.0.352** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 

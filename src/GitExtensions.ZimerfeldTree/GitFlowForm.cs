@@ -191,9 +191,10 @@ public sealed class GitFlowForm : Form
         {
             _lblStartPrefix.Text = _svc.GetGitFlowPrefix(_cboStartType.Text);
 
-            // Default release name follows the convention yyyyMMddHHmm (e.g. 202605311230).
+            // Default release/hotfix name follows the convention yyyyMMddHHmm (e.g. 202605311230).
             // Only auto-fill when the field is empty so manual input is never overwritten.
-            if (string.Equals(_cboStartType.Text, "release", StringComparison.OrdinalIgnoreCase)
+            if ((string.Equals(_cboStartType.Text, "release", StringComparison.OrdinalIgnoreCase)
+                 || string.Equals(_cboStartType.Text, "hotfix", StringComparison.OrdinalIgnoreCase))
                 && _txtStartName.Text.Trim().Length == 0)
                 _txtStartName.Text = DateTime.Now.ToString("yyyyMMddHHmm");
 

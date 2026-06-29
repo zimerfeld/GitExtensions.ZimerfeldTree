@@ -8,7 +8,7 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.351  
+**Versão:** 1.0.352  
 **Atualizado em:** 2026-06-29
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
@@ -285,7 +285,7 @@ No painel **Start branch** da janela GitFlow, além de tipo e nome, há a opçã
 - Para **bugfix** e **support** o checkbox já vem **marcado e obrigatório**: o bugfix lista as `release/*` existentes (um bugfix só pode existir vinculado a uma release) e o support lista as tags de produção; o Start é bloqueado se a base correta não for escolhida
 - Ao marcar o checkbox **based on:**, o dropdown é habilitado e lista as branches locais, permitindo iniciar a nova branch a partir de outra — por exemplo, uma **feature filha de outra feature pai**
 - O comando executado é: `git checkout -b <prefixo><nome> <base>`
-- **Nome padrão de release**: ao selecionar o tipo **release**, o campo de nome é preenchido automaticamente com a convenção `yyyyMMddHHmm` (ex.: `202605311230`), gerando branches como `release/202605311230`; o preenchimento só ocorre quando o campo está vazio, nunca sobrescrevendo digitação manual
+- **Nome padrão de release/hotfix**: ao selecionar o tipo **release** ou **hotfix**, o campo de nome é preenchido automaticamente com a convenção `yyyyMMddHHmm` (ex.: `202605311230`), gerando branches como `release/202605311230` ou `hotfix/202605311230`; o preenchimento só ocorre quando o campo está vazio, nunca sobrescrevendo digitação manual
 
 ### Janela GitFlow — painel "Manage existing branches"
 
