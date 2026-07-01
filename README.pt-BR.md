@@ -8,8 +8,8 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.354  
-**Atualizado em:** 2026-06-29
+**Versão:** 1.0.356  
+**Atualizado em:** 2026-07-01
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -541,7 +541,14 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 
 ## Instalação
 
-### Opção A — Via PowerShell (recomendado)
+### Opção A — Gerenciador de Plugins do GitExtensions (recomendado)
+
+No próprio GitExtensions, vá em **Plugins → Plugin Manager**, procure por
+**GitExtensions.ZimerfeldTree** no feed do nuget.org e clique em instalar.
+Reinicie o GitExtensions e abra **Plugins → ZimerfeldTree**. Não requer PowerShell
+nem permissão de Administrador.
+
+### Opção B — Via PowerShell
 
 Execute o PowerShell **como Administrador**:
 
@@ -554,7 +561,7 @@ cd C:\GitExtensions\ZimerfeldTree\tools
 
 > O script **fecha o GitExtensions automaticamente** se estiver aberto (o app mantém o DLL do plugin bloqueado): tenta o fechamento normal e, se não responder em 10 s, encerra à força.
 
-### Opção B — Manual
+### Opção C — Manual
 
 Copie `GitExtensions.Plugins.ZimerfeldTree.dll` para:
 

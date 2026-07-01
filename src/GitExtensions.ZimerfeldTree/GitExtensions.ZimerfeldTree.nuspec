@@ -16,7 +16,7 @@
   <metadata>
     <!-- ── Identity ───────────────────────────────────────────────────── -->
     <id>GitExtensions.ZimerfeldTree</id>
-    <version>1.0.354</version>
+    <version>1.0.356</version>
     <title>ZimerfeldTree — Hierarchical Branch Tree for GitExtensions</title>
     <authors>Zimerfeld</authors>
     <owners>Zimerfeld</owners>
@@ -91,15 +91,22 @@ Hierarquia flexível do GitFlow:
 1.0.18 — Primeiro lançamento público.
     </releaseNotes>
     <!-- ── GitExtensions plugin marker ───────────────────────────────────
-         The GitExtensions Plugin Manager filters the nuget.org feed to packages
-         that DEPEND on GitExtensions.Extensibility — without this the package is
-         published but never appears in the in-app Plugin Manager.
-         The version is the MINIMUM GitExtensions (Extensibility) required. No 6.x
-         Extensibility is published on nuget, so 1.0.0.129 (the highest published
-         version <= the installed GitExtensions 6.0.5) keeps it compatible with 6.x.
-         Raise this only if the Plugin Manager shows the package as "Not compatible". -->
+         The GitExtensions Plugin Manager (gitextensions.pluginmanager) filters the
+         nuget.org feed to packages that (a) are tagged "GitExtensions", (b) ship a lib
+         assembly under an accepted framework moniker (net5.0..net10.0, "any" or
+         netstandard2.0 — a DLL in lib\ root is the "any" group), and (c) DEPEND on
+         GitExtensions.Extensibility with a version range that INCLUDES the version the
+         manager advertises for the running host.
+         Manager v3.x (GitExtensions 6.x) advertises 0.4.0, so the range MUST contain
+         0.4.0 → [0.4.0, 0.5.0), exactly like the other working GE6 plugins (AITools,
+         BundleBackuper, Gerrit, SolutionRunner…).
+         WARNING: a bare "1.0.0.129" means ">= 1.0.0.129", which does NOT include 0.4.0,
+         so the package was silently filtered OUT of the Plugin Manager (that value was
+         wrong — the filter matches the manager's advertised version, NOT the installed
+         6.0.5 runtime).
+         For GitExtensions 7 (manager v7.x advertises 7.0.0) bump this to [7.0.0, 8.0.0). -->
     <dependencies>
-      <dependency id="GitExtensions.Extensibility" version="1.0.0.129" />
+      <dependency id="GitExtensions.Extensibility" version="[0.4.0, 0.5.0)" />
     </dependencies>
   </metadata>
   <!-- ── Package contents ───────────────────────────────────────────────── -->

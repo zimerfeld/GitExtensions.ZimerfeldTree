@@ -8,8 +8,8 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.354  
-**Updated:** 2026-06-29
+**Version:** 1.0.356  
+**Updated:** 2026-07-01
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
@@ -493,7 +493,14 @@ The plugin remains self-contained: images are embedded in the DLL and do not dep
 
 ## Installation
 
-### Option A - PowerShell (recommended)
+### Option A - GitExtensions Plugin Manager (recommended)
+
+Inside GitExtensions, go to **Plugins → Plugin Manager**, search for
+**GitExtensions.ZimerfeldTree** in the nuget.org feed and click install.
+Restart GitExtensions, then open **Plugins → ZimerfeldTree**. No PowerShell or
+Administrator permission required.
+
+### Option B - PowerShell
 
 From the repository root:
 
@@ -506,7 +513,7 @@ cd tools
 
 Restart GitExtensions after installation.
 
-### Option B - Manual
+### Option C - Manual
 
 Build or extract:
 
