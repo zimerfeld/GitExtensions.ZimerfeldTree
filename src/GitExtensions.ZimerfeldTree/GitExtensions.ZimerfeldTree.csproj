@@ -14,7 +14,7 @@
          loads the plugin by assembly identity, so freezing the assembly version keeps the DLL identity
          stable across releases (no binding churn) while the package version keeps incrementing. Do not
          "fix" these to match <Version> — build.ps1 only rewrites <Version> by design. -->
-    <Version>1.0.357</Version>
+    <Version>1.0.358</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
 

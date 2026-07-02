@@ -8,7 +8,7 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.357  
+**Versão:** 1.0.358  
 **Atualizado em:** 2026-07-01
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
@@ -517,14 +517,14 @@ Vários nós usam **imagens PNG embutidas na DLL**, declaradas como `<EmbeddedRe
 | Programa                 | Versão mínima | Download                                                           | Função                                                                               |
 | ------------------------ | ------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | **Git for Windows**      | qualquer      | https://git-scm.com/download/win                                   | Executa todos os comandos git (branch, checkout, pull, push, commit, tag…)           |
-| **GitExtensions**        | 4.x (.NET 9)  | https://github.com/gitextensions/gitextensions/releases            | Aplicação host que carrega o plugin; fornece diálogos nativos de Commit, Push e Pull |
+| **GitExtensions**        | 6.x (.NET 9)  | https://github.com/gitextensions/gitextensions/releases            | Aplicação host que carrega o plugin; fornece diálogos nativos de Commit, Push e Pull |
 | **Plugin ZimerfeldTree** | —             | `C:\Program Files\GitExtensions\Plugins\` (build local ou release) | O plugin em si                                                                       |
 
 **Instalação do Git for Windows:** baixar o instalador `.exe` e, na tela _"Adjusting your PATH"_, selecionar **"Git from command line and also from 3rd-party software"**.
 
-**Instalação do GitExtensions:** baixar o instalador `.msi` da release 4.x; ele instala o .NET 9 Desktop Runtime automaticamente.
+**Instalação do GitExtensions:** baixar o instalador `.msi` da release 6.x; ele instala o .NET 9 Desktop Runtime automaticamente.
 
-> **Atenção:** GitExtensions 3.x (`.NET Framework 4.8`) é incompatível — o plugin requer `net9.0-windows`.
+> **Compatibilidade:** o plugin tem como alvo `net9.0-windows` e é compilado contra a API de extensibilidade do GitExtensions 6.0.5 (`GitExtensions.Extensibility`); carrega na linha 6.x `.NET 9`. GitExtensions 3.x (`.NET Framework 4.8`) é incompatível. A cada nova release do GitExtensions, recompilar contra ela e refazer o smoke test (carregar a DLL, abrir a janela do ZimerfeldTree, fazer um checkout/atualizar) antes de publicar.
 
 ---
 
@@ -660,7 +660,7 @@ LOCAL
 
 ### Branch real não pode ser nó pai de outra branch
 
-O git armazena refs como arquivos no sistema de arquivos. Se `feature/login` já existe como branch, tentrar criar `feature/login/oauth` resulta em erro:
+O git armazena refs como arquivos no sistema de arquivos. Se `feature/login` já existe como branch, tentar criar `feature/login/oauth` resulta em erro:
 
 ```
 fatal: cannot lock ref 'refs/heads/feature/login/oauth':
@@ -675,6 +675,8 @@ Isso ocorre porque `feature/login` seria simultaneamente um **arquivo** (a branc
 | ------------------------- | ---------------------------------------------- |
 | Sub-tarefas de login      | `feature/login-oauth`, `feature/login-session` |
 | Agrupador sem branch real | `feature/login/base` + `feature/login/oauth`   |
+
+> **No plugin:** ao criar uma branch nesse conflito pelo botão/menu **Nova branch**, o ZimerfeldTree detecta o erro e, em vez da mensagem crua do git, exibe uma explicação com sugestões — um nome irmão (`feature/login-oauth`) ou o padrão de agrupador (`feature/login/base` + `feature/login/oauth`).
 
 ### Hierarquia flexível do GitFlow — feature filha de feature
 

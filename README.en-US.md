@@ -8,7 +8,7 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.357  
+**Version:** 1.0.358  
 **Updated:** 2026-07-01
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
@@ -478,10 +478,10 @@ The plugin remains self-contained: images are embedded in the DLL and do not dep
 | ------------------------ | ------------------------------------------------ | -------------------------------------- |
 | **Windows**              | Windows desktop                                  | WinForms plugin host                   |
 | **Git**                  | Available in PATH or GitExtensions configuration | Repository operations                  |
-| **GitExtensions**        | Compatible .NET 9 build                          | Host application that loads the plugin |
+| **GitExtensions**        | 6.x (.NET 9 build) — built & tested against 6.0.5 | Host application that loads the plugin |
 | **ZimerfeldTree plugin** | Installed DLL                                    | The plugin itself                      |
 
-> **Attention:** GitExtensions 3.x (`.NET Framework 4.8`) is incompatible; the plugin requires `net9.0-windows`.
+> **Compatibility:** the plugin targets `net9.0-windows` and is built against the GitExtensions 6.0.5 extensibility API (`GitExtensions.Extensibility`). It loads on the 6.x `.NET 9` line. GitExtensions 3.x (`.NET Framework 4.8`) is incompatible. When a new GitExtensions release ships, rebuild against it and re-run the smoke test (load the DLL, open the ZimerfeldTree window, do a checkout/refresh) before publishing.
 
 ### Conditional - build/development only
 
@@ -584,6 +584,8 @@ The plugin combines git commit ancestry with path grouping. Git itself does not 
 ### A real branch cannot be only a folder node
 
 If a branch name is also a prefix for other branches, the tree must represent both concepts: the actual branch and the folder path. This avoids hiding a real ref behind a visual grouping node.
+
+Git itself refuses to create a branch nested under an existing branch ref — e.g. creating `feature/login/oauth` while `feature/login` exists fails with `cannot lock ref … exists`, because the same path would be both a file (the branch) and a directory. When this happens via the **New branch** button/menu, ZimerfeldTree detects it and, instead of the raw git error, shows an explanation suggesting a sibling name (`feature/login-oauth`) or a grouping-folder layout (`feature/login/base` + `feature/login/oauth`).
 
 ### GitFlow flexible hierarchy — feature under feature
 

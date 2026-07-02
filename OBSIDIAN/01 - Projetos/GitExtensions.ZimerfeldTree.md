@@ -5,7 +5,7 @@ atualizado: 2026-07-01 (push atrás: o aviso agora oferece **Baixar com rebase e
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.357
+versao: 1.0.358
 repo: C:\GitExtensions\ZimerfeldTree
 ---
 
@@ -260,7 +260,7 @@ Quando **nenhuma mudança** é detectada nos fontes, o script mantém a versão 
 > O GitExtensions grava config no formato interno dele, mas o git flow CLI espera outras chaves. Solução em [[git flow - chaves de config (CLI)]].
 
 ## 🔢 Versionamento
-- Versão atual: **1.0.357** (README + csproj + nuspec + vault em sincronia)
+- Versão atual: **1.0.358** (README + csproj + nuspec + vault em sincronia)
 - Esquema: `major.minor.BUILD`, gerenciado pelo `build.ps1`
 - ⚠️ Manter csproj e nuspec em sincronia
 
