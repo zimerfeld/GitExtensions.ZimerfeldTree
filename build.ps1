@@ -118,8 +118,12 @@ $today = (Get-Date).ToString('yyyy-MM-dd')
 foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "$PSScriptRoot\README.en-US.md")) {
     if (Test-Path $doc) {
         $c = Get-Content $doc -Raw -Encoding UTF8
-        $c = $c -replace '(?m)^\*\*(Versão|Version):\*\*\s+[\d\.]+',                       "**`$1:** $newVersion"
-        $c = $c -replace '(?m)^\*\*(Atualizado em|Updated on|Updated):\*\*\s+\d{4}-\d{2}-\d{2}', "**`$1:** $today"
+        # Nao ancorado em ^: no README.md raiz o cabecalho e' inline apos "> ![EN](...)"
+        # (dois no mesmo arquivo, EN + PT); nos README.en-US/pt-BR fica no inicio da linha.
+        # Sem a ancora, um unico replace global cobre os tres formatos. Os rotulos so'
+        # aparecem nos cabecalhos (verificado), entao nao ha risco de recarimbar o corpo.
+        $c = $c -replace '\*\*(Versão|Version):\*\*\s+[\d\.]+',                       "**`$1:** $newVersion"
+        $c = $c -replace '\*\*(Atualizado em|Updated on|Updated):\*\*\s+\d{4}-\d{2}-\d{2}', "**`$1:** $today"
         [System.IO.File]::WriteAllText($doc, $c, [System.Text.Encoding]::UTF8)
         Write-Host "$([System.IO.Path]::GetFileName($doc)) atualizado para $newVersion ($today)"
     }
@@ -139,10 +143,10 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
 # deteccao de mudancas (secao 1b) nao dispara em loop. Cada nota atualizada registra
 # uma linha no formato: "Obsidian: <arquivo> atualizado para <versao> (<data>)".
 $obsidianDocs = @(
-    "$PSScriptRoot\OBSIDIAN\CLAUDE\01 - Projetos\GitExtensions.ZimerfeldTree.md",
-    "$PSScriptRoot\OBSIDIAN\CLAUDE\02 - Conhecimento\README — Instalação, Uso e Build.md",
-    "$PSScriptRoot\OBSIDIAN\CLAUDE\Sistema\Versionamento.md",
-    "$PSScriptRoot\OBSIDIAN\CLAUDE\Sistema\Visão Geral.md"
+    "$PSScriptRoot\OBSIDIAN\01 - Projetos\GitExtensions.ZimerfeldTree.md",
+    "$PSScriptRoot\OBSIDIAN\02 - Conhecimento\README — Instalação, Uso e Build.md",
+    "$PSScriptRoot\OBSIDIAN\Sistema\Versionamento.md",
+    "$PSScriptRoot\OBSIDIAN\Sistema\Visão Geral.md"
 )
 foreach ($obsDoc in $obsidianDocs) {
     if (Test-Path $obsDoc) {

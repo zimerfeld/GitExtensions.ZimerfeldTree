@@ -9,7 +9,11 @@
     <AssemblyName>GitExtensions.Plugins.ZimerfeldTree</AssemblyName>
     <RootNamespace>GitExtensions.ZimerfeldTree</RootNamespace>
 
-    <!-- Version is managed by build.ps1; keep in sync with the .nuspec -->
+    <!-- <Version> (NuGet/product) is bumped by build.ps1 on every build; keep in sync with the .nuspec.
+         AssemblyVersion/FileVersion are intentionally PINNED at 1.0.99.0 and NOT bumped: GitExtensions
+         loads the plugin by assembly identity, so freezing the assembly version keeps the DLL identity
+         stable across releases (no binding churn) while the package version keeps incrementing. Do not
+         "fix" these to match <Version> — build.ps1 only rewrites <Version> by design. -->
     <Version>1.0.357</Version>
     <AssemblyVersion>1.0.99.0</AssemblyVersion>
     <FileVersion>1.0.99.0</FileVersion>
