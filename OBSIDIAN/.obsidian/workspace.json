@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "01 - Projetos/GitExtensions.ZimerfeldTree.md",
-                "mode": "source",
+                "file": "🔑 Arquivos-Chave/🔧 build.ps1.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "GitExtensions.ZimerfeldTree"
+              "title": "🔧 build.ps1"
             }
           }
         ]
@@ -178,11 +178,13 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "custom-sort:Toggle custom sorting": false
     }
   },
   "active": "2d02b52cbf766074",
   "lastOpenFiles": [
+    "sortspec.md",
     "Fluxos/3 - Restore (voltar no tempo).md",
     "Fluxos/2 - GitFlow (Start a Finish).md",
     "Fluxos/1 - Abrir e navegar a árvore.md",
@@ -215,7 +217,6 @@
     "02 - Conhecimento/Plugin MEF para GitExtensions.md",
     "02 - Conhecimento/Interface ZimerfeldTree — botões e fluxos.md",
     "02 - Conhecimento/Interface GitFlow — botões e fluxos.md",
-    "02 - Conhecimento/git flow - chaves de config (CLI).md",
     "05 - Sessões/2026-06-05 - Tooltip Handle, Foco Commit, Layout btn, F3, Build.md.tmp.29232.37e90db1d04a",
     "01 - Projetos/GitExtensions.ZimerfeldTree.md.tmp.14248.52a13061b12b",
     "05 - Sessões/2026-06-01 - Criação do cofre de neurônios.md.tmp.14248.4f324cbaa800"

@@ -8,8 +8,8 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Versão:** 1.0.358  
-**Atualizado em:** 2026-07-01
+**Versão:** 1.0.359  
+**Atualizado em:** 2026-07-04
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
@@ -725,3 +725,13 @@ Isso garante que a nova branch diverge imediatamente de sua base e a hierarquia 
 **por:** zimerfeld
 
 Plugin para GitExtensions que gera automaticamente uma mensagem de commit resumindo em uma frase as mudanças nos arquivos staged, usando o formato Conventional Commits (`feat` / `fix` / `docs` / `test` / `chore`).
+
+- **GitHub:** [zimerfeld/GitExtensions.ZimerfeldCommitMsg](https://github.com/zimerfeld/GitExtensions.ZimerfeldCommitMsg)
+
+### [GitExtensions.ZimerfeldLFS](https://github.com/zimerfeld/GitExtensions.ZimerfeldLFS)
+
+**por:** zimerfeld
+
+Plugin para GitExtensions para gerenciar o Git LFS (Large File Storage) — rastrear, enviar e baixar arquivos binários grandes diretamente pela interface do GitExtensions.
+
+- **GitHub:** [zimerfeld/GitExtensions.ZimerfeldLFS](https://github.com/zimerfeld/GitExtensions.ZimerfeldLFS)
