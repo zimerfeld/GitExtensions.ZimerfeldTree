@@ -2644,13 +2644,43 @@ public sealed class BranchHierarchyForm : Form
             _t.F("newBranchPrompt", info.FullName), okText: _t["okBtn"], cancelText: _t["cancelBtn"]);
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
 
-        var (ok, err) = _svc.CreateAndCheckoutBranch(dlg.Value.Trim(), info.FullName);
+        string newName = dlg.Value.Trim();
+        var (ok, err) = _svc.CreateAndCheckoutBranch(newName, info.FullName);
         if (ok)
         {
             RefreshTree();
             NotifyRepoChanged();
         }
+        else if (IsRefLockConflict(err))
+            ShowBranchParentConflict(newName);
         else ShowError(_t["errCreateBranchTitle"], err);
+    }
+
+    /// <summary>
+    /// True when git refused to create a branch because its name would nest under an
+    /// existing branch ref (e.g. <c>feature/login/oauth</c> when <c>feature/login</c>
+    /// exists) — the same path cannot be both a ref file and a directory under refs/heads.
+    /// </summary>
+    private static bool IsRefLockConflict(string err) =>
+        !string.IsNullOrEmpty(err)
+        && err.Contains("cannot lock ref", StringComparison.OrdinalIgnoreCase)
+        && err.Contains("exists", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Explains the ref-lock conflict in plain language and suggests a sibling name or a
+    /// grouping-folder layout, instead of surfacing the raw git error.
+    /// </summary>
+    private void ShowBranchParentConflict(string attempted)
+    {
+        int slash = attempted.LastIndexOf('/');
+        string parent  = slash > 0 ? attempted[..slash]        : attempted;
+        string leaf    = slash > 0 ? attempted[(slash + 1)..]  : attempted;
+        string sibling = slash > 0 ? $"{parent}-{leaf}"        : attempted;
+        string grouper = $"{parent}/base";
+        MessageBox.Show(
+            _t.F("branchParentConflict", parent, attempted, sibling, grouper),
+            _t["branchParentConflictTitle"],
+            MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
 
     // ── GitFlow init helpers ─────────────────────────────────────────────────

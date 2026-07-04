@@ -99,6 +99,8 @@
   "newBranchTitle": "Nova branch",
   "newBranchPrompt": "Nome da nova branch a partir de '{0}':",
   "errCreateBranchTitle": "Erro ao criar branch",
+  "branchParentConflictTitle": "Nome de branch conflita com uma branch existente",
+  "branchParentConflict": "Não é possível criar a branch “{1}” porque já existe uma branch “{0}”.\n\nNo Git um mesmo caminho não pode ser branch e pasta ao mesmo tempo: o ref “{0}” teria que ser arquivo e diretório simultaneamente.\n\nAlternativas:\n•  Use um nome irmão:  {2}\n•  Ou transforme “{0}” num agrupador sem branch real: crie “{3}” e “{1}”, depois apague ou renomeie a branch “{0}”.",
   "renameTitle": "Renomear branch",
   "renamePrompt": "Novo nome para '{0}':",
   "errRenameTitle": "Erro ao renomear",
