@@ -8,8 +8,8 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-**Version:** 1.0.358  
-**Updated:** 2026-07-01
+**Version:** 1.0.359  
+**Updated:** 2026-07-04
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
@@ -628,3 +628,11 @@ That gives the new branch a distinct tip commit, making parent-child detection p
 ### [GitExtensions.ZimerfeldCommitMsg](https://www.nuget.org/packages/GitExtensions.ZimerfeldCommitMsg)
 
 GitExtensions plugin that automatically generates a commit message summarizing staged changes in one Conventional Commits-style sentence (`feat` / `fix` / `docs` / `test` / `chore`).
+
+- **GitHub:** [zimerfeld/GitExtensions.ZimerfeldCommitMsg](https://github.com/zimerfeld/GitExtensions.ZimerfeldCommitMsg)
+
+### [GitExtensions.ZimerfeldLFS](https://github.com/zimerfeld/GitExtensions.ZimerfeldLFS)
+
+GitExtensions plugin for managing Git LFS (Large File Storage) — tracking, pushing, and pulling large binary files directly from the GitExtensions interface.
+
+- **GitHub:** [zimerfeld/GitExtensions.ZimerfeldLFS](https://github.com/zimerfeld/GitExtensions.ZimerfeldLFS)

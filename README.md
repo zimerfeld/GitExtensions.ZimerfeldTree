@@ -10,9 +10,9 @@
 
 [![GitHub Sponsor](https://img.shields.io/badge/Sponsor-zimerfeld-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/zimerfeld) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-FF5E2B?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/C0D621FCGD)
 
-> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) **Version:** 1.0.358 — **Updated:** 2026-07-01
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) **Version:** 1.0.359 — **Updated:** 2026-07-04
 
-> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) **Versão:** 1.0.358 — **Atualizado em:** 2026-07-01
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) **Versão:** 1.0.359 — **Atualizado em:** 2026-07-04
 
 > ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) Plugin for [GitExtensions](https://gitextensions.github.io/) that displays branches as a hierarchical tree and it makes the GitFlow methodology available in a very easy, intuitive, and pleasant visual way to apply to projects of any size.
 
@@ -71,6 +71,15 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 > ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) This README is intentionally short so it works both on GitHub and NuGet. Use the language links above for the full documentation.
 
 > ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) Este README é propositalmente curto para funcionar tanto no GitHub quanto no NuGet. Use os links de idioma acima para acessar a documentação completa.
+
+## Integrated plugins / Plugins integrados
+
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) Other GitExtensions plugins by zimerfeld that work great alongside ZimerfeldTree:
+
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) Outros plugins do GitExtensions feitos por zimerfeld que funcionam muito bem ao lado do ZimerfeldTree:
+
+- **[GitExtensions.ZimerfeldCommitMsg](https://github.com/zimerfeld/GitExtensions.ZimerfeldCommitMsg)** — auto-generated Conventional Commits messages / mensagens de commit no padrão Conventional Commits geradas automaticamente.
+- **[GitExtensions.ZimerfeldLFS](https://github.com/zimerfeld/GitExtensions.ZimerfeldLFS)** — Git LFS (Large File Storage) management inside GitExtensions / gerenciamento do Git LFS (Large File Storage) dentro do GitExtensions.
 
 ## License / Licença
 
