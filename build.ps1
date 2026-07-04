@@ -132,33 +132,44 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
 # -- 4c. Carimbar a versao nas notas do cofre Obsidian (o vault espelha o README) ----
 # O bump tambem deve refletir no cofre, para o vault nao ficar defasado em relacao ao
 # README -- mesma versao em README/csproj/nuspec/vault, sem sync manual. Atualiza o
-# 'versao:' do frontmatter e a linha 'Versao atual: **X**' (Versionamento).
+# 'versao:'/'atualizado:' do frontmatter e as variantes de "Versao atual" no corpo
+# (negrito e rotulo+crase, PT e EN) das notas que espelham a versao ATUAL do projeto.
 #
-# Lista somente as notas que carimbam a versao ATUAL do projeto (espelham o README).
-# Notas de sessao/historico e notas com versionamento proprio (ex.: "Interface...",
-# "Dependencias...") NAO entram aqui de proposito -- o 'atualizado:' delas e' um
-# changelog escrito a mao. O laco deixa trivial somar novas notas no futuro.
+# Lista somente as 12 notas que carimbam a versao ATUAL (PT + variantes EN): Projeto,
+# README espelho, Visao Geral, Versionamento, Home e Backlog. Notas de sessao/historico
+# e notas com versionamento proprio NAO entram aqui de proposito -- o 'atualizado:'
+# delas e' um changelog escrito a mao. O laco deixa trivial somar novas notas no futuro.
 #
 # Roda ANTES do pack (secao 7), entao o .nupkg permanece o arquivo mais novo e a
 # deteccao de mudancas (secao 1b) nao dispara em loop. Cada nota atualizada registra
 # uma linha no formato: "Obsidian: <arquivo> atualizado para <versao> (<data>)".
+$vault = "$PSScriptRoot\OBSIDIAN"
 $obsidianDocs = @(
-    "$PSScriptRoot\OBSIDIAN\01 - Projetos\GitExtensions.ZimerfeldTree.md",
-    "$PSScriptRoot\OBSIDIAN\02 - Conhecimento\README — Instalação, Uso e Build.md",
-    "$PSScriptRoot\OBSIDIAN\Sistema\Versionamento.md",
-    "$PSScriptRoot\OBSIDIAN\Sistema\Visão Geral.md"
+    "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree.md",
+    "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree (EN).md",
+    "$vault\📚 Conhecimento\📘 README — Instalação, Uso e Build.md",
+    "$vault\📚 Conhecimento\📘 README — Instalação, Uso e Build (EN).md",
+    "$vault\🧩 Sistemas\👁️ Visão Geral.md",
+    "$vault\🧩 Sistemas\👁️ Visão Geral (EN).md",
+    "$vault\🧩 Sistemas\🏷️ Versionamento.md",
+    "$vault\🧩 Sistemas\🏷️ Versionamento (EN).md",
+    "$vault\🏠 Home.md",
+    "$vault\🏠 Home (EN).md",
+    "$vault\📌 Backlog.md",
+    "$vault\📌 Backlog (EN).md"
 )
 foreach ($obsDoc in $obsidianDocs) {
     if (Test-Path $obsDoc) {
         $v = Get-Content $obsDoc -Raw -Encoding UTF8
-        # Frontmatter -- versao
-        $v = $v -replace '(?m)^versao:\s+[\d\.]+',          "versao: $newVersion"
-        # Carimba so' a DATA inicial da linha 'atualizado:', preservando o texto descritivo
-        # do changelog (ex.: '(1.0.x: ...)') que e' escrito a mao.
+        # Frontmatter -- versao / atualizado
+        $v = $v -replace '(?m)^versao:\s+[\d\.]+',               "versao: $newVersion"
         $v = $v -replace '(?m)^atualizado:\s+\d{4}-\d{2}-\d{2}', "atualizado: $today"
-        # Corpo -- "Versao atual: **X**" (texto corrido) e "| Versao atual | **X** |" (tabela)
-        $v = $v -replace 'Versão atual: \*\*[\d\.]+\*\*',                   "Versão atual: **$newVersion**"
-        $v = $v -replace '(\|\s*Versão atual\s*\|\s*)\*\*[\d\.]+\*\*',      ('${1}' + "**$newVersion**")
+        # Corpo -- "Versao atual: **X**" / "Current version: **X**" (negrito, PT e EN)
+        $v = $v -replace '(Vers[ãa]o atual|Current version):\s*\*\*[\d\.]+\*\*',        ('${1}: **' + $newVersion + '**')
+        # Corpo -- "**Versao atual:** `X`" / "**Current version:** `X`" (rotulo + crase)
+        $v = $v -replace '(\*\*(?:Vers[ãa]o atual|Current version):\*\*\s*`)[\d\.]+(`)', ('${1}' + $newVersion + '${2}')
+        # Corpo -- "| Versao atual | `X` |" (tabela, crase)
+        $v = $v -replace '(\|\s*Vers[ãa]o atual\s*\|\s*`)[\d\.]+(`)',                    ('${1}' + $newVersion + '${2}')
         [System.IO.File]::WriteAllText($obsDoc, $v, [System.Text.Encoding]::UTF8)
         Write-Host "Obsidian: $([System.IO.Path]::GetFileName($obsDoc)) atualizado para $newVersion ($today)"
     }

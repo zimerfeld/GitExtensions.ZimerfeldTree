@@ -1,10 +1,10 @@
----
+﻿---
 tipo: sistema
 projeto: GitExtensions.ZimerfeldTree
 lang: en-US
 atualizado: 2026-07-04
 tags: [sistema, overview, plugin, gitextensions, winforms, gitflow]
-versao: 1.0.358
+versao: 1.0.361
 ---
 
 # Overview
