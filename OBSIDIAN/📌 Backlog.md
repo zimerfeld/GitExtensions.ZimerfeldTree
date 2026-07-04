@@ -1,9 +1,9 @@
----
+﻿---
 tipo: backlog
 projeto: GitExtensions.ZimerfeldTree
 lang: pt-BR
 atualizado: 2026-07-04
-versao: 1.0.358
+versao: 1.0.361
 tags: [backlog, retomada]
 ---
 
