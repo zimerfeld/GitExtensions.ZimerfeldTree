@@ -19,7 +19,7 @@ tags: [fatos-chave, referencia]
 - Ver [[👤 Renato]] para preferências detalhadas
 
 ## 📁 Caminhos importantes
-- Cofre de memória (este): `C:\GitExtensions\GitExtensions.ZimerfeldTree\OBSIDIAN`
+- Cofre de memória (este): `C:\GitExtensions\GitExtensions.ZimerfeldTree\ZimerfeldTree`
 - Raiz de projetos: `C:\GitExtensions\GitExtensions.ZimerfeldTree`
 - `C:\GitExtensions\GitExtensions.ZimerfeldTree` **é** o repositório do projeto [[🌳 GitExtensions.ZimerfeldTree]] (C#, plugin GitExtensions)
 - GitExtensions instalado em: `C:\Program Files\GitExtensions\`

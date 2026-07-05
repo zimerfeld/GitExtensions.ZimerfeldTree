@@ -22,7 +22,7 @@ tags: [moc, home, zimerfeld, tree, gitextensions, gitflow]
 - **Problem it solves:** browsing branches in a flat list and driving GitFlow from the command line is slow and error-prone. The plugin provides **visual parent-child context** between branches and turns start/publish/track/update/finish into buttons — logging every git command executed.
 - **Differentiators:** **flexible GitFlow** (feature child of feature via *based on:*, with *finish* cascading up to `develop`); **non-modal**, asynchronous window (opens instantly with a progress overlay); **live Commit counter** (FileSystemWatcher); **protected push** against divergence (offers pull --rebase + automatic push); **Developer Mode** protecting `main`/`master`/`develop`; **Restore** window with 10 recovery levels; **i18n** (English / Portuguese, per window); sponsorship banner (GitHub Sponsors + Ko-fi).
 - **Stack:** C# / WinForms `Library`, targeting **net9.0-windows**, assembly `GitExtensions.Plugins.ZimerfeldTree.dll`, packaged as a **nupkg**; build and versioning automated via `build.ps1`.
-- **Current state:** version **`1.0.358`** — functional, with all three windows in production.
+- **Current state:** version **`1.0.361`** — functional, with all three windows in production.
 - **Target audience:** developers and teams using GitExtensions on Windows who adopt (or want to adopt) GitFlow with visual clarity of the branch hierarchy.
 - **Business/portfolio angle:** **open source** product under the `zimerfeld` owner, reinforcing technical authority and serving as a showcase for adoption (NuGet clones/downloads) and sponsorship. Integrates with its sibling **GitExtensions.ZimerfeldCommitMsg**.
 
