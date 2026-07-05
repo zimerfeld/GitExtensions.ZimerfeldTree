@@ -19,7 +19,7 @@ tags: [fatos-chave, referencia]
 - See [[👤 Renato (EN)|Renato]] for detailed preferences
 
 ## 📁 Important paths
-- Memory vault (this one): `C:\GitExtensions\GitExtensions.ZimerfeldTree\OBSIDIAN`
+- Memory vault (this one): `C:\GitExtensions\GitExtensions.ZimerfeldTree\ZimerfeldTree`
 - Projects root: `C:\GitExtensions\GitExtensions.ZimerfeldTree`
 - `C:\GitExtensions\GitExtensions.ZimerfeldTree` **is** the repository of the project [[🌳 GitExtensions.ZimerfeldTree (EN)|GitExtensions.ZimerfeldTree]] (C#, GitExtensions plugin)
 - GitExtensions installed at: `C:\Program Files\GitExtensions\`

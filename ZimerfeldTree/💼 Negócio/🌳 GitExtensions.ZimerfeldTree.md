@@ -43,7 +43,7 @@ C:\GitExtensions\ZimerfeldTree\
 │   └─ GitExtensions.ZimerfeldTree.nuspec  # metadados do pacote NuGet
 ├─ build.ps1                               # build + versionamento + deploy
 ├─ README.md                               # documentação rica
-└─ OBSIDIAN\CLAUDE\                        # 🧠 este cofre de memória
+└─ ZimerfeldTree\                          # 🧠 este cofre de memória
 ```
 
 ## ⚙️ Stack técnica

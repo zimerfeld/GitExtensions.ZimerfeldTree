@@ -143,7 +143,7 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
 # Roda ANTES do pack (secao 7), entao o .nupkg permanece o arquivo mais novo e a
 # deteccao de mudancas (secao 1b) nao dispara em loop. Cada nota atualizada registra
 # uma linha no formato: "Obsidian: <arquivo> atualizado para <versao> (<data>)".
-$vault = "$PSScriptRoot\OBSIDIAN"
+$vault = "$PSScriptRoot\ZimerfeldTree"
 $obsidianDocs = @(
     "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree.md",
     "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree (EN).md",
