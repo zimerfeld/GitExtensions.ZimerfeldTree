@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GitExtensions.ZimerfeldTree — GitExtensions plugin</title>
+<meta name="description" content="Branches as a hierarchical tree, one-click GitFlow, and a Restore hub to safely go back in time — right inside GitExtensions.">
+<style>
+  :root{
+    --accent:#6E56CF;
+    --accent-2:#9E7BFF;
+    --bg:#0d1117; --panel:#161b22; --panel-2:#1c232d; --line:#2a323d;
+    --tx:#e6edf3; --muted:#9aa7b4; --white:#fff;
+    --radius:16px; --maxw:1080px;
+    --shadow:0 10px 40px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--tx);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+  .lang-pt{display:none}
+  html[data-lang="pt"] .lang-en{display:none}
+  html[data-lang="pt"] .lang-pt{display:inline}
+  html[data-lang="pt"] .block.lang-pt{display:block}
+  .block.lang-pt{display:none}
+  /* top nav */
+  nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+    background:rgba(13,17,23,.72);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:14px;height:60px}
+  nav img{width:30px;height:30px;border-radius:7px}
+  nav .brand{font-weight:700;letter-spacing:.2px}
+  nav .spacer{flex:1}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .toggle button{background:transparent;color:var(--muted);border:0;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600}
+  .toggle button.active{background:var(--accent);color:#fff}
+  /* hero */
+  header.hero{position:relative;overflow:hidden;padding:72px 0 56px;text-align:center;
+    background:radial-gradient(1200px 400px at 50% -120px,var(--accent) -40%,transparent 60%)}
+  header.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,var(--bg));pointer-events:none}
+  .hero-icon{width:96px;height:96px;border-radius:22px;box-shadow:var(--shadow);position:relative;z-index:1}
+  h1{font-size:clamp(30px,5vw,46px);margin:18px 0 6px;letter-spacing:-.5px;position:relative;z-index:1}
+  .tagline{font-size:clamp(16px,2.4vw,20px);color:var(--muted);max-width:720px;margin:0 auto;position:relative;z-index:1}
+  .badges{margin:22px 0 6px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;position:relative;z-index:1}
+  .badges img{height:24px}
+  .cta{margin-top:26px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;position:relative;z-index:1}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:12px;font-weight:700;font-size:15px;
+    border:1px solid var(--line);color:var(--tx);background:var(--panel);transition:transform .08s ease,border-color .2s}
+  .btn:hover{text-decoration:none;transform:translateY(-2px);border-color:var(--accent)}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+  /* sections */
+  section{padding:52px 0}
+  h2{font-size:clamp(22px,3.4vw,30px);margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--muted);margin:0 0 28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;transition:border-color .2s,transform .1s}
+  .card:hover{border-color:var(--accent);transform:translateY(-3px)}
+  .card h3{margin:0 0 8px;font-size:17px}
+  .card p{margin:0;color:var(--muted);font-size:14.5px}
+  .card .ic{font-size:22px;display:block;margin-bottom:10px}
+  /* shots */
+  .shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  figure img{width:100%;display:block;background:var(--panel-2)}
+  figcaption{padding:12px 16px;color:var(--muted);font-size:13.5px;border-top:1px solid var(--line)}
+  /* install */
+  .steps{counter-reset:s;display:grid;gap:14px;max-width:760px}
+  .step{display:flex;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+  .step::before{counter-increment:s;content:counter(s);flex:0 0 32px;height:32px;border-radius:50%;
+    display:grid;place-items:center;font-weight:800;background:var(--accent);color:#fff}
+  .step div{font-size:14.5px}
+  code{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:13px}
+  /* langbox */
+  .langlinks{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px}
+  .langlinks a{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:12px 18px;font-weight:600;color:var(--tx)}
+  .langlinks a:hover{border-color:var(--accent);text-decoration:none}
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--muted);font-size:14px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  footer a{color:var(--muted)}
+  .heart{color:#EA4AAA}
+  hr.soft{border:0;border-top:1px solid var(--line);margin:0}
+</style>
+</head>
+<body>
+<nav>
+  <div class="wrap">
+    <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="GitExtensions.ZimerfeldTree icon">
+    <span class="brand">GitExtensions.ZimerfeldTree</span>
+    <span class="spacer"></span>
+    <a href="#features" class="lang-en" style="color:var(--muted);font-size:14px">Features</a>
+    <a href="#features" class="lang-pt" style="color:var(--muted);font-size:14px">Funcionalidades</a>
+    <a href="#install" class="lang-en" style="color:var(--muted);font-size:14px">Install</a>
+    <a href="#install" class="lang-pt" style="color:var(--muted);font-size:14px">Instalação</a>
+    <div class="toggle" role="group" aria-label="Language">
+      <button data-set="en">EN</button>
+      <button data-set="pt">PT</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="hero-icon" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="GitExtensions.ZimerfeldTree">
+    <h1>GitExtensions.ZimerfeldTree</h1>
+    <p class="tagline lang-en">Branches as a hierarchical tree, one-click GitFlow, and a Restore hub to safely go back in time — right inside GitExtensions.</p>
+    <p class="tagline lang-pt">Branches em árvore hierárquica, GitFlow num clique e uma central Restore para voltar no tempo com segurança — dentro do GitExtensions.</p>
+    <div class="badges">
+      <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/"><img alt="NuGet version" src="https://img.shields.io/nuget/v/GitExtensions.ZimerfeldTree?logo=nuget&label=NuGet"></a>
+      <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/"><img alt="NuGet downloads" src="https://img.shields.io/nuget/dt/GitExtensions.ZimerfeldTree?logo=nuget&label=Downloads"></a>
+      <img alt="License" src="https://img.shields.io/badge/License-CC%20BY--NC--ND%204.0-blue">
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">
+        <span class="lang-en">Get it on NuGet</span><span class="lang-pt">Baixar no NuGet</span></a>
+      <a class="btn" href="https://github.com/zimerfeld/GitExtensions.ZimerfeldTree">GitHub</a>
+      <a class="btn" href="https://github.com/sponsors/zimerfeld"><span class="heart">&#10084;</span>
+        <span class="lang-en">Sponsor</span><span class="lang-pt">Patrocinar</span></a>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2 class="lang-en">Features</h2><h2 class="lang-pt">Funcionalidades</h2>
+    <p class="sub lang-en">What GitExtensions.ZimerfeldTree brings to your GitExtensions.</p>
+    <p class="sub lang-pt">O que o GitExtensions.ZimerfeldTree traz para o seu GitExtensions.</p>
+    <div class="grid">
+      <div class="card"><span class="ic">🌳</span><h3 class="lang-en">Hierarchical branch tree</h3><h3 class="lang-pt">Árvore hierárquica de branches</h3><p class="lang-en">LOCAL, REMOTES &amp; TAGS combining real commit ancestry with <code>/</code> path grouping; current branch in bold, live counters and a real-time filter.</p><p class="lang-pt">LOCAL, REMOTES e TAGS combinando ancestralidade real de commits com agrupamento por caminho <code>/</code>; branch atual em negrito, contadores ao vivo e filtro em tempo real.</p></div><div class="card"><span class="ic">⚡</span><h3 class="lang-en">One-click GitFlow</h3><h3 class="lang-pt">GitFlow num clique</h3><p class="lang-en">Start/publish/track/update/finish for feature, release, hotfix, bugfix and support — with a flexible hierarchy that even allows a <em>feature under a feature</em>.</p><p class="lang-pt">Start/publish/track/update/finish para feature, release, hotfix, bugfix e support — com hierarquia flexível que permite até <em>feature filha de feature</em>.</p></div><div class="card"><span class="ic">↕️</span><h3 class="lang-en">Pull / Push / Commit at hand</h3><h3 class="lang-pt">Pull / Push / Commit à mão</h3><p class="lang-en">Arrow buttons with ahead/behind counters, a background remote check, and a one-click <em>pull with rebase, then push</em> that clears non-fast-forward rejections.</p><p class="lang-pt">Botões com contadores adiante/atrás, verificação do remoto em segundo plano e um <em>baixar com rebase e então enviar</em> num clique que resolve rejeições non-fast-forward.</p></div><div class="card"><span class="ic">⏪</span><h3 class="lang-en">Restore — go back in time</h3><h3 class="lang-pt">Restore — voltar no tempo</h3><p class="lang-en">A dedicated hub for every safe recovery: restore, cherry-pick, revert, reflog recovery, create branch/tag from any commit — each with built-in guidance.</p><p class="lang-pt">Uma central dedicada para toda recuperação segura: restaurar, cherry-pick, reverter, recuperação via reflog, criar branch/tag de qualquer commit — cada uma com orientação embutida.</p></div><div class="card"><span class="ic">🌐</span><h3 class="lang-en">Localized (EN / PT)</h3><h3 class="lang-pt">Localizado (EN / PT)</h3><p class="lang-en">Every window picks its language independently and remembers it.</p><p class="lang-pt">Cada janela escolhe seu idioma de forma independente e o memoriza.</p></div><div class="card"><span class="ic">🛡️</span><h3 class="lang-en">Developer mode</h3><h3 class="lang-pt">Modo Developer</h3><p class="lang-en">Protects main/master/develop from risky operations and persists tree state per working directory.</p><p class="lang-pt">Protege main/master/develop de operações arriscadas e persiste o estado da árvore por diretório de trabalho.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="soft">
+
+<section id="screens">
+  <div class="wrap">
+    <h2 class="lang-en">Screenshots</h2><h2 class="lang-pt">Printscreens</h2>
+    <p class="sub lang-en">A look at the plugin in action.</p>
+    <p class="sub lang-pt">Uma olhada no plugin em ação.</p>
+    <div class="shots">
+      <figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png" alt="Hierarchical branch tree"><figcaption><span class="lang-en">Hierarchical branch tree</span><span class="lang-pt">Árvore hierárquica de branches</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png" alt="GitFlow Start &amp; Finish rules per type"><figcaption><span class="lang-en">GitFlow Start &amp; Finish rules per type</span><span class="lang-pt">Regras de Start e Finish por tipo</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png" alt="Full command flow per type"><figcaption><span class="lang-en">Full command flow per type</span><span class="lang-pt">Fluxo completo de comandos por tipo</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png" alt="Empty commit vs based-on override"><figcaption><span class="lang-en">Empty commit vs based-on override</span><span class="lang-pt">Commit vazio vs based-on override</span></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<hr class="soft">
+
+<section id="install">
+  <div class="wrap">
+    <h2 class="lang-en">Installation</h2><h2 class="lang-pt">Instalação</h2>
+    <p class="sub lang-en">Two ways to get up and running.</p>
+    <p class="sub lang-pt">Duas formas de começar.</p>
+    <div class="steps">
+      <div class="step"><div>
+        <strong class="lang-en">Plugin Manager (recommended)</strong><strong class="lang-pt">Gerenciador de Plugins (recomendado)</strong><br>
+        <span class="lang-en">In GitExtensions, open <code>Plugins &rarr; Plugin Manager</code>, search for <code>ZimerfeldTree</code> and install. Restart, then open <code>Plugins &rarr; ZimerfeldTree</code>.</span>
+        <span class="lang-pt">No GitExtensions, abra <code>Plugins &rarr; Plugin Manager</code>, procure por <code>ZimerfeldTree</code> e instale. Reinicie e abra <code>Plugins &rarr; ZimerfeldTree</code>.</span>
+      </div></div>
+      <div class="step"><div>
+        <strong class="lang-en">Manual</strong><strong class="lang-pt">Manual</strong><br>
+        <span class="lang-en">Install the <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">NuGet package</a> or drop the plugin DLL into <code>C:\Program Files\GitExtensions\Plugins\</code>.</span>
+        <span class="lang-pt">Instale o <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">pacote NuGet</a> ou copie a DLL do plugin para <code>C:\Program Files\GitExtensions\Plugins\</code>.</span>
+      </div></div>
+    </div>
+    <p class="sub" style="margin-top:16px">
+      <span class="lang-en">Requires <a href="https://gitextensions.github.io/">GitExtensions</a> 6.x (.NET 9) on Windows.</span>
+      <span class="lang-pt">Requer o <a href="https://gitextensions.github.io/">GitExtensions</a> 6.x (.NET 9) no Windows.</span>
+    </p>
+  </div>
+</section>
+
+<hr class="soft">
+
+<section id="docs">
+  <div class="wrap">
+    <h2 class="lang-en">Full documentation</h2><h2 class="lang-pt">Documentação completa</h2>
+    <p class="sub lang-en"><strong>Technical details, features, screenshots and installation</strong> are available per language. Click here:</p>
+    <p class="sub lang-pt"><strong>Detalhes técnicos, funcionalidades, printscreens e instalação</strong> estão disponíveis por idioma. Clique aqui:</p>
+    <div class="langlinks">
+      <a href="https://github.com/zimerfeld/GitExtensions.ZimerfeldTree/blob/main/README.en-US.md">&#127482;&#127480; English (United States)</a>
+      <a href="https://github.com/zimerfeld/GitExtensions.ZimerfeldTree/blob/main/README.pt-BR.md">&#127463;&#127479; Português (Brasil)</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <span class="lang-en">Copyright &copy; 2026 Renato Zimerfeld &mdash; <strong>CC BY-NC-ND 4.0</strong>.</span>
+      <span class="lang-pt">Copyright &copy; 2026 Renato Zimerfeld &mdash; <strong>CC BY-NC-ND 4.0</strong>.</span>
+    </div>
+    <div>
+      <a href="https://zimerfeld.com">zimerfeld.com</a> &nbsp;&middot;&nbsp;
+      <a href="https://github.com/sponsors/zimerfeld">GitHub Sponsors</a> &nbsp;&middot;&nbsp;
+      <a href="https://ko-fi.com/C0D621FCGD">Ko-fi</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var html=document.documentElement;
+    function set(l){
+      html.setAttribute('data-lang',l);
+      html.setAttribute('lang', l==='pt'?'pt-BR':'en');
+      document.querySelectorAll('.toggle button').forEach(function(b){
+        b.classList.toggle('active', b.dataset.set===l);
+      });
+      try{localStorage.setItem('zf-lang',l);}catch(e){}
+    }
+    var saved=null; try{saved=localStorage.getItem('zf-lang');}catch(e){}
+    var initial = saved || ((navigator.language||'en').toLowerCase().indexOf('pt')===0?'pt':'en');
+    set(initial);
+    document.querySelectorAll('.toggle button').forEach(function(b){
+      b.addEventListener('click',function(){set(b.dataset.set);});
+    });
+  })();
+</script>
+</body>
+</html>
