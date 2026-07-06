@@ -58,6 +58,10 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 ## Languages / Idiomas
 
+> ![EN](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotGB.png) **Technical details, features, screenshots and installation** are available in the language-specific versions. **Click here:**
+
+> ![PT](https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/screenshotBR.png) **Detalhes técnicos, funcionalidades, printscreens e instalação** encontram-se disponíveis nas versões por idioma. **Clique aqui:**
+
 - [English (United States)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.en-US.md)
 - [Português (Brasil)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.pt-BR.md)
 
@@ -83,4 +87,4 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 ## License / Licença
 
-[CC BY-NC-ND 4.0](LICENSE.txt)
+Copyright © 2026 Renato Zimerfeld — **CC BY-NC-ND 4.0** (see / veja [`LICENSE.txt`](LICENSE.txt)).

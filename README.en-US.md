@@ -636,3 +636,7 @@ GitExtensions plugin that automatically generates a commit message summarizing s
 GitExtensions plugin for managing Git LFS (Large File Storage) — tracking, pushing, and pulling large binary files directly from the GitExtensions interface.
 
 - **GitHub:** [zimerfeld/GitExtensions.ZimerfeldLFS](https://github.com/zimerfeld/GitExtensions.ZimerfeldLFS)
+
+## License
+
+Copyright © 2026 Renato Zimerfeld — **CC BY-NC-ND 4.0** (see [`LICENSE.txt`](LICENSE.txt)).
