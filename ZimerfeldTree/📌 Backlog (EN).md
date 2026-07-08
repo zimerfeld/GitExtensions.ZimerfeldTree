@@ -9,8 +9,6 @@ tags: [backlog, retomada]
 
 # 📌 Backlog — GitExtensions.ZimerfeldTree
 
-> 🇧🇷 Leia esta página em português → [[📌 Backlog]]
-
 > [!tip] 🧭 Resumption point
 > **Start here** when resuming the project in another session. Current state + pending items, always updated at the end of each work stage.
 

@@ -9,8 +9,6 @@ tags: [backlog, retomada]
 
 # 📌 Backlog — GitExtensions.ZimerfeldTree
 
-> 🇺🇸 Read this page in English → [[📌 Backlog (EN)]]
-
 > [!tip] 🧭 Ponto de retomada
 > **Comece por aqui** ao retomar o projeto em outra sessão. Estado atual + pendências, sempre atualizados ao fim de cada etapa de trabalho.
 
