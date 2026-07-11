@@ -3,8 +3,10 @@ sorting-spec: |
   target-folder: /
   🏠 Home
   🏠 Home (EN)
+  🏠 Home (ES)
   📌 Backlog
   📌 Backlog (EN)
+  📌 Backlog (ES)
   🔑 Arquivos-Chave
   🧩 Sistemas
   🔀 Fluxos
