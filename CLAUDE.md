@@ -13,6 +13,23 @@ Guia para o Claude Code neste repositório.
   convenção de idioma própria de cada um (por exemplo, os documentos de
   localização podem estar em en-US, pt-BR ou es-ES).
 
+## Paridade de idiomas — PT, EN e ES sempre juntos
+
+- **Ao criar ou alterar qualquer conteúdo traduzível, faça-o nos três idiomas:
+  Português (pt-BR), Inglês (en-US) e Espanhol (es-ES).** Nunca deixe um idioma
+  para trás.
+- Isto vale para todo o material que já segue a convenção multi-idioma:
+  - **Dicionários de UI** em `src/GitExtensions.ZimerfeldTree/Resources/`
+    (`*.pt-BR.json`, `*.en-US.json`, `*.es-ES.json`) — mantenha **as mesmas
+    chaves** nos três arquivos (paridade de chaves), traduzindo o valor.
+  - **READMEs** (`README.pt-BR.md`, `README.en-US.md`, `README.es-ES.md`) e os
+    blocos por idioma do `README.md`.
+  - **Cofre OBSIDIAN** (`ZimerfeldTree/`) — cada nota existe como `<Nome>.md`
+    (pt-BR), `<Nome> (EN).md` e `<Nome> (ES).md`, com `lang:` correto no
+    front-matter e os links internos apontando para a versão do mesmo idioma.
+- Se adicionar uma nova chave/nota/seção em um idioma, adicione **imediatamente**
+  a correspondente nos outros dois, para que os três permaneçam em paridade.
+
 ## Fluxo de publicação — NÃO criar nem aprovar Pull Requests
 
 - **Não peça para criar Pull Requests e não crie Pull Requests.**
