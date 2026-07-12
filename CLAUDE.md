@@ -2,6 +2,17 @@
 
 Guia para o Claude Code neste repositório.
 
+## Idioma das respostas — sempre Português (BR)
+
+- **Responda no chat sempre em Português do Brasil (pt-BR).**
+- Vale para toda a comunicação no chat (explicações, resumos, perguntas,
+  relatórios de status), independentemente do idioma em que a mensagem do
+  usuário for escrita.
+- Isto se aplica apenas às respostas do chat. Código, nomes de arquivos,
+  mensagens de commit, conteúdo de documentos e demais artefatos seguem a
+  convenção de idioma própria de cada um (por exemplo, os documentos de
+  localização podem estar em en-US, pt-BR ou es-ES).
+
 ## Fluxo de publicação — NÃO criar nem aprovar Pull Requests
 
 - **Não peça para criar Pull Requests e não crie Pull Requests.**
