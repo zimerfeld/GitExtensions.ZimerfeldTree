@@ -30,3 +30,16 @@ O que fazer em vez disso:
   já estabelecido — não abra, não solicite e não aprove PRs por conta própria.
 - Se uma mudança precisar chegar à produção, informe que o push foi feito e que a
   publicação segue pelo processo GitFlow/Actions (GitHub) ou `wrangler` (terminal).
+
+## Rito pós-publicação — sincronizar develop e abrir a próxima feature
+
+Sempre que publicar a `main` (após a integração/release):
+
+1. **Sincronize a `develop` com a `main`** para que as duas não divirjam — faça o
+   *back-merge* de `main` em `develop` e **push** da `develop`. A `develop` deve
+   sempre conter tudo o que já está na `main`.
+2. **Crie uma nova feature a partir da `develop`** (`feature/<nome>`), com um
+   **nome sugestivo** para a próxima demanda, e passe a desenvolver nela.
+
+Assim o ciclo GitFlow fecha: produção sai da `main`, a `develop` fica alinhada e
+já existe uma branch de trabalho pronta para a próxima entrega.
