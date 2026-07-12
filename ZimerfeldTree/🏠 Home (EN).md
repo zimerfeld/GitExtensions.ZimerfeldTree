@@ -9,8 +9,6 @@ tags: [moc, home, zimerfeld, tree, gitextensions, gitflow]
 
 # 🏠 GitExtensions.ZimerfeldTree — Neuron Vault
 
-> 🇧🇷 Leia esta página em português → [[🏠 Home]]
-
 > [!abstract] 🧠 What this vault is
 > Claude's persistent memory for the **GitExtensions.ZimerfeldTree** project — a GitExtensions plugin that displays branches as a **hierarchical tree** and provides **visual GitFlow** using pure git. The vault is read at the start of every session and updated whenever something relevant changes.
 

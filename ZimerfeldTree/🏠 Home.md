@@ -9,8 +9,6 @@ tags: [moc, home, zimerfeld, tree, gitextensions, gitflow]
 
 # 🏠 GitExtensions.ZimerfeldTree — Cofre de Neurônios
 
-> 🇺🇸 Read this page in English → [[🏠 Home (EN)]]
-
 > [!abstract] 🧠 O que é este cofre
 > Memória persistente do Claude para o projeto **GitExtensions.ZimerfeldTree** — plugin para GitExtensions que exibe as branches em **árvore hierárquica** e disponibiliza **GitFlow visual** em git puro. O cofre é lido no início de cada sessão e atualizado sempre que algo relevante muda.
 
