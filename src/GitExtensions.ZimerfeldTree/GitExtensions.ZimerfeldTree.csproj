@@ -92,10 +92,13 @@
          infix as a culture (which would divert these into satellite assemblies). -->
     <EmbeddedResource Include="Resources\ZimerfeldTree.pt-BR.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.pt-BR.json" />
     <EmbeddedResource Include="Resources\ZimerfeldTree.en-US.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldTree.es-ES.json"     WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldTree.es-ES.json" />
     <EmbeddedResource Include="Resources\ZimerfeldGitFlow.pt-BR.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.pt-BR.json" />
     <EmbeddedResource Include="Resources\ZimerfeldGitFlow.en-US.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldGitFlow.es-ES.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldGitFlow.es-ES.json" />
     <EmbeddedResource Include="Resources\ZimerfeldRestore.pt-BR.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.pt-BR.json" />
     <EmbeddedResource Include="Resources\ZimerfeldRestore.en-US.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.en-US.json" />
+    <EmbeddedResource Include="Resources\ZimerfeldRestore.es-ES.json"  WithCulture="false" LogicalName="GitExtensions.ZimerfeldTree.Resources.ZimerfeldRestore.es-ES.json" />
   </ItemGroup>
 
   <ItemGroup>

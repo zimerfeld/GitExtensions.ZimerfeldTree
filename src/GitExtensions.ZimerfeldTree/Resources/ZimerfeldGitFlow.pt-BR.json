@@ -22,6 +22,7 @@
   "langAutomatic": "Automático",
   "langEnglish": "Inglês",
   "langPortuguese": "Português",
+  "langSpanish": "Espanhol",
   "cmdDone": "(comando concluído)",
   "noOutput": "(sem saída)",
   "skippedRemoteBranch": "(pulado: a branch remota '{0}' já não existe)",

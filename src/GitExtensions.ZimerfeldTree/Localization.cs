@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace GitExtensions.ZimerfeldTree;
 
 /// <summary>User-selectable UI language. <see cref="Automatic"/> follows the OS UI culture.</summary>
-public enum AppLanguage { Automatic, English, Portuguese }
+public enum AppLanguage { Automatic, English, Portuguese, Spanish }
 
 /// <summary>
 /// Loads per-window text dictionaries (embedded JSON resources, one file per window per language)
@@ -33,20 +33,25 @@ public static class I18n
         SaveChoice(lang);
     }
 
-    /// <summary>Resolves the active choice to a concrete culture code ("en-US" / "pt-BR").</summary>
+    /// <summary>Resolves the active choice to a concrete culture code ("en-US" / "pt-BR" / "es-ES").</summary>
     public static string Culture => CultureOf(_current);
 
-    /// <summary>Resolves an explicit language to a concrete culture code ("en-US" / "pt-BR").</summary>
+    /// <summary>Resolves an explicit language to a concrete culture code ("en-US" / "pt-BR" / "es-ES").</summary>
     public static string CultureOf(AppLanguage lang) => lang switch
     {
         AppLanguage.English    => "en-US",
         AppLanguage.Portuguese => "pt-BR",
+        AppLanguage.Spanish    => "es-ES",
         _                      => AutoCulture(),
     };
 
     private static string AutoCulture() =>
-        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("pt", StringComparison.OrdinalIgnoreCase)
-            ? "pt-BR" : "en-US";
+        CultureInfo.CurrentUICulture.TwoLetterISOLanguageName switch
+        {
+            var l when l.Equals("pt", StringComparison.OrdinalIgnoreCase) => "pt-BR",
+            var l when l.Equals("es", StringComparison.OrdinalIgnoreCase) => "es-ES",
+            _                                                             => "en-US",
+        };
 
     /// <summary>
     /// Loads the dictionary for a window (<paramref name="scope"/> = "ZimerfeldTree" /
