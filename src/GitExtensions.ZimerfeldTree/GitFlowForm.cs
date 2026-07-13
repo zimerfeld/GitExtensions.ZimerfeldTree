@@ -417,7 +417,7 @@ public sealed class GitFlowForm : Form
         };
 
         // Language selector (right-aligned). Items + selection populated by PopulateLanguageCombo so
-        // they stay localized; index order matches AppLanguage (0=Automatic, 1=English, 2=Portuguese, 3=Spanish).
+        // they stay localized; index order matches AppLanguage (0=Automatic, 1=Portuguese, 2=English, 3=Spanish).
         _lblLanguage = new Label
         {
             Name      = "lblLanguage",
@@ -470,8 +470,8 @@ public sealed class GitFlowForm : Form
         if (_suppressLangEvent) return;
         _lang = _cboLanguage.SelectedIndex switch
         {
-            1 => AppLanguage.English,
-            2 => AppLanguage.Portuguese,
+            1 => AppLanguage.Portuguese,
+            2 => AppLanguage.English,
             3 => AppLanguage.Spanish,
             _ => AppLanguage.Automatic,
         };
@@ -494,7 +494,7 @@ public sealed class GitFlowForm : Form
     {
         _suppressLangEvent = true;
         _cboLanguage.Items.Clear();
-        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"], _t["langSpanish"]]);
+        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langPortuguese"], _t["langEnglish"], _t["langSpanish"]]);
         _cboLanguage.SelectedIndex = (int)_lang;
         _suppressLangEvent = false;
     }
