@@ -962,8 +962,8 @@ public sealed class BranchHierarchyForm : Form
         };
 
         // Language selector (right-aligned). Items + selection are populated by ApplyLanguage so
-        // they stay localized; index order matches the AppLanguage enum (0=Automatic, 1=English,
-        // 2=Portuguese, 3=Spanish). Changing it persists the choice and re-localizes this window live.
+        // they stay localized; index order matches the AppLanguage enum (0=Automatic, 1=Portuguese,
+        // 2=English, 3=Spanish). Changing it persists the choice and re-localizes this window live.
         _lblLanguage = new Label
         {
             Name      = "lblLanguage",
@@ -1017,8 +1017,8 @@ public sealed class BranchHierarchyForm : Form
         if (_suppressLangEvent) return;
         var lang = _cboLanguage.SelectedIndex switch
         {
-            1 => AppLanguage.English,
-            2 => AppLanguage.Portuguese,
+            1 => AppLanguage.Portuguese,
+            2 => AppLanguage.English,
             3 => AppLanguage.Spanish,
             _ => AppLanguage.Automatic,
         };
@@ -1103,7 +1103,7 @@ public sealed class BranchHierarchyForm : Form
         _suppressLangEvent = true;
         int sel = _cboLanguage.SelectedIndex >= 0 ? _cboLanguage.SelectedIndex : (int)I18n.Current;
         _cboLanguage.Items.Clear();
-        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langEnglish"], _t["langPortuguese"], _t["langSpanish"]]);
+        _cboLanguage.Items.AddRange([_t["langAutomatic"], _t["langPortuguese"], _t["langEnglish"], _t["langSpanish"]]);
         _cboLanguage.SelectedIndex = sel;
         _suppressLangEvent = false;
     }

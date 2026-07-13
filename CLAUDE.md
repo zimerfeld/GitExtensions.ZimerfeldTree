@@ -30,6 +30,20 @@ Guia para o Claude Code neste repositório.
 - Se adicionar uma nova chave/nota/seção em um idioma, adicione **imediatamente**
   a correspondente nos outros dois, para que os três permaneçam em paridade.
 
+## Combo de idioma — sempre AUTO/PT/EN/ES, com AUTO por padrão
+
+- O seletor de idioma (combo) de **todas** as janelas deve exibir **sempre** as
+  quatro opções, **nesta ordem**: **AUTO** (automático, segue a cultura do SO),
+  **PT** (Português), **EN** (Inglês) e **ES** (Espanhol).
+- **AUTO é a opção pré-selecionada por padrão** — é o valor inicial quando não há
+  preferência salva. A persistência por janela continua valendo: se o usuário
+  escolher um idioma, aquela janela reabre no idioma escolhido; sem escolha,
+  volta a AUTO.
+- Ao acrescentar um novo idioma, mantenha a ordem AUTO → PT → EN → ES → (novos) e
+  garanta a paridade da ordem entre o `enum AppLanguage`, o preenchimento do combo
+  (`PopulateLanguageCombo`) e o mapeamento índice→idioma (`OnLanguageChanged`) nas
+  três janelas, além das chaves `lang*` nos dicionários dos três idiomas.
+
 ## Fluxo de publicação — NÃO criar nem aprovar Pull Requests
 
 - **Não peça para criar Pull Requests e não crie Pull Requests.**
