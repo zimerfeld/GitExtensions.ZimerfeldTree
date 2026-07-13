@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace GitExtensions.ZimerfeldTree;
 
 /// <summary>User-selectable UI language. <see cref="Automatic"/> follows the OS UI culture.</summary>
-public enum AppLanguage { Automatic, English, Portuguese, Spanish }
+public enum AppLanguage { Automatic, Portuguese, English, Spanish }
 
 /// <summary>
 /// Loads per-window text dictionaries (embedded JSON resources, one file per window per language)
