@@ -13,7 +13,7 @@ Este plugin é construído e mantido no meu tempo livre. Se ele te poupa tempo g
 
 Plugin para [GitExtensions](https://gitextensions.github.io/) que exibe branches **hierarquicamente** em estrutura de árvore, mostrando branches filhas.
 
-[English](README.en-US.md) | [Português](README.pt-BR.md)
+[🇧🇷 Português](README.pt-BR.md) | [🇺🇸 English](README.en-US.md) | [🇪🇸 Español](README.es-ES.md)
 
 [...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree "More information about GitExtensions.ZimerfeldTree package")
 

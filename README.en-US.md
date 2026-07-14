@@ -13,7 +13,7 @@ This plugin is built and maintained in my free time. If it saves you time managi
 
 A [GitExtensions](https://gitextensions.github.io/) plugin that displays branches **hierarchically** in a tree view, including child branches.
 
-[English](README.en-US.md) | [Português](README.pt-BR.md)
+[🇧🇷 Português](README.pt-BR.md) | [🇺🇸 English](README.en-US.md) | [🇪🇸 Español](README.es-ES.md)
 
 [...More information](https://www.nuget.org/packages/GitExtensions.ZimerfeldTree "More information about GitExtensions.ZimerfeldTree package")
 
