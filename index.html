@@ -35,15 +35,17 @@
   nav .brand{font-weight:700;letter-spacing:.2px}
   nav .spacer{flex:1}
   nav .navlinks{display:flex;align-items:center;gap:14px}
-  .langsel{background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:999px;
-    padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
-  .langsel:hover{border-color:var(--accent)}
+  /* segmented language toggle (AUTO/PT/EN/ES); active pill uses the site accent */
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
+  .toggle button{background:transparent;color:var(--muted);border:0;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.3px}
+  .toggle button:hover{color:var(--tx)}
+  .toggle button.active{background:var(--accent);color:#fff}
   /* On narrow screens (<=860px) drop the section links to a second row,
      below the program name; the brand and language selector stay on the first row. */
   @media (max-width:860px){
     nav .wrap{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px;row-gap:10px}
     nav .wrap .spacer{order:3}
-    nav .wrap #langsel{order:4}
+    nav .wrap .toggle{order:4}
     nav .wrap .navlinks{order:5;flex-basis:100%}
   }
   /* hero */
@@ -109,12 +111,12 @@
       <a href="#install" class="lang-pt" style="color:var(--muted);font-size:14px">Instalação</a>
       <a href="#install" class="lang-es" style="color:var(--muted);font-size:14px">Instalación</a>
     </div>
-    <select id="langsel" class="langsel" aria-label="Language / Idioma">
-      <option value="auto">🌐 Automático</option>
-      <option value="pt">🇧🇷 Português (BR)</option>
-      <option value="en">🇺🇸 Inglês (US)</option>
-      <option value="es">🇪🇸 Espanhol (ES)</option>
-    </select>
+    <div class="toggle" role="group" aria-label="Language / Idioma">
+      <button data-set="auto">AUTO</button>
+      <button data-set="pt">PT</button>
+      <button data-set="en">EN</button>
+      <button data-set="es">ES</button>
+    </div>
   </div>
 </nav>
 
@@ -242,15 +244,18 @@
       var eff=resolve(sel);
       html.setAttribute('data-lang',eff);
       html.setAttribute('lang', eff==='pt'?'pt-BR':(eff==='es'?'es-ES':'en-US'));
-      var s=document.getElementById('langsel');
-      if(s) s.value=sel;
+      // highlight the chosen button (AUTO stays highlighted even though it resolves to a concrete language)
+      document.querySelectorAll('.toggle button').forEach(function(b){
+        b.classList.toggle('active', b.dataset.set===sel);
+      });
       try{localStorage.setItem('zf-lang',sel);}catch(e){}
     }
     var saved=null; try{saved=localStorage.getItem('zf-lang');}catch(e){}
     // AUTO is the default when there is no saved preference.
     apply(saved||'auto');
-    var s=document.getElementById('langsel');
-    if(s) s.addEventListener('change',function(){apply(s.value);});
+    document.querySelectorAll('.toggle button').forEach(function(b){
+      b.addEventListener('click',function(){apply(b.dataset.set);});
+    });
   })();
 </script>
 </body>
