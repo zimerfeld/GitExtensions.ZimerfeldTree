@@ -80,9 +80,9 @@ Tree hierarchy — empty commit vs based-on override / Hierarquia na árvore —
 
 > 🇪🇸 **Detalles técnicos, funcionalidades, capturas de pantalla e instalación** están disponibles en las versiones por idioma. **Haz clic aquí:**
 
-- [English (United States)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.en-US.md)
-- [Português (Brasil)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.pt-BR.md)
-- [Español (España)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.es-ES.md)
+- [🇧🇷 Português (Brasil)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.pt-BR.md)
+- [🇺🇸 English (United States)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.en-US.md)
+- [🇪🇸 Español (España)](https://github.com/zimerfeld/ZimerfeldTree/blob/main/README.es-ES.md)
 
 ## Package / Pacote
 
