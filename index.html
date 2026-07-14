@@ -34,9 +34,18 @@
   nav img{width:30px;height:30px;border-radius:7px}
   nav .brand{font-weight:700;letter-spacing:.2px}
   nav .spacer{flex:1}
+  nav .navlinks{display:flex;align-items:center;gap:14px}
   .langsel{background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:999px;
     padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
   .langsel:hover{border-color:var(--accent)}
+  /* On narrow screens (<=860px) drop the section links to a second row,
+     below the program name; the brand and language selector stay on the first row. */
+  @media (max-width:860px){
+    nav .wrap{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px;row-gap:10px}
+    nav .wrap .spacer{order:3}
+    nav .wrap #langsel{order:4}
+    nav .wrap .navlinks{order:5;flex-basis:100%}
+  }
   /* hero */
   header.hero{position:relative;overflow:hidden;padding:72px 0 56px;text-align:center;
     background:radial-gradient(1200px 400px at 50% -120px,var(--accent) -40%,transparent 60%)}
@@ -92,12 +101,14 @@
     <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="GitExtensions.ZimerfeldTree icon">
     <span class="brand">GitExtensions.ZimerfeldTree</span>
     <span class="spacer"></span>
-    <a href="#features" class="lang-en" style="color:var(--muted);font-size:14px">Features</a>
-    <a href="#features" class="lang-pt" style="color:var(--muted);font-size:14px">Funcionalidades</a>
-    <a href="#features" class="lang-es" style="color:var(--muted);font-size:14px">Características</a>
-    <a href="#install" class="lang-en" style="color:var(--muted);font-size:14px">Install</a>
-    <a href="#install" class="lang-pt" style="color:var(--muted);font-size:14px">Instalação</a>
-    <a href="#install" class="lang-es" style="color:var(--muted);font-size:14px">Instalación</a>
+    <div class="navlinks">
+      <a href="#features" class="lang-en" style="color:var(--muted);font-size:14px">Features</a>
+      <a href="#features" class="lang-pt" style="color:var(--muted);font-size:14px">Funcionalidades</a>
+      <a href="#features" class="lang-es" style="color:var(--muted);font-size:14px">Características</a>
+      <a href="#install" class="lang-en" style="color:var(--muted);font-size:14px">Install</a>
+      <a href="#install" class="lang-pt" style="color:var(--muted);font-size:14px">Instalação</a>
+      <a href="#install" class="lang-es" style="color:var(--muted);font-size:14px">Instalación</a>
+    </div>
     <select id="langsel" class="langsel" aria-label="Language / Idioma">
       <option value="auto">🌐 Automático</option>
       <option value="pt">🇧🇷 Português (BR)</option>
