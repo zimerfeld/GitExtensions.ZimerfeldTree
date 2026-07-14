@@ -39,6 +39,12 @@ Guia para o Claude Code neste repositório.
   preferência salva. A persistência por janela continua valendo: se o usuário
   escolher um idioma, aquela janela reabre no idioma escolhido; sem escolha,
   volta a AUTO.
+- **Formato dos rótulos** (chaves `lang*`): ícone + nome do idioma + código do país
+  entre parênteses, com o **nome traduzido em cada dicionário** e o **ícone/código
+  universais**. Padrão de referência (pt-BR):
+  **🌐 Automático**, **🇧🇷 Português (BR)**, **🇺🇸 Inglês (US)**, **🇪🇸 Espanhol (ES)**.
+  Em en-US: 🌐 Automatic / 🇧🇷 Portuguese (BR) / 🇺🇸 English (US) / 🇪🇸 Spanish (ES);
+  em es-ES: 🌐 Automático / 🇧🇷 Portugués (BR) / 🇺🇸 Inglés (US) / 🇪🇸 Español (ES).
 - Ao acrescentar um novo idioma, mantenha a ordem AUTO → PT → EN → ES → (novos) e
   garanta a paridade da ordem entre o `enum AppLanguage`, o preenchimento do combo
   (`PopulateLanguageCombo`) e o mapeamento índice→idioma (`OnLanguageChanged`) nas

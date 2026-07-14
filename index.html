@@ -21,12 +21,12 @@
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
   .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
-  .lang-pt{display:none}
-  html[data-lang="pt"] .lang-en{display:none}
-  html[data-lang="pt"] .lang-pt{display:inline}
-  html[data-lang="pt"] .block.lang-pt{display:block}
-  .block.lang-pt{display:none}
-  html[data-lang="pt"] h2.lang-pt,html[data-lang="pt"] h3.lang-pt{display:block}
+  /* language visibility: hide every localized element, reveal only the active language
+     (display:revert restores each element's natural block/inline default) */
+  .lang-en,.lang-pt,.lang-es{display:none}
+  html[data-lang="en"] .lang-en,
+  html[data-lang="pt"] .lang-pt,
+  html[data-lang="es"] .lang-es{display:revert}
   /* top nav */
   nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
     background:rgba(13,17,23,.72);border-bottom:1px solid var(--line)}
@@ -34,9 +34,9 @@
   nav img{width:30px;height:30px;border-radius:7px}
   nav .brand{font-weight:700;letter-spacing:.2px}
   nav .spacer{flex:1}
-  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
-  .toggle button{background:transparent;color:var(--muted);border:0;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600}
-  .toggle button.active{background:var(--accent);color:#fff}
+  .langsel{background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .langsel:hover{border-color:var(--accent)}
   /* hero */
   header.hero{position:relative;overflow:hidden;padding:72px 0 56px;text-align:center;
     background:radial-gradient(1200px 400px at 50% -120px,var(--accent) -40%,transparent 60%)}
@@ -94,12 +94,16 @@
     <span class="spacer"></span>
     <a href="#features" class="lang-en" style="color:var(--muted);font-size:14px">Features</a>
     <a href="#features" class="lang-pt" style="color:var(--muted);font-size:14px">Funcionalidades</a>
+    <a href="#features" class="lang-es" style="color:var(--muted);font-size:14px">Características</a>
     <a href="#install" class="lang-en" style="color:var(--muted);font-size:14px">Install</a>
     <a href="#install" class="lang-pt" style="color:var(--muted);font-size:14px">Instalação</a>
-    <div class="toggle" role="group" aria-label="Language">
-      <button data-set="en">EN</button>
-      <button data-set="pt">PT</button>
-    </div>
+    <a href="#install" class="lang-es" style="color:var(--muted);font-size:14px">Instalación</a>
+    <select id="langsel" class="langsel" aria-label="Language / Idioma">
+      <option value="auto">🌐 Automático</option>
+      <option value="pt">🇧🇷 Português (BR)</option>
+      <option value="en">🇺🇸 Inglês (US)</option>
+      <option value="es">🇪🇸 Espanhol (ES)</option>
+    </select>
   </div>
 </nav>
 
@@ -109,6 +113,7 @@
     <h1>GitExtensions.ZimerfeldTree</h1>
     <p class="tagline lang-en">Branches as a hierarchical tree, one-click GitFlow, and a Restore hub to safely go back in time — right inside GitExtensions.</p>
     <p class="tagline lang-pt">Branches em árvore hierárquica, GitFlow num clique e uma central Restore para voltar no tempo com segurança — dentro do GitExtensions.</p>
+    <p class="tagline lang-es">Branches en árbol jerárquico, GitFlow con un clic y una central Restore para volver atrás en el tiempo con seguridad — dentro de GitExtensions.</p>
     <div class="badges">
       <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/"><img alt="NuGet version" src="https://img.shields.io/nuget/v/GitExtensions.ZimerfeldTree?logo=nuget&label=NuGet"></a>
       <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/"><img alt="NuGet downloads" src="https://img.shields.io/nuget/dt/GitExtensions.ZimerfeldTree?logo=nuget&label=Downloads"></a>
@@ -116,21 +121,22 @@
     </div>
     <div class="cta">
       <a class="btn primary" href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">
-        <span class="lang-en">Get it on NuGet</span><span class="lang-pt">Baixar no NuGet</span></a>
+        <span class="lang-en">Get it on NuGet</span><span class="lang-pt">Baixar no NuGet</span><span class="lang-es">Conseguir en NuGet</span></a>
       <a class="btn" href="https://github.com/zimerfeld/GitExtensions.ZimerfeldTree">GitHub</a>
       <a class="btn" href="https://github.com/sponsors/zimerfeld"><span class="heart">&#10084;</span>
-        <span class="lang-en">Sponsor</span><span class="lang-pt">Patrocinar</span></a>
+        <span class="lang-en">Sponsor</span><span class="lang-pt">Patrocinar</span><span class="lang-es">Patrocinar</span></a>
     </div>
   </div>
 </header>
 
 <section id="features">
   <div class="wrap">
-    <h2 class="lang-en">Features</h2><h2 class="lang-pt">Funcionalidades</h2>
+    <h2 class="lang-en">Features</h2><h2 class="lang-pt">Funcionalidades</h2><h2 class="lang-es">Características</h2>
     <p class="sub lang-en">What GitExtensions.ZimerfeldTree brings to your GitExtensions.</p>
     <p class="sub lang-pt">O que o GitExtensions.ZimerfeldTree traz para o seu GitExtensions.</p>
+    <p class="sub lang-es">Lo que GitExtensions.ZimerfeldTree aporta a tu GitExtensions.</p>
     <div class="grid">
-      <div class="card"><span class="ic">🌳</span><h3 class="lang-en">Hierarchical branch tree</h3><h3 class="lang-pt">Árvore hierárquica de branches</h3><p class="lang-en">LOCAL, REMOTES &amp; TAGS combining real commit ancestry with <code>/</code> path grouping; current branch in bold, live counters and a real-time filter.</p><p class="lang-pt">LOCAL, REMOTES e TAGS combinando ancestralidade real de commits com agrupamento por caminho <code>/</code>; branch atual em negrito, contadores ao vivo e filtro em tempo real.</p></div><div class="card"><span class="ic">⚡</span><h3 class="lang-en">One-click GitFlow</h3><h3 class="lang-pt">GitFlow num clique</h3><p class="lang-en">Start/publish/track/update/finish for feature, release, hotfix, bugfix and support — with a flexible hierarchy that even allows a <em>feature under a feature</em>.</p><p class="lang-pt">Start/publish/track/update/finish para feature, release, hotfix, bugfix e support — com hierarquia flexível que permite até <em>feature filha de feature</em>.</p></div><div class="card"><span class="ic">↕️</span><h3 class="lang-en">Pull / Push / Commit at hand</h3><h3 class="lang-pt">Pull / Push / Commit à mão</h3><p class="lang-en">Arrow buttons with ahead/behind counters, a background remote check, and a one-click <em>pull with rebase, then push</em> that clears non-fast-forward rejections.</p><p class="lang-pt">Botões com contadores adiante/atrás, verificação do remoto em segundo plano e um <em>baixar com rebase e então enviar</em> num clique que resolve rejeições non-fast-forward.</p></div><div class="card"><span class="ic">⏪</span><h3 class="lang-en">Restore — go back in time</h3><h3 class="lang-pt">Restore — voltar no tempo</h3><p class="lang-en">A dedicated hub for every safe recovery: restore, cherry-pick, revert, reflog recovery, create branch/tag from any commit — each with built-in guidance.</p><p class="lang-pt">Uma central dedicada para toda recuperação segura: restaurar, cherry-pick, reverter, recuperação via reflog, criar branch/tag de qualquer commit — cada uma com orientação embutida.</p></div><div class="card"><span class="ic">🌐</span><h3 class="lang-en">Localized (EN / PT)</h3><h3 class="lang-pt">Localizado (EN / PT)</h3><p class="lang-en">Every window picks its language independently and remembers it.</p><p class="lang-pt">Cada janela escolhe seu idioma de forma independente e o memoriza.</p></div><div class="card"><span class="ic">🛡️</span><h3 class="lang-en">Developer mode</h3><h3 class="lang-pt">Modo Developer</h3><p class="lang-en">Protects main/master/develop from risky operations and persists tree state per working directory.</p><p class="lang-pt">Protege main/master/develop de operações arriscadas e persiste o estado da árvore por diretório de trabalho.</p></div>
+      <div class="card"><span class="ic">🌳</span><h3 class="lang-en">Hierarchical branch tree</h3><h3 class="lang-pt">Árvore hierárquica de branches</h3><h3 class="lang-es">Árbol jerárquico de branches</h3><p class="lang-en">LOCAL, REMOTES &amp; TAGS combining real commit ancestry with <code>/</code> path grouping; current branch in bold, live counters and a real-time filter.</p><p class="lang-pt">LOCAL, REMOTES e TAGS combinando ancestralidade real de commits com agrupamento por caminho <code>/</code>; branch atual em negrito, contadores ao vivo e filtro em tempo real.</p><p class="lang-es">LOCAL, REMOTES y TAGS combinando la ascendencia real de commits con la agrupación por ruta <code>/</code>; branch actual en negrita, contadores en vivo y filtro en tiempo real.</p></div><div class="card"><span class="ic">⚡</span><h3 class="lang-en">One-click GitFlow</h3><h3 class="lang-pt">GitFlow num clique</h3><h3 class="lang-es">GitFlow con un clic</h3><p class="lang-en">Start/publish/track/update/finish for feature, release, hotfix, bugfix and support — with a flexible hierarchy that even allows a <em>feature under a feature</em>.</p><p class="lang-pt">Start/publish/track/update/finish para feature, release, hotfix, bugfix e support — com hierarquia flexível que permite até <em>feature filha de feature</em>.</p><p class="lang-es">Start/publish/track/update/finish para feature, release, hotfix, bugfix y support — con una jerarquía flexible que permite incluso una <em>feature hija de otra feature</em>.</p></div><div class="card"><span class="ic">↕️</span><h3 class="lang-en">Pull / Push / Commit at hand</h3><h3 class="lang-pt">Pull / Push / Commit à mão</h3><h3 class="lang-es">Pull / Push / Commit a mano</h3><p class="lang-en">Arrow buttons with ahead/behind counters, a background remote check, and a one-click <em>pull with rebase, then push</em> that clears non-fast-forward rejections.</p><p class="lang-pt">Botões com contadores adiante/atrás, verificação do remoto em segundo plano e um <em>baixar com rebase e então enviar</em> num clique que resolve rejeições non-fast-forward.</p><p class="lang-es">Botones con contadores adelante/atrás, verificación del remoto en segundo plano y un <em>traer con rebase y luego enviar</em> con un clic que resuelve los rechazos non-fast-forward.</p></div><div class="card"><span class="ic">⏪</span><h3 class="lang-en">Restore — go back in time</h3><h3 class="lang-pt">Restore — voltar no tempo</h3><h3 class="lang-es">Restore — volver atrás en el tiempo</h3><p class="lang-en">A dedicated hub for every safe recovery: restore, cherry-pick, revert, reflog recovery, create branch/tag from any commit — each with built-in guidance.</p><p class="lang-pt">Uma central dedicada para toda recuperação segura: restaurar, cherry-pick, reverter, recuperação via reflog, criar branch/tag de qualquer commit — cada uma com orientação embutida.</p><p class="lang-es">Una central dedicada para toda recuperación segura: restaurar, cherry-pick, revertir, recuperación vía reflog, crear branch/tag desde cualquier commit — cada una con orientación integrada.</p></div><div class="card"><span class="ic">🌐</span><h3 class="lang-en">Localized (EN / PT / ES)</h3><h3 class="lang-pt">Localizado (EN / PT / ES)</h3><h3 class="lang-es">Localizado (EN / PT / ES)</h3><p class="lang-en">Every window picks its language independently and remembers it.</p><p class="lang-pt">Cada janela escolhe seu idioma de forma independente e o memoriza.</p><p class="lang-es">Cada ventana elige su idioma de forma independiente y lo recuerda.</p></div><div class="card"><span class="ic">🛡️</span><h3 class="lang-en">Developer mode</h3><h3 class="lang-pt">Modo Developer</h3><h3 class="lang-es">Modo Desarrollador</h3><p class="lang-en">Protects main/master/develop from risky operations and persists tree state per working directory.</p><p class="lang-pt">Protege main/master/develop de operações arriscadas e persiste o estado da árvore por diretório de trabalho.</p><p class="lang-es">Protege main/master/develop de operaciones arriesgadas y conserva el estado del árbol por directorio de trabajo.</p></div>
     </div>
   </div>
 </section>
@@ -139,11 +145,12 @@
 
 <section id="screens">
   <div class="wrap">
-    <h2 class="lang-en">Screenshots</h2><h2 class="lang-pt">Printscreens</h2>
+    <h2 class="lang-en">Screenshots</h2><h2 class="lang-pt">Printscreens</h2><h2 class="lang-es">Capturas de pantalla</h2>
     <p class="sub lang-en">A look at the plugin in action.</p>
     <p class="sub lang-pt">Uma olhada no plugin em ação.</p>
+    <p class="sub lang-es">Un vistazo al plugin en acción.</p>
     <div class="shots">
-      <figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png" alt="Hierarchical branch tree"><figcaption><span class="lang-en">Hierarchical branch tree</span><span class="lang-pt">Árvore hierárquica de branches</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png" alt="GitFlow Start &amp; Finish rules per type"><figcaption><span class="lang-en">GitFlow Start &amp; Finish rules per type</span><span class="lang-pt">Regras de Start e Finish por tipo</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png" alt="Full command flow per type"><figcaption><span class="lang-en">Full command flow per type</span><span class="lang-pt">Fluxo completo de comandos por tipo</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png" alt="Empty commit vs based-on override"><figcaption><span class="lang-en">Empty commit vs based-on override</span><span class="lang-pt">Commit vazio vs based-on override</span></figcaption></figure>
+      <figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenshotBranchHierarchy.png" alt="Hierarchical branch tree"><figcaption><span class="lang-en">Hierarchical branch tree</span><span class="lang-pt">Árvore hierárquica de branches</span><span class="lang-es">Árbol jerárquico de branches</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotStartFinish.png" alt="GitFlow Start &amp; Finish rules per type"><figcaption><span class="lang-en">GitFlow Start &amp; Finish rules per type</span><span class="lang-pt">Regras de Start e Finish por tipo</span><span class="lang-es">Reglas de Start y Finish por tipo</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotFlowPerType.png" alt="Full command flow per type"><figcaption><span class="lang-en">Full command flow per type</span><span class="lang-pt">Fluxo completo de comandos por tipo</span><span class="lang-es">Flujo completo de comandos por tipo</span></figcaption></figure><figure><img loading="lazy" src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/ScreenShots/ScreenShotHierarchyBasedOn.png" alt="Empty commit vs based-on override"><figcaption><span class="lang-en">Empty commit vs based-on override</span><span class="lang-pt">Commit vazio vs based-on override</span><span class="lang-es">Commit vacío vs based-on override</span></figcaption></figure>
     </div>
   </div>
 </section>
@@ -152,24 +159,28 @@
 
 <section id="install">
   <div class="wrap">
-    <h2 class="lang-en">Installation</h2><h2 class="lang-pt">Instalação</h2>
+    <h2 class="lang-en">Installation</h2><h2 class="lang-pt">Instalação</h2><h2 class="lang-es">Instalación</h2>
     <p class="sub lang-en">Two ways to get up and running.</p>
     <p class="sub lang-pt">Duas formas de começar.</p>
+    <p class="sub lang-es">Dos formas de empezar.</p>
     <div class="steps">
       <div class="step"><div>
-        <strong class="lang-en">Plugin Manager (recommended)</strong><strong class="lang-pt">Gerenciador de Plugins (recomendado)</strong><br>
+        <strong class="lang-en">Plugin Manager (recommended)</strong><strong class="lang-pt">Gerenciador de Plugins (recomendado)</strong><strong class="lang-es">Gestor de Plugins (recomendado)</strong><br>
         <span class="lang-en">In GitExtensions, open <code>Plugins &rarr; Plugin Manager</code>, search for <code>ZimerfeldTree</code> and install. Restart, then open <code>Plugins &rarr; ZimerfeldTree</code>.</span>
         <span class="lang-pt">No GitExtensions, abra <code>Plugins &rarr; Plugin Manager</code>, procure por <code>ZimerfeldTree</code> e instale. Reinicie e abra <code>Plugins &rarr; ZimerfeldTree</code>.</span>
+        <span class="lang-es">En GitExtensions, abre <code>Plugins &rarr; Plugin Manager</code>, busca <code>ZimerfeldTree</code> e instálalo. Reinicia y abre <code>Plugins &rarr; ZimerfeldTree</code>.</span>
       </div></div>
       <div class="step"><div>
-        <strong class="lang-en">Manual</strong><strong class="lang-pt">Manual</strong><br>
+        <strong class="lang-en">Manual</strong><strong class="lang-pt">Manual</strong><strong class="lang-es">Manual</strong><br>
         <span class="lang-en">Install the <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">NuGet package</a> or drop the plugin DLL into <code>C:\Program Files\GitExtensions\Plugins\</code>.</span>
         <span class="lang-pt">Instale o <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">pacote NuGet</a> ou copie a DLL do plugin para <code>C:\Program Files\GitExtensions\Plugins\</code>.</span>
+        <span class="lang-es">Instala el <a href="https://www.nuget.org/packages/GitExtensions.ZimerfeldTree/">paquete NuGet</a> o copia la DLL del plugin en <code>C:\Program Files\GitExtensions\Plugins\</code>.</span>
       </div></div>
     </div>
     <p class="sub" style="margin-top:16px">
       <span class="lang-en">Requires <a href="https://gitextensions.github.io/">GitExtensions</a> 6.x (.NET 9) on Windows.</span>
       <span class="lang-pt">Requer o <a href="https://gitextensions.github.io/">GitExtensions</a> 6.x (.NET 9) no Windows.</span>
+      <span class="lang-es">Requiere <a href="https://gitextensions.github.io/">GitExtensions</a> 6.x (.NET 9) en Windows.</span>
     </p>
   </div>
 </section>
@@ -178,9 +189,10 @@
 
 <section id="docs">
   <div class="wrap">
-    <h2 class="lang-en">Full documentation</h2><h2 class="lang-pt">Documentação completa</h2>
+    <h2 class="lang-en">Full documentation</h2><h2 class="lang-pt">Documentação completa</h2><h2 class="lang-es">Documentación completa</h2>
     <p class="sub lang-en"><strong>Technical details, features, screenshots and installation</strong> are available per language. Click here:</p>
     <p class="sub lang-pt"><strong>Detalhes técnicos, funcionalidades, printscreens e instalação</strong> estão disponíveis por idioma. Clique aqui:</p>
+    <p class="sub lang-es"><strong>Detalles técnicos, funcionalidades, capturas de pantalla e instalación</strong> están disponibles por idioma. Haz clic aquí:</p>
     <div class="langlinks">
       <a href="https://github.com/zimerfeld/GitExtensions.ZimerfeldTree/blob/main/README.pt-BR.md">&#127463;&#127479; Português (Brasil)</a>
       <a href="https://github.com/zimerfeld/GitExtensions.ZimerfeldTree/blob/main/README.en-US.md">&#127482;&#127480; English (United States)</a>
@@ -194,6 +206,7 @@
     <div>
       <span class="lang-en">Copyright &copy; 2026 Renato Zimerfeld &mdash; <strong>CC BY-NC-ND 4.0</strong>.</span>
       <span class="lang-pt">Copyright &copy; 2026 Renato Zimerfeld &mdash; <strong>CC BY-NC-ND 4.0</strong>.</span>
+      <span class="lang-es">Copyright &copy; 2026 Renato Zimerfeld &mdash; <strong>CC BY-NC-ND 4.0</strong>.</span>
     </div>
     <div>
       <a href="https://zimerfeld.com">zimerfeld.com</a> &nbsp;&middot;&nbsp;
@@ -206,20 +219,27 @@
 <script>
   (function(){
     var html=document.documentElement;
-    function set(l){
-      html.setAttribute('data-lang',l);
-      html.setAttribute('lang', l==='pt'?'pt-BR':'en');
-      document.querySelectorAll('.toggle button').forEach(function(b){
-        b.classList.toggle('active', b.dataset.set===l);
-      });
-      try{localStorage.setItem('zf-lang',l);}catch(e){}
+    // Resolve AUTO to a concrete language following the browser UI language.
+    function resolve(sel){
+      if(sel!=='auto') return sel;
+      var n=(navigator.language||'en').toLowerCase();
+      if(n.indexOf('pt')===0) return 'pt';
+      if(n.indexOf('es')===0) return 'es';
+      return 'en';
+    }
+    function apply(sel){
+      var eff=resolve(sel);
+      html.setAttribute('data-lang',eff);
+      html.setAttribute('lang', eff==='pt'?'pt-BR':(eff==='es'?'es-ES':'en-US'));
+      var s=document.getElementById('langsel');
+      if(s) s.value=sel;
+      try{localStorage.setItem('zf-lang',sel);}catch(e){}
     }
     var saved=null; try{saved=localStorage.getItem('zf-lang');}catch(e){}
-    var initial = saved || ((navigator.language||'en').toLowerCase().indexOf('pt')===0?'pt':'en');
-    set(initial);
-    document.querySelectorAll('.toggle button').forEach(function(b){
-      b.addEventListener('click',function(){set(b.dataset.set);});
-    });
+    // AUTO is the default when there is no saved preference.
+    apply(saved||'auto');
+    var s=document.getElementById('langsel');
+    if(s) s.addEventListener('change',function(){apply(s.value);});
   })();
 </script>
 </body>
