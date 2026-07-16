@@ -34,19 +34,15 @@
   nav img{width:30px;height:30px;border-radius:7px}
   nav .brand{font-weight:700;letter-spacing:.2px;font-size:clamp(13px,3.4vw,17px);min-width:0}
   nav .spacer{flex:1}
-  nav .navlinks{display:flex;align-items:center;gap:14px}
   /* segmented language toggle (AUTO/PT/EN/ES); active pill uses the site accent */
   .toggle{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
   .toggle button{background:transparent;color:var(--muted);border:0;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.3px}
   .toggle button:hover{color:var(--tx)}
   .toggle button.active{background:var(--accent);color:#fff}
-  /* On narrow screens (<=860px) drop the section links to a second row,
-     below the program name; the brand and language selector stay on the first row. */
+  /* On narrow screens (<=860px) let the nav wrap so the language toggle can move
+     to a second row below the program name if it doesn't fit. */
   @media (max-width:860px){
     nav .wrap{flex-wrap:wrap;height:auto;padding-top:10px;padding-bottom:10px;row-gap:10px}
-    nav .wrap .spacer{order:3}
-    nav .wrap .toggle{order:4}
-    nav .wrap .navlinks{order:5;flex-basis:100%}
   }
   /* hero */
   header.hero{position:relative;overflow:hidden;padding:72px 0 56px;text-align:center;
@@ -103,14 +99,6 @@
     <img src="https://raw.githubusercontent.com/zimerfeld/ZimerfeldTree/main/src/GitExtensions.ZimerfeldTree/Resources/icon-128.png" alt="GitExtensions.ZimerfeldTree icon">
     <span class="brand">GitExtensions.ZimerfeldTree</span>
     <span class="spacer"></span>
-    <div class="navlinks">
-      <a href="#features" class="lang-en" style="color:var(--muted);font-size:14px">Features</a>
-      <a href="#features" class="lang-pt" style="color:var(--muted);font-size:14px">Funcionalidades</a>
-      <a href="#features" class="lang-es" style="color:var(--muted);font-size:14px">Características</a>
-      <a href="#install" class="lang-en" style="color:var(--muted);font-size:14px">Install</a>
-      <a href="#install" class="lang-pt" style="color:var(--muted);font-size:14px">Instalação</a>
-      <a href="#install" class="lang-es" style="color:var(--muted);font-size:14px">Instalación</a>
-    </div>
     <div class="toggle" role="group" aria-label="Language / Idioma">
       <button data-set="auto">AUTO</button>
       <button data-set="pt">PT</button>
