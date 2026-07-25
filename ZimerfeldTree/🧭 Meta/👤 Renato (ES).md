@@ -9,7 +9,7 @@ tags: [preferencia, contexto, pessoa]
 
 # 👤 Renato Zimerfeld
 
-> 🇧🇷 Lee esta página en portugués → [[👤 Renato]]
+> 🇧🇷 Lee esta página en portugués → [[👤 Renato (PT)|👤 Renato]]
 > 🇺🇸 Read this page in English → [[👤 Renato (EN)]]
 
 ## Identidad

@@ -9,7 +9,7 @@ versao: 1.0.361
 
 # Visión General
 
-> 🇧🇷 Lee esta página en portugués → [[👁️ Visão Geral]]
+> 🇧🇷 Lee esta página en portugués → [[👁️ Visão Geral (PT)|👁️ Visão Geral]]
 > 🇺🇸 Read this page in English → [[👁️ Visão Geral (EN)]]
 
 ## Qué es

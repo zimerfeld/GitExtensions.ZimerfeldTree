@@ -9,7 +9,7 @@ tags: [conhecimento, git, hierarquia, branch, bfs, ancestralidade]
 
 # Jerarquía de branches — branches en el mismo commit
 
-> 🇧🇷 Lee esta página en portugués → [[🌿 Hierarquia de branches — branches no mesmo commit]]
+> 🇧🇷 Lee esta página en portugués → [[🌿 Hierarquia de branches — branches no mesmo commit (PT)|🌿 Hierarquia de branches — branches no mesmo commit]]
 > 🇺🇸 Read this page in English → [[🌿 Hierarquia de branches — branches no mesmo commit (EN)]]
 
 ## Resumen

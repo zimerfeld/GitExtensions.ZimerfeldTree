@@ -9,7 +9,7 @@ versao: 1.0.361
 
 # Versionado y Build
 
-> 🇧🇷 Lee esta página en portugués → [[🏷️ Versionamento]]
+> 🇧🇷 Lee esta página en portugués → [[🏷️ Versionamento (PT)|🏷️ Versionamento]]
 > 🇺🇸 Read this page in English → [[🏷️ Versionamento (EN)]]
 
 ## Esquema de versión

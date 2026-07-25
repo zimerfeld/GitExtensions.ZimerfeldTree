@@ -9,7 +9,7 @@ versao: 1.0.358
 
 # Dependencias
 
-> 🇧🇷 Lee esta página en portugués → [[📦 Dependências]]
+> 🇧🇷 Lee esta página en portugués → [[📦 Dependências (PT)|📦 Dependências]]
 > 🇺🇸 Read this page in English → [[📦 Dependências (EN)]]
 
 > [!abstract] Resumen

@@ -14,7 +14,7 @@ repo: C:\GitExtensions\GitExtensions.ZimerfeldTree
 
 # 🌳 GitExtensions.ZimerfeldTree
 
-> 🇧🇷 Lee esta página en portugués → [[🌳 GitExtensions.ZimerfeldTree]]
+> 🇧🇷 Lee esta página en portugués → [[🌳 GitExtensions.ZimerfeldTree (PT)|🌳 GitExtensions.ZimerfeldTree]]
 > 🇺🇸 Read this page in English → [[🌳 GitExtensions.ZimerfeldTree (EN)]]
 
 > [!info] Esta nota es un espejo del `README.md` del repositorio

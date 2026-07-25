@@ -9,7 +9,7 @@ tags: [conhecimento, git, gitflow]
 
 # git flow — claves de config (CLI)
 
-> 🇧🇷 Lee esta página en portugués → [[⚙️ git flow - chaves de config (CLI)]]
+> 🇧🇷 Lee esta página en portugués → [[⚙️ git flow - chaves de config (CLI) (PT)|⚙️ git flow - chaves de config (CLI)]]
 > 🇺🇸 Read this page in English → [[⚙️ git flow - chaves de config (CLI) (EN)]]
 
 ## Problema

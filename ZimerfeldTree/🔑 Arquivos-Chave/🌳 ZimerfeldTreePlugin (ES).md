@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/ZimerfeldTreePlugin.cs
 
 # ZimerfeldTreePlugin.cs
 
-> 🇧🇷 Lee esta página en portugués → [[🌳 ZimerfeldTreePlugin]]
+> 🇧🇷 Lee esta página en portugués → [[🌳 ZimerfeldTreePlugin (PT)|🌳 ZimerfeldTreePlugin]]
 > 🇺🇸 Read this page in English → [[🌳 ZimerfeldTreePlugin (EN)]]
 
 Punto de entrada MEF del plugin (`IGitPlugin`). ~238 líneas.

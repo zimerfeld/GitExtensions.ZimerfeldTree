@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/BranchHierarchyService.cs
 
 # BranchHierarchyService.cs
 
-> 🇧🇷 Lee esta página en portugués → [[⚙️ BranchHierarchyService]]
+> 🇧🇷 Lee esta página en portugués → [[⚙️ BranchHierarchyService (PT)|⚙️ BranchHierarchyService]]
 > 🇺🇸 Read this page in English → [[⚙️ BranchHierarchyService (EN)]]
 
 Ejecutor de `git` como subproceso + parser de la salida + construcción de la jerarquía de branches. ~831 líneas.

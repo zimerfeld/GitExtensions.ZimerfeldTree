@@ -9,7 +9,7 @@ versao: 1.0.358
 
 # Arquitectura
 
-> 🇧🇷 Lee esta página en portugués → [[🏗️ Arquitetura]]
+> 🇧🇷 Lee esta página en portugués → [[🏗️ Arquitetura (PT)|🏗️ Arquitetura]]
 > 🇺🇸 Read this page in English → [[🏗️ Arquitetura (EN)]]
 
 ## Diagrama de clases

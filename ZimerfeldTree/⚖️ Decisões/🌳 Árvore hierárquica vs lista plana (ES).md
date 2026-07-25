@@ -10,7 +10,7 @@ criado: 2026-06-01
 
 # ADR — Árbol jerárquico de branches en lugar de una lista plana
 
-> 🇧🇷 Lee esta página en portugués → [[🌳 Árvore hierárquica vs lista plana]]
+> 🇧🇷 Lee esta página en portugués → [[🌳 Árvore hierárquica vs lista plana (PT)|🌳 Árvore hierárquica vs lista plana]]
 > 🇺🇸 Read this page in English → [[🌳 Árvore hierárquica vs lista plana (EN)]]
 
 ## Contexto

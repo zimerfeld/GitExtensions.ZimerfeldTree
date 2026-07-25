@@ -10,7 +10,7 @@ versao: 1.0.358
 
 # build.ps1
 
-> 🇧🇷 Lee esta página en portugués → [[🔧 build.ps1]]
+> 🇧🇷 Lee esta página en portugués → [[🔧 build.ps1 (PT)|🔧 build.ps1]]
 > 🇺🇸 Read this page in English → [[🔧 build.ps1 (EN)]]
 
 Script de build, versionado y deploy del plugin.

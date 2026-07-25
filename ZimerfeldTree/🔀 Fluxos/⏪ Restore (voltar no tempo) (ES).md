@@ -8,7 +8,7 @@ tags: [fluxo, restore, recuperacao, desfazer, etapa3]
 
 # Flujo: 3 — Restore (volver en el tiempo)
 
-> 🇧🇷 Lee esta página en portugués → [[⏪ Restore (voltar no tempo)]]
+> 🇧🇷 Lee esta página en portugués → [[⏪ Restore (voltar no tempo) (PT)|⏪ Restore (voltar no tempo)]]
 > 🇺🇸 Read this page in English → [[⏪ Restore (voltar no tempo) (EN)]]
 
 Ventana `RestoreForm`, abierta con el botón **Restore**. 10 pestañas ordenadas de la más segura a la más destructiva.

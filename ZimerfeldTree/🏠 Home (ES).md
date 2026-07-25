@@ -9,7 +9,7 @@ tags: [moc, home, zimerfeld, tree, gitextensions, gitflow]
 
 # 🏠 GitExtensions.ZimerfeldTree — Bóveda de Neuronas
 
-> 🇧🇷 Lee esta página en portugués → [[🏠 Home]]
+> 🇧🇷 Lee esta página en portugués → [[🏠 Home (PT)|🏠 Home]]
 > 🇺🇸 Read this page in English → [[🏠 Home (EN)]]
 
 > [!abstract] 🧠 Qué es esta bóveda

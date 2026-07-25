@@ -10,7 +10,7 @@ criado: 2026-06-01
 
 # ADR — Ventana principal no modal y singleton
 
-> 🇧🇷 Lee esta página en portugués → [[🪟 Janela não-modal singleton]]
+> 🇧🇷 Lee esta página en portugués → [[🪟 Janela não-modal singleton (PT)|🪟 Janela não-modal singleton]]
 > 🇺🇸 Read this page in English → [[🪟 Janela não-modal singleton (EN)]]
 
 ## Contexto
