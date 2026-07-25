@@ -9,7 +9,7 @@ tags: [fatos-chave, referencia]
 
 # 🔑 Datos Clave
 
-> 🇧🇷 Lee esta página en portugués → [[🔑 Fatos-Chave]]
+> 🇧🇷 Lee esta página en portugués → [[🔑 Fatos-Chave (PT)|🔑 Fatos-Chave]]
 > 🇺🇸 Read this page in English → [[🔑 Fatos-Chave (EN)]]
 
 > [!tip] Leer primero

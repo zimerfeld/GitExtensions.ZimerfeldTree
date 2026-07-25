@@ -9,7 +9,7 @@ tags: [conhecimento, csharp, gitextensions, mef, plugin]
 
 # Plugin MEF para GitExtensions
 
-> 🇧🇷 Lee esta página en portugués → [[🧩 Plugin MEF para GitExtensions]]
+> 🇧🇷 Lee esta página en portugués → [[🧩 Plugin MEF para GitExtensions (PT)|🧩 Plugin MEF para GitExtensions]]
 > 🇺🇸 Read this page in English → [[🧩 Plugin MEF para GitExtensions (EN)]]
 
 ## Resumen

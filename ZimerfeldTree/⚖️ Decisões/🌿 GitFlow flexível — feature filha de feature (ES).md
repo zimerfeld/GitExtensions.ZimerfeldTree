@@ -10,7 +10,7 @@ criado: 2026-06-18
 
 # ADR — GitFlow flexible: feature hija de feature
 
-> 🇧🇷 Lee esta página en portugués → [[🌿 GitFlow flexível — feature filha de feature]]
+> 🇧🇷 Lee esta página en portugués → [[🌿 GitFlow flexível — feature filha de feature (PT)|🌿 GitFlow flexível — feature filha de feature]]
 > 🇺🇸 Read this page in English → [[🌿 GitFlow flexível — feature filha de feature (EN)]]
 
 ## Contexto

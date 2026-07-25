@@ -8,7 +8,7 @@ tags: [fluxo, arvore, abertura, overlay, etapa1]
 
 # Flujo: 1 — Abrir y navegar el árbol
 
-> 🇧🇷 Lee esta página en portugués → [[🌲 Abrir e navegar a árvore]]
+> 🇧🇷 Lee esta página en portugués → [[🌲 Abrir e navegar a árvore (PT)|🌲 Abrir e navegar a árvore]]
 > 🇺🇸 Read this page in English → [[🌲 Abrir e navegar a árvore (EN)]]
 
 Apertura de la ventana principal (`BranchHierarchyForm`) y navegación de la jerarquía de branches.

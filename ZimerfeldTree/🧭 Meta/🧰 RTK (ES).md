@@ -9,7 +9,7 @@ tags: [ferramenta, cli, rtk]
 
 # 🦀 RTK — Rust Token Killer
 
-> 🇧🇷 Lee esta página en portugués → [[🧰 RTK]]
+> 🇧🇷 Lee esta página en portugués → [[🧰 RTK (PT)|🧰 RTK]]
 > 🇺🇸 Read this page in English → [[🧰 RTK (EN)]]
 
 ## Resumen

@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/GitFlowForm.cs
 
 # GitFlowForm.cs
 
-> 🇧🇷 Lee esta página en portugués → [[🔀 GitFlowForm]]
+> 🇧🇷 Lee esta página en portugués → [[🔀 GitFlowForm (PT)|🔀 GitFlowForm]]
 > 🇺🇸 Read this page in English → [[🔀 GitFlowForm (EN)]]
 
 Ventana modal que dirige los comandos `git flow` usando **solo git nativo**. ~758 líneas. Título: `ZimerfeldTree - GitFlow`.

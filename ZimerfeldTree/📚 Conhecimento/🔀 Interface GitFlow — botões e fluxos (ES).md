@@ -11,7 +11,7 @@ fonte: src\GitExtensions.ZimerfeldTree\GitFlowForm.cs
 
 # Interfaz GitFlow — botones y flujos
 
-> 🇧🇷 Lee esta página en portugués → [[🔀 Interface GitFlow — botões e fluxos]]
+> 🇧🇷 Lee esta página en portugués → [[🔀 Interface GitFlow — botões e fluxos (PT)|🔀 Interface GitFlow — botões e fluxos]]
 > 🇺🇸 Read this page in English → [[🔀 Interface GitFlow — botões e fluxos (EN)]]
 
 > [!abstract] Resumen

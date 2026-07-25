@@ -8,7 +8,7 @@ tags: [fluxo, gitflow, start, finish, etapa2]
 
 # Flujo: 2 — GitFlow (Start → Finish)
 
-> 🇧🇷 Lee esta página en portugués → [[🔀 GitFlow (Start a Finish)]]
+> 🇧🇷 Lee esta página en portugués → [[🔀 GitFlow (Start a Finish) (PT)|🔀 GitFlow (Start a Finish)]]
 > 🇺🇸 Read this page in English → [[🔀 GitFlow (Start a Finish) (EN)]]
 
 Ventana `GitFlowForm`, abierta con el botón **GitFlow** o desde el menú contextual. Dirige el ciclo en **git puro** (sin el binario `git-flow`).

@@ -11,7 +11,7 @@ versao: 1.0.361
 
 # README — Instalación, Uso y Build
 
-> 🇧🇷 Lee esta página en portugués → [[📘 README — Instalação, Uso e Build]]
+> 🇧🇷 Lee esta página en portugués → [[📘 README — Instalação, Uso e Build (PT)|📘 README — Instalação, Uso e Build]]
 > 🇺🇸 Read this page in English → [[📘 README — Instalação, Uso e Build (EN)]]
 
 > Espejo fiel del `README.md` de la raíz del repositorio (y de las variantes `README.en-US.md` / `README.pt-BR.md`).

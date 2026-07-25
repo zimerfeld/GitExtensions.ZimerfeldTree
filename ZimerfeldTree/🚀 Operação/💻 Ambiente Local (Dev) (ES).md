@@ -8,7 +8,7 @@ tags: [operacao, dev, build, install, powershell]
 
 # 💻 Entorno Local (Dev)
 
-> 🇧🇷 Lee esta página en portugués → [[💻 Ambiente Local (Dev)]]
+> 🇧🇷 Lee esta página en portugués → [[💻 Ambiente Local (Dev) (PT)|💻 Ambiente Local (Dev)]]
 > 🇺🇸 Read this page in English → [[💻 Ambiente Local (Dev) (EN)]]
 
 > [!abstract] 🎯 Objetivo

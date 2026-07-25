@@ -11,7 +11,7 @@ fonte: src\GitExtensions.ZimerfeldTree\BranchHierarchyForm.cs
 
 # Interfaz ZimerfeldTree — botones y flujos
 
-> 🇧🇷 Lee esta página en portugués → [[🌳 Interface ZimerfeldTree — botões e fluxos]]
+> 🇧🇷 Lee esta página en portugués → [[🌳 Interface ZimerfeldTree — botões e fluxos (PT)|🌳 Interface ZimerfeldTree — botões e fluxos]]
 > 🇺🇸 Read this page in English → [[🌳 Interface ZimerfeldTree — botões e fluxos (EN)]]
 
 > [!abstract] Resumen

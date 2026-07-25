@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/BranchHierarchyForm.cs
 
 # BranchHierarchyForm.cs
 
-> 🇧🇷 Lee esta página en portugués → [[🪟 BranchHierarchyForm]]
+> 🇧🇷 Lee esta página en portugués → [[🪟 BranchHierarchyForm (PT)|🪟 BranchHierarchyForm]]
 > 🇺🇸 Read this page in English → [[🪟 BranchHierarchyForm (EN)]]
 
 Ventana principal no modal — el árbol jerárquico de branches. **~2066 líneas** (la mayor parte de la UI). Título de la barra: `ZimerfeldTree - BranchHierarchy`.

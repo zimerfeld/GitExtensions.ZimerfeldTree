@@ -9,7 +9,7 @@ tags: [ferramenta, dependencias, instalacao, zimerfeldtree, gitextensions, git, 
 
 # 🧩 Dependencias de ZimerfeldTree
 
-> 🇧🇷 Lee esta página en portugués → [[📦 Dependências do ZimerfeldTree]]
+> 🇧🇷 Lee esta página en portugués → [[📦 Dependências do ZimerfeldTree (PT)|📦 Dependências do ZimerfeldTree]]
 > 🇺🇸 Read this page in English → [[📦 Dependências do ZimerfeldTree (EN)]]
 
 > [!abstract] Resumen

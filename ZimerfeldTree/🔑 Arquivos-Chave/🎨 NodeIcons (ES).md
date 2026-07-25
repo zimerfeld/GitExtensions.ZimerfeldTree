@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/NodeIcons.cs
 
 # NodeIcons.cs
 
-> 🇧🇷 Lee esta página en portugués → [[🎨 NodeIcons]]
+> 🇧🇷 Lee esta página en portugués → [[🎨 NodeIcons (PT)|🎨 NodeIcons]]
 > 🇺🇸 Read this page in English → [[🎨 NodeIcons (EN)]]
 
 Iconos 16×16 del árbol — PNGs embebidos con fallback dibujado en GDI+. ~381 líneas.

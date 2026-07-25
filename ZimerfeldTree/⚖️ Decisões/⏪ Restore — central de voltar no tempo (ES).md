@@ -10,7 +10,7 @@ criado: 2026-06-07
 
 # ADR — Restore como centro único para "volver en el tiempo"
 
-> 🇧🇷 Lee esta página en portugués → [[⏪ Restore — central de voltar no tempo]]
+> 🇧🇷 Lee esta página en portugués → [[⏪ Restore — central de voltar no tempo (PT)|⏪ Restore — central de voltar no tempo]]
 > 🇺🇸 Read this page in English → [[⏪ Restore — central de voltar no tempo (EN)]]
 
 ## Contexto
