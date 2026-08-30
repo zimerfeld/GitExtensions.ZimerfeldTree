@@ -6,7 +6,7 @@ atualizado: 2026-08-29
 criado: 2026-06-18
 tags: [conhecimento, readme, instalacao, build, uso, gitflow, hierarquia, i18n]
 fonte: README.md
-versao: 1.0.362
+versao: 1.0.363
 ---
 
 # README — Install, Usage and Build
@@ -15,7 +15,7 @@ versao: 1.0.362
 > Project note: [[🌳 GitExtensions.ZimerfeldTree (EN)|GitExtensions.ZimerfeldTree]]. Detailed flows in [[🌳 Interface ZimerfeldTree — botões e fluxos (EN)|ZimerfeldTree Interface — buttons and flows]], [[🔀 Interface GitFlow — botões e fluxos (EN)|GitFlow Interface — buttons and flows]] and [[⏪ Interface Restore — botões e fluxos (EN)|Restore Interface — buttons and flows]].
 > `build.ps1` stamps version + date in the READMEs **and in this note** (frontmatter `versao:`/`atualizado:`) on every build — re-mirror the body when the README changes significantly.
 
-Current version: **1.0.362**
+Current version: **1.0.363**
 
 Plugin for **[GitExtensions](https://gitextensions.github.io/)** that displays the repository branches **hierarchically as a tree** (showing child branches) instead of the default flat list, and makes using the **GitFlow** methodology very easy, intuitive and pleasant to apply on projects of any size.
 

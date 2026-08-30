@@ -8,7 +8,7 @@ historico: 2026-07-01 (behind push: the warning now offers **Pull with rebase an
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.362
+versao: 1.0.363
 repo: C:\GitExtensions\GitExtensions.ZimerfeldTree
 ---
 
@@ -262,7 +262,7 @@ When **no change** is detected in the sources, the script keeps the version and 
 > GitExtensions writes the config in its own internal format, but the git flow CLI expects other keys. Solution in [[⚙️ git flow - chaves de config (CLI) (EN)|git flow — config keys (CLI)]].
 
 ## 🔢 Versioning
-- Current version: **1.0.362** (README + csproj + nuspec + vault in sync)
+- Current version: **1.0.363** (README + csproj + nuspec + vault in sync)
 - Scheme: `major.minor.BUILD`, managed by `build.ps1`
 - ⚠️ Keep the csproj and nuspec in sync
 
