@@ -9,7 +9,7 @@ tags: [backlog, retomada]
 
 # 📌 Backlog — GitExtensions.ZimerfeldTree
 
-> 🇧🇷 Lee esta página en portugués → [[📌 Backlog]]
+> 🇧🇷 Lee esta página en portugués → [[📌 Backlog (PT)|📌 Backlog]]
 > 🇺🇸 Read this page in English → [[📌 Backlog (EN)]]
 
 > [!tip] 🧭 Punto de retomada

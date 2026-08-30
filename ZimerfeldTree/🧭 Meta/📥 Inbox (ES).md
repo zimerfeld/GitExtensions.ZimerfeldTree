@@ -9,7 +9,7 @@ tags: [inbox, captura-rapida]
 
 # 📥 Inbox
 
-> 🇧🇷 Lee esta página en portugués → [[📥 Inbox]]
+> 🇧🇷 Lee esta página en portugués → [[📥 Inbox (PT)|📥 Inbox]]
 > 🇺🇸 Read this page in English → [[📥 Inbox (EN)]]
 
 > [!note] Captura rápida

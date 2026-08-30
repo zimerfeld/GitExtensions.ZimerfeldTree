@@ -8,7 +8,7 @@ tags: [operacao, prod, release, nupkg, nuget, github]
 
 # 🚀 Despliegue en Producción (Prod)
 
-> 🇧🇷 Lee esta página en portugués → [[🚀 Deploy em Produção (Prod)]]
+> 🇧🇷 Lee esta página en portugués → [[🚀 Deploy em Produção (Prod) (PT)|🚀 Deploy em Produção (Prod)]]
 > 🇺🇸 Read this page in English → [[🚀 Deploy em Produção (Prod) (EN)]]
 
 > [!abstract] 🎯 Objetivo

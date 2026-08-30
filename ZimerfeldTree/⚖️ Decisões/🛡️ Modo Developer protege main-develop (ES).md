@@ -10,7 +10,7 @@ criado: 2026-06-16
 
 # ADR — "Modo Developer" para proteger main / master / develop
 
-> 🇧🇷 Lee esta página en portugués → [[🛡️ Modo Developer protege main-develop]]
+> 🇧🇷 Lee esta página en portugués → [[🛡️ Modo Developer protege main-develop (PT)|🛡️ Modo Developer protege main-develop]]
 > 🇺🇸 Read this page in English → [[🛡️ Modo Developer protege main-develop (EN)]]
 
 ## Contexto

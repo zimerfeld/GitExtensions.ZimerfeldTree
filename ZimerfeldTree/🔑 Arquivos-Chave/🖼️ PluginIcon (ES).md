@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/PluginIcon.cs
 
 # PluginIcon.cs
 
-> 🇧🇷 Lee esta página en portugués → [[🖼️ PluginIcon]]
+> 🇧🇷 Lee esta página en portugués → [[🖼️ PluginIcon (PT)|🖼️ PluginIcon]]
 > 🇺🇸 Read this page in English → [[🖼️ PluginIcon (EN)]]
 
 Icono del plugin/ventana — "Árbol de la Vida". ~33 líneas.

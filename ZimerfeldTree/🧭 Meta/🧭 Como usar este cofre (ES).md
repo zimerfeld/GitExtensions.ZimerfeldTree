@@ -9,7 +9,7 @@ tags: [meta, protocolo]
 
 # 🧭 Cómo usar esta bóveda (protocolo de Claude)
 
-> 🇧🇷 Lee esta página en portugués → [[🧭 Como usar este cofre]]
+> 🇧🇷 Lee esta página en portugués → [[🧭 Como usar este cofre (PT)|🧭 Como usar este cofre]]
 > 🇺🇸 Read this page in English → [[🧭 Como usar este cofre (EN)]]
 
 > [!important] Protocolo de memoria

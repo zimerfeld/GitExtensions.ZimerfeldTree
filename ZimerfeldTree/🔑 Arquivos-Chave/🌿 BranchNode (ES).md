@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/BranchNode.cs
 
 # BranchNode.cs
 
-> 🇧🇷 Lee esta página en portugués → [[🌿 BranchNode]]
+> 🇧🇷 Lee esta página en portugués → [[🌿 BranchNode (PT)|🌿 BranchNode]]
 > 🇺🇸 Read this page in English → [[🌿 BranchNode (EN)]]
 
 Modelos de datos del árbol. ~41 líneas.

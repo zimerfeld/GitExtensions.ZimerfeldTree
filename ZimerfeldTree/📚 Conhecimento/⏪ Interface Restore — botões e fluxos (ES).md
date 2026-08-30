@@ -11,7 +11,7 @@ fonte: src\GitExtensions.ZimerfeldTree\RestoreForm.cs
 
 # Interfaz Restore — botones y flujos
 
-> 🇧🇷 Lee esta página en portugués → [[⏪ Interface Restore — botões e fluxos]]
+> 🇧🇷 Lee esta página en portugués → [[⏪ Interface Restore — botões e fluxos (PT)|⏪ Interface Restore — botões e fluxos]]
 > 🇺🇸 Read this page in English → [[⏪ Interface Restore — botões e fluxos (EN)]]
 
 > [!abstract] Resumen

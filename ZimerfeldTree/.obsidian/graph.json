@@ -7,11 +7,41 @@
   "showOrphans": true,
   "collapse-color-groups": false,
   "colorGroups": [
-    { "query": "path:\"01 - Projetos\"", "color": { "a": 1, "rgb": 5431378 } },
-    { "query": "path:\"02 - Conhecimento\"", "color": { "a": 1, "rgb": 3450963 } },
-    { "query": "path:\"03 - Decisões\"", "color": { "a": 1, "rgb": 14701138 } },
-    { "query": "path:\"05 - Sessões\"", "color": { "a": 1, "rgb": 9019699 } },
-    { "query": "path:\"06 - Bancos de Dados\"", "color": { "a": 1, "rgb": 11621088 } }
+    {
+      "query": "path:\"01 - Projetos\"",
+      "color": {
+        "a": 1,
+        "rgb": 5431378
+      }
+    },
+    {
+      "query": "path:\"02 - Conhecimento\"",
+      "color": {
+        "a": 1,
+        "rgb": 3450963
+      }
+    },
+    {
+      "query": "path:\"03 - Decisões\"",
+      "color": {
+        "a": 1,
+        "rgb": 14701138
+      }
+    },
+    {
+      "query": "path:\"05 - Sessões\"",
+      "color": {
+        "a": 1,
+        "rgb": 9019699
+      }
+    },
+    {
+      "query": "path:\"06 - Bancos de Dados\"",
+      "color": {
+        "a": 1,
+        "rgb": 11621088
+      }
+    }
   ],
   "collapse-display": true,
   "showArrow": true,
@@ -23,5 +53,6 @@
   "repelStrength": 10,
   "linkStrength": 1,
   "linkDistance": 250,
-  "scale": 1
+  "scale": 0.2292013594174924,
+  "close": true
 }

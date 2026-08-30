@@ -2,8 +2,8 @@
 tipo: moc
 projeto: GitExtensions.ZimerfeldTree
 lang: en-US
-atualizado: 2026-07-04
-versao: 1.0.361
+atualizado: 2026-08-29
+versao: 1.0.362
 tags: [moc, home, zimerfeld, tree, gitextensions, gitflow]
 ---
 

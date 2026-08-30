@@ -10,7 +10,7 @@ criado: 2026-06-05
 
 # ADR — GitFlow ejecutado en git puro (sin el binario git-flow)
 
-> 🇧🇷 Lee esta página en portugués → [[🔀 GitFlow em git puro]]
+> 🇧🇷 Lee esta página en portugués → [[🔀 GitFlow em git puro (PT)|🔀 GitFlow em git puro]]
 > 🇺🇸 Read this page in English → [[🔀 GitFlow em git puro (EN)]]
 
 ## Contexto

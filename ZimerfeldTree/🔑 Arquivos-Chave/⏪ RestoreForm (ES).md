@@ -9,7 +9,7 @@ arquivo: src/GitExtensions.ZimerfeldTree/RestoreForm.cs
 
 # RestoreForm.cs
 
-> 🇧🇷 Lee esta página en portugués → [[⏪ RestoreForm]]
+> 🇧🇷 Lee esta página en portugués → [[⏪ RestoreForm (PT)|⏪ RestoreForm]]
 > 🇺🇸 Read this page in English → [[⏪ RestoreForm (EN)]]
 
 Ventana modal "volver en el tiempo" — 10 pestañas de recuperación/deshacer, de la más segura a la más destructiva. ~1473 líneas. Título: `ZimerfeldTree - Restore`.
