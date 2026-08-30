@@ -133,9 +133,9 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
 # O bump tambem deve refletir no cofre, para o vault nao ficar defasado em relacao ao
 # README -- mesma versao em README/csproj/nuspec/vault, sem sync manual. Atualiza o
 # 'versao:'/'atualizado:' do frontmatter e as variantes de "Versao atual" no corpo
-# (negrito e rotulo+crase, PT e EN) das notas que espelham a versao ATUAL do projeto.
+# (negrito e rotulo+crase, PT/EN/ES) das notas que espelham a versao ATUAL do projeto.
 #
-# Lista somente as 12 notas que carimbam a versao ATUAL (PT + variantes EN): Projeto,
+# Lista somente as 18 notas que carimbam a versao ATUAL (variantes PT/EN/ES): Projeto,
 # README espelho, Visao Geral, Versionamento, Home e Backlog. Notas de sessao/historico
 # e notas com versionamento proprio NAO entram aqui de proposito -- o 'atualizado:'
 # delas e' um changelog escrito a mao. O laco deixa trivial somar novas notas no futuro.
@@ -145,18 +145,24 @@ foreach ($doc in @("$PSScriptRoot\README.md", "$PSScriptRoot\README.pt-BR.md", "
 # uma linha no formato: "Obsidian: <arquivo> atualizado para <versao> (<data>)".
 $vault = "$PSScriptRoot\ZimerfeldTree"
 $obsidianDocs = @(
-    "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree.md",
+    "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree (PT).md",
     "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree (EN).md",
-    "$vault\📚 Conhecimento\📘 README — Instalação, Uso e Build.md",
+    "$vault\💼 Negócio\🌳 GitExtensions.ZimerfeldTree (ES).md",
+    "$vault\📚 Conhecimento\📘 README — Instalação, Uso e Build (PT).md",
     "$vault\📚 Conhecimento\📘 README — Instalação, Uso e Build (EN).md",
-    "$vault\🧩 Sistemas\👁️ Visão Geral.md",
+    "$vault\📚 Conhecimento\📘 README — Instalação, Uso e Build (ES).md",
+    "$vault\🧩 Sistemas\👁️ Visão Geral (PT).md",
     "$vault\🧩 Sistemas\👁️ Visão Geral (EN).md",
-    "$vault\🧩 Sistemas\🏷️ Versionamento.md",
+    "$vault\🧩 Sistemas\👁️ Visão Geral (ES).md",
+    "$vault\🧩 Sistemas\🏷️ Versionamento (PT).md",
     "$vault\🧩 Sistemas\🏷️ Versionamento (EN).md",
-    "$vault\🏠 Home.md",
+    "$vault\🧩 Sistemas\🏷️ Versionamento (ES).md",
+    "$vault\🏠 Home (PT).md",
     "$vault\🏠 Home (EN).md",
-    "$vault\📌 Backlog.md",
-    "$vault\📌 Backlog (EN).md"
+    "$vault\🏠 Home (ES).md",
+    "$vault\📌 Backlog (PT).md",
+    "$vault\📌 Backlog (EN).md",
+    "$vault\📌 Backlog (ES).md"
 )
 foreach ($obsDoc in $obsidianDocs) {
     if (Test-Path $obsDoc) {
@@ -164,12 +170,12 @@ foreach ($obsDoc in $obsidianDocs) {
         # Frontmatter -- versao / atualizado
         $v = $v -replace '(?m)^versao:\s+[\d\.]+',               "versao: $newVersion"
         $v = $v -replace '(?m)^atualizado:\s+\d{4}-\d{2}-\d{2}', "atualizado: $today"
-        # Corpo -- "Versao atual: **X**" / "Current version: **X**" (negrito, PT e EN)
-        $v = $v -replace '(Vers[ãa]o atual|Current version):\s*\*\*[\d\.]+\*\*',        ('${1}: **' + $newVersion + '**')
-        # Corpo -- "**Versao atual:** `X`" / "**Current version:** `X`" (rotulo + crase)
-        $v = $v -replace '(\*\*(?:Vers[ãa]o atual|Current version):\*\*\s*`)[\d\.]+(`)', ('${1}' + $newVersion + '${2}')
-        # Corpo -- "| Versao atual | `X` |" (tabela, crase)
-        $v = $v -replace '(\|\s*Vers[ãa]o atual\s*\|\s*`)[\d\.]+(`)',                    ('${1}' + $newVersion + '${2}')
+        # Corpo -- "Versao atual: **X**" / "Current version: **X**" / "Version actual: **X**" (negrito, PT/EN/ES)
+        $v = $v -replace '(Vers[ãa]o atual|Current version|Versi[óo]n actual):\s*\*\*[\d\.]+\*\*',        ('${1}: **' + $newVersion + '**')
+        # Corpo -- "**Versao atual:** `X`" / "**Current version:** `X`" / "**Version actual:** `X`" (rotulo + crase)
+        $v = $v -replace '(\*\*(?:Vers[ãa]o atual|Current version|Versi[óo]n actual):\*\*\s*`)[\d\.]+(`)', ('${1}' + $newVersion + '${2}')
+        # Corpo -- "| Versao atual | `X` |" (tabela, crase, PT/EN/ES)
+        $v = $v -replace '(\|\s*(?:Vers[ãa]o atual|Current version|Versi[óo]n actual)\s*\|\s*`)[\d\.]+(`)', ('${1}' + $newVersion + '${2}')
         [System.IO.File]::WriteAllText($obsDoc, $v, [System.Text.Encoding]::UTF8)
         Write-Host "Obsidian: $([System.IO.Path]::GetFileName($obsDoc)) atualizado para $newVersion ($today)"
     }
