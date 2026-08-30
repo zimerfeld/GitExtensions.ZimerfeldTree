@@ -1,10 +1,10 @@
----
+﻿---
 tipo: sistema
 projeto: GitExtensions.ZimerfeldTree
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-08-29
 tags: [build, versão, nupkg, deploy]
-versao: 1.0.361
+versao: 1.0.363
 ---
 
 # Versionado y Build
@@ -16,7 +16,7 @@ versao: 1.0.361
 
 `major.minor.build` — solo el `build` se incrementa automáticamente mediante `build.ps1`. Major y minor se cambian manualmente.
 
-Versión actual: **1.0.361** *(fuente de la verdad: `.nuspec` / `.csproj`)*
+Versión actual: **1.0.363** *(fuente de la verdad: `.nuspec` / `.csproj`)*
 
 > [!note] Detección incremental por timestamp
 > `build.ps1` solo incrementa la versión (y recompila/empaqueta) si alguna **entrada del paquete** es más reciente que el último `.nupkg` generado. Entradas = fuentes (`*.cs`/`*.csproj`/`*.nuspec`/`*.resx`/`*.png`), **cualquier `*.md`** del repositorio y los textos empaquetados (`LICENSE`, scripts de `tools\`). La comparación se hace contra el `.nupkg` (y no la DLL) a propósito — cuando solo cambia un texto, el build incremental de dotnet puede no regrabar la DLL, lo que dispararía la detección en bucle. Usa `-Force` para empaquetar incluso sin cambios.

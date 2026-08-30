@@ -1,12 +1,12 @@
----
+﻿---
 tipo: conhecimento
 projeto: GitExtensions.ZimerfeldTree
 lang: es-ES
-atualizado: 2026-07-04
+atualizado: 2026-08-29
 criado: 2026-06-18
 tags: [conhecimento, readme, instalacao, build, uso, gitflow, hierarquia, i18n]
 fonte: README.md
-versao: 1.0.361
+versao: 1.0.363
 ---
 
 # README — Instalación, Uso y Build
@@ -18,7 +18,7 @@ versao: 1.0.361
 > Nota de proyecto: [[🌳 GitExtensions.ZimerfeldTree (ES)|GitExtensions.ZimerfeldTree]]. Flujos detallados en [[🌳 Interface ZimerfeldTree — botões e fluxos (ES)|Interfaz ZimerfeldTree — botones y flujos]], [[🔀 Interface GitFlow — botões e fluxos (ES)|Interfaz GitFlow — botones y flujos]] y [[⏪ Interface Restore — botões e fluxos (ES)|Interfaz Restore — botones y flujos]].
 > `build.ps1` sella versión + fecha en los READMEs **y en esta nota** (frontmatter `versao:`/`atualizado:`) en cada build — volver a espejar el cuerpo cuando el README cambie de forma significativa.
 
-Versión actual: **1.0.361**
+Versión actual: **1.0.363**
 
 Plugin para **[GitExtensions](https://gitextensions.github.io/)** que muestra las branches del repositorio **jerárquicamente en árbol** (mostrando branches hijas) en lugar de la lista plana por defecto, y permite usar la metodología **GitFlow** de forma visual, muy fácil, intuitiva y agradable de aplicar en proyectos de cualquier tamaño.
 
