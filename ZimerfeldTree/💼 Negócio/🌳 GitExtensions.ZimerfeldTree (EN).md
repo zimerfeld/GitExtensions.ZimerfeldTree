@@ -2,13 +2,13 @@
 tipo: negocio
 projeto: GitExtensions.ZimerfeldTree
 lang: en-US
-atualizado: 2026-07-04
+atualizado: 2026-08-29
 criado: 2026-06-01
 historico: 2026-07-01 (behind push: the warning now offers **Pull with rebase and then push automatically** — `git pull --rebase` reapplies the local commits on top of the remote ones, with no merge, leaving the branch fast-forward; the `PullRebase` service method + `DoPullRebaseThenPush`) | 2026-06-27 (live Commit counter: a FileSystemWatcher on the working directory folder updates the `(N)` of the Commit button silently, with debounce and ignoring `.git`) | 2026-06-26 (funding: FUNDING.yml with github+ko_fi, NuGet version/downloads badges and a "why donate" line in the READMEs) | 2026-06-18 (doc: flexible GitFlow — feature as a child of a feature; cascading finish up to develop. 1.0.323: Pull/Push icons on the buttons and menu; remote check on open via a fetch of the current branch; Pull/Push menu acts on the clicked branch; a warning blocks a push when the branch is behind; header with the checked-out branch in the context menu)
 tags: [projeto, csharp, gitextensions, plugin, winforms]
 status: ativo
 linguagem: C#
-versao: 1.0.361
+versao: 1.0.362
 repo: C:\GitExtensions\GitExtensions.ZimerfeldTree
 ---
 
@@ -262,7 +262,7 @@ When **no change** is detected in the sources, the script keeps the version and 
 > GitExtensions writes the config in its own internal format, but the git flow CLI expects other keys. Solution in [[⚙️ git flow - chaves de config (CLI) (EN)|git flow — config keys (CLI)]].
 
 ## 🔢 Versioning
-- Current version: **1.0.361** (README + csproj + nuspec + vault in sync)
+- Current version: **1.0.362** (README + csproj + nuspec + vault in sync)
 - Scheme: `major.minor.BUILD`, managed by `build.ps1`
 - ⚠️ Keep the csproj and nuspec in sync
 
